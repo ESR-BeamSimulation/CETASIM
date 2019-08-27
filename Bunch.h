@@ -6,7 +6,7 @@
 #include "Global.h"
 #include "LatticeInterActionPoint.h"
 #include "Train.h"
-
+#include "ReadInputSettings.h"
 
 using namespace std;
 using std::vector;
@@ -21,6 +21,12 @@ public:
     Bunch();
     ~Bunch();
 
+    double CorssSectionEI;
+    double pipeAperatureR;
+    double PipeAperatureX;
+    double PipeAperatureY;
+
+    int    distributionType;
     int    macroEleNumPerBunch;
     int    macroEleNumSurivePerBunch;
     double macroEleCharge;
@@ -53,11 +59,9 @@ public:
     void InitialBeamCurDenZProf();
     void InitialBeamCurDenTProf();
     //-----------------------------------------------------------------------------
-    
-    
-    
-    void Initial(Train &train,LatticeInterActionPoint &latticeInterActionPoint);
 
+    
+    void Initial(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
 
 
     double emittanceX;          // [m rad] non-normalized rms emittance of beam in one bunch

@@ -1,0 +1,47 @@
+
+CircRing               = 1360.4E0    
+WorkQx                 = 114.05E0 
+WorkQy                 = 106.231E0
+WorkQz                 = 0.00521 
+RFBaseFrequency        = 166.6E6 
+
+
+CorssSectionEI         = 2.0E-22                     //  [m^2] Collision crossing section of CO
+PipeAperatureX         = 1.1E-3                      // [m] 
+PipeAperatureY         = 1.1E-3                      // [m] 
+PipeAperatureR         = 1.1E-3                      // [m] 
+
+ionMaxNumber                = 1E+5
+numberofIonBeamInterPoint   = 1   
+electronBeamEnergy          = 6.0E+9
+macroEleNumPerBunch         = 1
+distributionType            = 1                       // 1: KV 2:WB  3: GS  For  longitudian is Gausion 3sigma truncted
+nTurns                      = 10000
+
+trainNumber = 1
+totBunchNumber = 680;
+bunchNumberPerTrain  680  
+trainGaps  76  
+
+SynRadDampingFlag = 1
+synchRadDampTimex =  2386.34   // in the unit of truns
+synchRadDampTimey =  4536.4  
+synchRadDampTimez =  4126.1
+bunchBinNumberZ   =  256
+current           = 0.2
+
+emittanceX      = 34.2E-10
+kappa           = 0.1
+rmsBunchLength  = 30.E-3        
+rmsEnergySpread = 1.E-3
+
+
+fIRBunchByBunchFeedbackFlag = 1
+
+calSettings = 1;
+
+
+printInterval =10000
+intevalofTurnsIonDataPrint = 0
+
+

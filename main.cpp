@@ -12,7 +12,7 @@
 #include "Train.h"
 #include "LatticeInterActionPoint.h"
 #include "Beam.h"
-
+#include"ReadInputSettings.h"
 
 
 using namespace std;
@@ -24,25 +24,28 @@ int main(int argc,char *argv[])
 
     MPI_Init(&argc,&argv);
     MPI_Status status;
-    
+
     MPI_Comm_size(MPI_COMM_WORLD,&numProcess);
     MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
 
-    
+
+    ReadInputSettings inputParameter;
+    inputParameter.ParamRead();
+
+
     LatticeInterActionPoint latticeInterActionPoint;
-    latticeInterActionPoint.Initial();
+    latticeInterActionPoint.Initial(inputParameter);
+    latticeInterActionPoint.InitialLattice(inputParameter);
 
     Train train;
-    train.Initial();
+    train.Initial(inputParameter);
 
-	
 
     Beam beam;
-    beam.Initial(train,latticeInterActionPoint);
+    beam.Initial(train,latticeInterActionPoint,inputParameter);
 
 
-    beam.Run(train,latticeInterActionPoint);
-    
+    beam.Run(train,latticeInterActionPoint,inputParameter);
 
     MPI_Finalize();
     return 0;

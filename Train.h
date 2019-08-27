@@ -5,7 +5,7 @@
 #include "Global.h"
 #include <vector>
 #include <complex>
-
+#include "ReadInputSettings.h"
 
 
 using namespace std;
@@ -28,7 +28,7 @@ public:
     
     
     vector<double> bunchNumberPerTrain;
-    void Initial();
+    void Initial(ReadInputSettings &inputParameter);
 
 private:
 

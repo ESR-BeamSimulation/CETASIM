@@ -5,9 +5,13 @@
 #include <complex>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
+#include <vector>
+#include <string>
+#include <algorithm>
 
 using std::complex;
-
+using std::vector;
+using namespace std;
 
 
 const double Epsilon 				= 8.854187817E-12;
@@ -20,33 +24,27 @@ const double IonMassEV              = 931.49432e+6;                  // eV
 const double PI                     = 4*atan(1.E0);
 const double ElecClassicRadius      = 2.81794092E-15;             // m
 const double Boltzmann              = 1.3806505E-23;             // J/K
-
-
-
-const double CorssSectionEI         = 2.0e-22;                    //  [m^2] Collision crossing section of CO
-const double PipeAperatureX         = 1.1E-3;                      // [m] 
-const double PipeAperatureY         = 1.1E-3;                      // [m] 
-const double PipeAperatureR         = 1.1E-3;                      // [m] 
-const int    IonMaxNumber           = 1E+5;                 
 const  complex<double> li(0,1);
+
+
 
 extern int      numProcess;
 extern int      myRank;
-extern double   Omegas;                // [Hz] sychronous revolution frequency 
-extern double   T0;                    // [s]  EvolutionPeriod  T0
-extern int      Harmonics;             // []   number of harmonics 
+
 double Gaussrand(double rms, double aver,int randomIndex);
 void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c);
 void gsl_matrix_inv(gsl_matrix *a);
 double get_det(gsl_matrix * A);
+int StringVecSplit(string str, vector<string> &strVec);
+int StringSplit(string str, vector<string> &strVec);
+
+/*extern double Omegas;*/
+/*extern int Harmonics ;*/
+/*extern double T0;*/
 
 
-// HEPS lattice parameters
-const double CircRing               = 1360.4E0;                     // m
-const double WorkQx                 = 114.05E0; //114.141E0; //114.19;
-const double WorkQy                 = 106.231E0; //.1571;
-const double WorkQz                 = 0.00521; //.1571;
-const double RFBaseFrequency        = 166.6E6;                    // Hz
+
+
 //************************************************************************
 
 // SIAP lattice parameters

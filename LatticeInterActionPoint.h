@@ -4,7 +4,7 @@
 
 #include "Global.h"
 #include <vector>
-
+#include "ReadInputSettings.h"
 
 using namespace std;
 using std::vector;
@@ -20,6 +20,13 @@ public:
     ~LatticeInterActionPoint();
 
     int numberOfInteraction;
+    double circRing;
+    
+    
+    double pipeAperatureR;
+    double pipeAperatureX;
+    double pipeAperatureY;
+    int harmonics;
 
     vector<double> twissAlphaX;
     vector<double> twissBetaX;              // m/rad   betatron function at center the high betatron straight section
@@ -34,7 +41,7 @@ public:
     vector<double> twissDispPY;             // rad    
    
     
-    vector<double> interActionLocations;
+
     vector<vector<double> > ionPositionX;            // m
     vector<vector<double> > ionPositionY;            // m
     vector<vector<double> > ionVelocityX;            // m/s
@@ -65,6 +72,7 @@ public:
     vector <int>   macroIonNumber;
 
     vector<double> ionNumber;
+    int ionMaxNumberOneInterPoint;
     vector<double> macroIonCharge;
     
     vector<vector<double> > transferMatrix;
@@ -75,9 +83,9 @@ public:
     vector<double> yPhaseAdv;
     vector<double> zPhaseAdv;
     
-    double electronEnergy;                  // GeV
 
-    void Initial();
+    void Initial(ReadInputSettings &inputParameter);
+    void InitialLattice(ReadInputSettings &inputParameter);
     void IonGenerator(double rmsRx, double rmsRy, double xAver,double yAver, int k);
     void IonsUpdate(int k);
     void IonTransferDueToBunch(int bunchGap, int k);

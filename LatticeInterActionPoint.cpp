@@ -7,13 +7,40 @@
 #include <fstream>
 #include <time.h>
 #include <random>
+#include<string>
 
 
 
 LatticeInterActionPoint::LatticeInterActionPoint()
 {
 
-    numberOfInteraction = 1;                //HEPS lattice 24 super period
+}
+
+
+
+
+
+LatticeInterActionPoint::~LatticeInterActionPoint()
+{
+
+}
+
+void LatticeInterActionPoint::Initial(ReadInputSettings &inputParameter)
+{
+
+    numberOfInteraction = inputParameter.numberofIonBeamInterPoint;                //HEPS lattice 24 super period
+    ionMaxNumberOneInterPoint = inputParameter.ionMaxNumber;
+    
+    
+    circRing =  inputParameter.circRing;
+    harmonics = inputParameter.harmonics;
+ 
+    pipeAperatureR = inputParameter.pipeAperatureR;
+    pipeAperatureX = inputParameter.pipeAperatureX;
+    pipeAperatureY = inputParameter.pipeAperatureY;
+    
+    
+
     twissAlphaX.resize(numberOfInteraction);
     twissBetaX.resize(numberOfInteraction);
     twissAlphaY.resize(numberOfInteraction);
@@ -26,7 +53,7 @@ LatticeInterActionPoint::LatticeInterActionPoint()
     twissDispY.resize(numberOfInteraction);;				
     twissDispPY.resize(numberOfInteraction);;             
 
-    interActionLocations.resize(numberOfInteraction);
+//    interActionLocations.resize(numberOfInteraction);
     vacuumPressure.resize(numberOfInteraction);
     temperature.resize(numberOfInteraction);
     ionLineDensity.resize(numberOfInteraction);
@@ -79,15 +106,72 @@ LatticeInterActionPoint::LatticeInterActionPoint()
 }
 
 
-LatticeInterActionPoint::~LatticeInterActionPoint()
+
+void LatticeInterActionPoint::InitialLattice(ReadInputSettings &inputParameter)
 {
 
-}
 
-void LatticeInterActionPoint::Initial()
-{
+    ifstream fin("InterPointParameter.dat");
+    if (! fin.is_open())
+    {
+        cerr<< "Error opening file InterPointParameter.dat"; exit (1);
+    }
+    
+    
+    string str;
+    vector<string> strVec;
+    
+    getline(fin,str);
+    bool flag;
+    
+    int index = 0;
+    
+    while (!fin.eof())
+    {
+        getline(fin,str);
 
-// Read the lattice alpha and betatron function from files.
+        StringSplit(str, strVec);
+        
+        string stringTest;
+        for(int i=0;i<str.size();i++)
+        {
+            stringTest.push_back(' ');
+        }
+        
+        if(stringTest == str )  continue;
+        
+        for(int i=0;i<numberOfInteraction;i++)
+        {
+            twissAlphaX[i] = stod(strVec[0]);
+            twissAlphaY[i] = stod(strVec[1]);
+            twissAlphaZ[i] = stod(strVec[2]);
+            twissBetaX[i]  = stod(strVec[3]);
+            twissBetaY[i]  = stod(strVec[4]); 
+            twissBetaZ[i]  = stod(strVec[5]);
+            
+            twissDispX[i]  = stod(strVec[6]);
+            twissDispPX[i] = stod(strVec[7]);
+            twissDispY[i]  = stod(strVec[8]);
+            twissDispPY[i] = stod(strVec[9]);
+            
+            temperature[i] = stod(strVec[10]) ;
+            vacuumPressure[i] =  stod(strVec[11])* 1.0E-9 * 133.3224;;
+            
+        }
+
+        index++;
+    }
+
+
+
+    if((index)!=inputParameter.numberofIonBeamInterPoint)
+    {
+        cerr<<"data of numberofIonBeamInterPoint in input.dat and InterPointParameter.dat files does not match";
+        exit(0);
+    }
+
+
+    fin.close();
 
     double betaX1;
     double betaX2;
@@ -111,35 +195,24 @@ void LatticeInterActionPoint::Initial()
     double phaseAdvanceZ;
     
 
+    
+    double workQx = inputParameter.workQx;
+    double workQy = inputParameter.workQy;
+    double workQz = inputParameter.workQz;
+
+    
+    
+
     for(int i=0;i<numberOfInteraction;i++)
     {
-        twissAlphaX[i]      = 0.E0;
-        twissAlphaY[i]      = 0.E0;
-        twissBetaX[i]       = 4.5E0;               //[m]  betatronX function at center the high betatron straight section
-        twissBetaY[i]       = 8.1E0;               //[m]
-        twissAlphaZ[i]      = 0.E0;   
-        twissBetaZ[i]       = 30.E-3/1.E-3;         //[m]  ZhangYuan Paper PRAB 074402, 2005, data setting is from bunch.initial() 
-        
-        twissDispX[i]		= 0.E0;
-        twissDispPX[i]		= 0.E0;
-        twissDispY[i]		= 0.E0;
-        twissDispPY[i]		= 0.E0;
-        
-        
-        
-        temperature[i]      = 300.E0;               // K        
-        vacuumPressure[i]   = 1.0E-9 * 133.3224;    // Pa       1 na Tor 
 
-        xPhaseAdv[i]        = 2*PI*WorkQx/numberOfInteraction; // [rad]
-        yPhaseAdv[i]        = 2*PI*WorkQy/numberOfInteraction; // [rad]    
-        zPhaseAdv[i]        = 2*PI*WorkQz/numberOfInteraction; // [rad]   
-        interactionLength[i]= CircRing/numberOfInteraction;    // [m]
 
-//      ionLineDensity[i]   = CorssSectionEI * vacuumPressure[i] / Boltzmann / temperature[i] *Ne
-//      can not be decided here, have to be deal with during the calculatin
-//      interActionLocations[i] =  not weel understood 
+        xPhaseAdv[i]         = 2*PI*workQx/numberOfInteraction; // [rad]
+        yPhaseAdv[i]         = 2*PI*workQy/numberOfInteraction; // [rad]    
+        zPhaseAdv[i]         = 2*PI*workQz/numberOfInteraction; // [rad]   
+        interactionLength[i] = circRing/numberOfInteraction;    // [m]
 
-        
+
         alphaX1 = twissAlphaX[i];
         betaX1  = twissBetaX[i];
         alphaY1 = twissAlphaY[i];
@@ -194,17 +267,7 @@ void LatticeInterActionPoint::Initial()
     }
 
 
-    double rGamma;
-    double rBeta;
 
-    electronEnergy = 6.0E+9;
-    
-    rGamma = electronEnergy/ElectronMassEV;
-    rBeta  = sqrt(1.E0-1.E0/rGamma);
-    
-    T0     = CircRing/rBeta/CLight; 
-    Omegas = 2*PI/T0;
-    Harmonics = round(2*PI*RFBaseFrequency/(Omegas));
 
     for(int k=0; k<numberOfInteraction;k++)
     {
@@ -232,6 +295,7 @@ void LatticeInterActionPoint::Initial()
 
 void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xAver,double yAver, int k)
 {
+
 
     macroIonCharge[k] = ionNumber[k]/macroIonNumber[k];
 
@@ -280,18 +344,28 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
         tempy = dy(gen);
 
 
+
         if( pow( (tempx-xAver)/rmsRx, 2)  + pow( (tempy-yAver)/rmsRy, 2) > 9.E0  ) // beam is 3 sigma truncted.
         {
             continue;
         }
         
-        ionPositionX[k][i]=tempx;
-        ionPositionY[k][i]=tempy;
+
+
+//        ionPositionX[k][i]=tempx;
+//        ionPositionY[k][i]=tempy;
+        
+        ionPositionX[k][i]=rmsRx;
+        ionPositionY[k][i]=rmsRy;
+        
+        
         ionVelocityX[k][i]=0.E0;
         ionVelocityY[k][i]=0.E0;
 
         i++;
     }
+    
+
     
 
 }
@@ -358,7 +432,7 @@ void LatticeInterActionPoint::IonsUpdate(int k)
     
     while(i<ionAccumuPositionX[k].size())
     {
-        if(pow(ionAccumuPositionX[k][i],2)+pow(ionAccumuPositionY[k][i],2)>pow(PipeAperatureR,2))
+        if(pow(ionAccumuPositionX[k][i],2)+pow(ionAccumuPositionY[k][i],2)>pow(pipeAperatureR,2))
         {
             ionAccumuPositionX[k].erase(ionAccumuPositionX[k].begin()+i);
             ionAccumuPositionY[k].erase(ionAccumuPositionY[k].begin()+i);
@@ -369,21 +443,21 @@ void LatticeInterActionPoint::IonsUpdate(int k)
             i--;
         }
         
+        
         i++;
     }
     
     ionAccumuNumber[k]  =  ionAccumuPositionX[k].size(); 
-   
     
+
 //*******************end ****************************************************************
 
-    
-    
-    if(ionAccumuNumber[k]>IonMaxNumber)
+    if(ionAccumuNumber[k]>ionMaxNumberOneInterPoint)
     {
-        cerr<<"Ions accumulated are larger than  "<<IonMaxNumber<<endl;
+        cerr<<"Ions accumulated are larger than setting limit "<<ionMaxNumberOneInterPoint<<endl;
         exit(0);
     }
+
 
 }
 
@@ -431,6 +505,8 @@ void LatticeInterActionPoint::IonRMSCal(int k)
 
 void LatticeInterActionPoint::IonTransferDueToBunch(int bunchGap,int k)
 {
+
+    
     for(int i=0;i<ionAccumuNumber[k];i++)
     {
 
@@ -441,10 +517,11 @@ void LatticeInterActionPoint::IonTransferDueToBunch(int bunchGap,int k)
         ionAccumuVelocityY[k][i] +=  ionAccumuFy[k][i]  ;
         
 
-        ionAccumuPositionX[k][i] +=  ionAccumuVelocityX[k][i] * CircRing/Harmonics*bunchGap/CLight;
-        ionAccumuPositionY[k][i] +=  ionAccumuVelocityY[k][i] * CircRing/Harmonics*bunchGap/CLight;
+        ionAccumuPositionX[k][i] +=  ionAccumuVelocityX[k][i] * circRing/harmonics*bunchGap/CLight;
+        ionAccumuPositionY[k][i] +=  ionAccumuVelocityY[k][i] * circRing/harmonics*bunchGap/CLight;
         
 
+        
     }
 
 

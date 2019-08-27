@@ -11,6 +11,9 @@
 #include <vector>
 #include <complex>
 #include "FIRFeedBack.h"
+#include "ReadInputSettings.h"
+
+
 
 using namespace std;
 using std::vector;
@@ -23,8 +26,11 @@ class Beam
 public:
     Beam();
     ~Beam();
+    
 
-	int printInterval;    
+    
+
+    int printInterval;    
     double actionJxMax;
     double actionJyMax;
     double bunchSizeXMax;
@@ -33,8 +39,10 @@ public:
 
 	vector<vector<double> > bunchInfoOneTurn;
     vector<Bunch> beamVec;
-    void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint);
-    void Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint);
+    void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
+    
+    
+    void Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void SSBunchDataPrint(Bunch &bunch,int count);
     void WSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint,int count, int k);
     void WSBeamIonEffectOneTurn(Train &train, LatticeInterActionPoint &latticeInterActionPoint, int nTurns, ofstream &fout);
@@ -42,12 +50,12 @@ public:
 
     void SingleBunchLongiImpedInterAction(LongImpSingalBunch &longImpSingalBunch, int nTurns, ofstream &fout);
     void GetMaxBunchInfo();
-    void FIRBuncgByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns);
+    void FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns);
 	void IonBeamDataPrintPerTurn(int turns, LatticeInterActionPoint &latticeInterActionPoint, ofstream &fout);
 	void BeamSynRadDamping(vector<double> &synchRadDampTime,LatticeInterActionPoint &latticeInterActionPoint);
 	void WSBeamRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
 	void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint);
-	void WSBeamIonEffectOneInteractionPoint(Train &train, LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
+	void WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
 	void BeamTransferPerInteractionPointDueToLattice(LatticeInterActionPoint &latticeInterActionPoint, int k);
 	
 private:

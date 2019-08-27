@@ -18,8 +18,25 @@
 
 Bunch::Bunch()
 {
-    macroEleNumPerBunch = 1;                    // macroEleNumPerBunch=1 -- electron beam weak-strong model
-                                                // macroEleNumPerBunch!=1 -- electron beam strong-strong model
+
+
+}
+
+Bunch::~Bunch()
+{
+}
+
+void Bunch::Initial(LatticeInterActionPoint &latticeInterActionPoint, ReadInputSettings &inputParameter)
+{
+
+
+    macroEleNumPerBunch = inputParameter.macroEleNumPerBunch;                    // macroEleNumPerBunch=1 -- electron beam weak-strong model
+                                                                                  // macroEleNumPerBunch!=1 -- electron beam strong-strong model
+    kappa =  inputParameter.kappa;
+    pipeAperatureR =   inputParameter.pipeAperatureR;
+    PipeAperatureX =   inputParameter.pipeAperatureX;
+    PipeAperatureY =   inputParameter.pipeAperatureY;                            
+
     ePositionX.resize(macroEleNumPerBunch);
     ePositionX.resize(macroEleNumPerBunch);
     ePositionY.resize(macroEleNumPerBunch);
@@ -31,38 +48,31 @@ Bunch::Bunch()
     eFy.resize(macroEleNumPerBunch);
     eSurive.resize(macroEleNumPerBunch);
 
-    bunchBinNumberZ = 256;
+    
+    bunchBinNumberZ = inputParameter.bunchBinNumberZ;
     beamCurDenZProf.resize(bunchBinNumberZ);
     beamCurDenTProf.resize(bunchBinNumberT);
+    
+    current = inputParameter.current;
+    electronEnergy  = inputParameter.electronBeamEnergy;
+    
+    
+    
+    emittanceX      = inputParameter.emittanceX;
+    emittanceY      = inputParameter.emittanceY;
 
-}
-
-Bunch::~Bunch()
-{
-}
-
-void Bunch::Initial(Train &train,LatticeInterActionPoint &latticeInterActionPoint)
-{
-
-    current= 0.2E0;
-    electronEnergy  = latticeInterActionPoint.electronEnergy;
-    emittanceX      = 34.2E-10;
-    kappa           = 0.1;
-    emittanceY      = emittanceX * kappa;
-    rmsBunchLength  = 30.E-3;        
-    rmsEnergySpread = 1.E-3;
+    rmsBunchLength  = inputParameter.rmsBunchLength;        
+    rmsEnergySpread = inputParameter.rmsEnergySpread;
     
 
     rGamma = electronEnergy/ElectronMassEV;
-    
     rBeta  = sqrt(1.E0-1.E0/pow(rGamma,2));
-
 
 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
-        ePositionX[i]=1.0E-5;
-        ePositionY[i]=1.0E-5;
+        ePositionX[i]=0.0E-5;
+        ePositionY[i]=0.0E-5;
         ePositionZ[i]=0.E0;
         eMomentumX[i]=0.E0;
         eMomentumY[i]=0.E0;
@@ -73,13 +83,11 @@ void Bunch::Initial(Train &train,LatticeInterActionPoint &latticeInterActionPoin
     }
 
 
-    electronNumPerBunch = current / Omegas * 2*PI /train.totBunchNum/ElectronCharge;
+    electronNumPerBunch = current / inputParameter.omegas * 2*PI /inputParameter.totBunchNumber/ElectronCharge;
 
     macroEleCharge = electronNumPerBunch / macroEleNumPerBunch;
+    distributionType = inputParameter.distributionType;
     
-//    cout<<"the electron Number Per bunch is "<<electronNumPerBunch<<endl;
-//    getchar();
-
 
 }
 
@@ -87,7 +95,9 @@ void Bunch::Initial(Train &train,LatticeInterActionPoint &latticeInterActionPoin
 
 void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int randomIndex)
 {
- 
+
+
+
     double gammaX;
     double gammaY;
     double sigmaX;
@@ -115,14 +125,12 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
 
 
 
-    rGamma = electronEnergy/ElectronMassEV;
-    rBeta  = sqrt(1.E0-1.E0/rGamma);
-    
     double rX;
     double rY;
 
     rX   = sqrt(emittanceX*betaX);
     rY   = sqrt(emittanceY*betaY);
+
 
 
     double f0;
@@ -136,13 +144,6 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     double phaseY;
     double ix;
 
-    int distributionType =3;
-    
-    // distributionType =1 KV transverse  
-    // distributionType =2 WB transverse
-    // distributionType =3 GS transverse
-
-
 
     srand(time(0)+randomIndex);
 
@@ -155,8 +156,7 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     
     while(i<macroEleNumPerBunch)
     {
-    
-        
+
         switch(distributionType)
         {
             case 1:
@@ -187,12 +187,11 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
         
         ax  = sqrt(axax);
         ay  = sqrt(ayay);
-        
+ 
 
         phaseX = 2 * PI* double(rand())/RAND_MAX;
         phaseY = 2 * PI* double(rand())/RAND_MAX;
 
-        
 
 
         ePositionX[i] = ax *   sigmaX * cos( phaseX );
@@ -207,7 +206,7 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
                 continue;
             }
         }
-        
+
 
         i++;
     }
@@ -250,7 +249,7 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     double tempx;
     double tempy;
     
-    i=1;
+    i=0;
     while(i<macroEleNumPerBunch)
     {
         tempx = dx(gen);
@@ -316,6 +315,8 @@ double Bunch::GSSlover(double if0)
 
 void Bunch::InducedIonDensity(LatticeInterActionPoint &latticeInterActionPoint)
 {
+
+
     for(int i=0;i<latticeInterActionPoint.numberOfInteraction;i++)
     {
         latticeInterActionPoint.ionLineDensity[i] = CorssSectionEI*latticeInterActionPoint.vacuumPressure[i]
@@ -445,15 +446,15 @@ void Bunch::WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
     rmsRx = sqrt(emittanceX * latticeInterActionPoint.twissBetaX[k]);
     rmsRy = sqrt(emittanceY * latticeInterActionPoint.twissBetaY[k]);
-            
+
     xAver   =  ePositionX[0];
     yAver   =  ePositionY[0];
     pxAver	=  eMomentumX[0];
     pyAver	=  eMomentumY[0];
-    
+
     actionJx = 0.E0;
     actionJy = 0.E0;
-    
+
     double twissAlphaXTemp;
     double twissAlphaYTemp;
     double twissBetaXTemp;
@@ -484,13 +485,7 @@ void Bunch::WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 //            getchar();
 //    }
 
-
-//            Jx[ib] = 1./2*(xb[ib]*xb[ib]/bx+bx*pxb[ib]*pxb[ib]);
-//            Jy[ib] = 1./2*(yb[ib]*yb[ib]/by+by*pyb[ib]*pyb[ib]); 
-
-
-
-
+    
 }
 
 
@@ -590,6 +585,7 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     nE0 = electronNumPerBunch;
     nI0 = latticeInterActionPoint.macroIonCharge[k];
     
+
     omegaE =0.E0;
     omegaI =0.E0;
     
@@ -602,10 +598,11 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     // there equations are wrong, need to be modifiled. 
 
 
-    double tempFx;
-    double tempFy;
-    double posx;
-    double posy;
+    
+    double tempFx=0.E0;
+    double tempFy=0.E0;
+    double posx=0.E0;
+    double posy=0.E0;
     double rmsRxTemp;
     double rmsRyTemp;
     double eFxTemp;
@@ -632,7 +629,7 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
 
 
         BassettiErskine(posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy);
-        
+
         latticeInterActionPoint.ionAccumuFx[k][j]= coeffI*tempFx;
         latticeInterActionPoint.ionAccumuFy[k][j]= coeffI*tempFy;
 
@@ -652,6 +649,7 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     eFx[0] = eFxTemp * coeffE * nI0;
     eFy[0] = eFyTemp * coeffE * nI0;
     
+
     
     omegaE = coeffE * nI0 * pow(CLight,2) /rmsRy/(rmsRx+rmsRy);
     omegaE = sqrt(omegaE);
@@ -689,10 +687,7 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
     sigma   =0.E0;
     temp    =0.E0;
 
-    
-    
-    
-    
+
     if(pow(rmsRxTemp,2)<pow(rmsRyTemp,2))
     {
         temp        = rmsRyTemp;
@@ -834,7 +829,6 @@ void Bunch::BunchTransferDueToIon(LatticeInterActionPoint &latticeInterActionPoi
 
         eMomentumX[i] +=  eFx[i]  ;    // rad
         eMomentumY[i] +=  eFy[i]  ;    // rad 
-
     }
 
 }
@@ -873,6 +867,10 @@ void Bunch::BunchTransferDueToLattice(LatticeInterActionPoint &latticeInterActio
         zPtemp = latticeInterActionPoint.zTransferMatrix[k][2] * ePositionZ[i]
 			   + latticeInterActionPoint.zTransferMatrix[k][3] * eMomentumZ[i];
                        
+                       
+                      
+           
+           
         ePositionX[i] = xtemp;
         ePositionY[i] = ytemp;
         eMomentumX[i] = xPtemp;
@@ -880,11 +878,12 @@ void Bunch::BunchTransferDueToLattice(LatticeInterActionPoint &latticeInterActio
         eMomentumZ[i] = xPtemp;
         eMomentumZ[i] = yPtemp;
         
-        if(pow(ePositionX[i],2) + pow(ePositionY[i],2)>PipeAperatureR)
+        if(pow(ePositionX[i],2) + pow(ePositionY[i],2)>pipeAperatureR)
         {
             eSurive[i] = 0;
         }   
     }
+
 
 }
 
@@ -892,187 +891,187 @@ void Bunch::BunchTransferDueToLattice(LatticeInterActionPoint &latticeInterActio
 void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterActionPoint &latticeInterActionPoint)
 {
 
-	int k=0;
+    int k=0;
 
-//	 set the J2_sympeletic matrix
-	gsl_matrix * sympleMarixJ = gsl_matrix_alloc (2, 2); 
-	gsl_matrix_set_zero(sympleMarixJ);
-	gsl_matrix_set (sympleMarixJ, 0, 1,1);
-	gsl_matrix_set (sympleMarixJ, 1, 0,-1);
-	
-//	// set the H matrix
-	gsl_matrix * dispMatrixH  = gsl_matrix_alloc (6, 6);
-	gsl_matrix * dispMatrixHX = gsl_matrix_alloc (2, 2);
-	gsl_matrix * dispMatrixHY = gsl_matrix_alloc (2, 2);
-	
-	gsl_matrix * H31   = gsl_matrix_alloc (2, 2); 
-	gsl_matrix * H32   = gsl_matrix_alloc (2, 2);  
-	
-	
-	gsl_matrix_set_identity(dispMatrixH);
-	gsl_matrix_set_zero(dispMatrixHX);
-	gsl_matrix_set_zero(dispMatrixHY);	
-	gsl_matrix_set_zero(H31);
-	gsl_matrix_set_zero(H32);	
-		
-	
-	
-	gsl_matrix_set(dispMatrixHX,0,1,latticeInterActionPoint.twissDispX[k]);
-	gsl_matrix_set(dispMatrixHX,1,1,latticeInterActionPoint.twissDispPX[k]);
-	
-	gsl_matrix_set(dispMatrixHY,0,1,latticeInterActionPoint.twissDispY[k]);
-	gsl_matrix_set(dispMatrixHY,1,1,latticeInterActionPoint.twissDispPY[k]);
+    //	 set the J2_sympeletic matrix
+    gsl_matrix * sympleMarixJ = gsl_matrix_alloc (2, 2); 
+    gsl_matrix_set_zero(sympleMarixJ);
+    gsl_matrix_set (sympleMarixJ, 0, 1,1);
+    gsl_matrix_set (sympleMarixJ, 1, 0,-1);
 
-	
-	gsl_matrix * tempMatrix1 = gsl_matrix_alloc (2, 2);
-	gsl_matrix * tempMatrix2 = gsl_matrix_alloc (2, 2);
-	gsl_matrix_set_zero(tempMatrix1);
-	gsl_matrix_set_zero(tempMatrix2);
-//	
-//	// get H31 sub_matrix;
-	gsl_matrix_transpose(dispMatrixHX);
+    //	// set the H matrix
+    gsl_matrix * dispMatrixH  = gsl_matrix_alloc (6, 6);
+    gsl_matrix * dispMatrixHX = gsl_matrix_alloc (2, 2);
+    gsl_matrix * dispMatrixHY = gsl_matrix_alloc (2, 2);
 
-	gsl_matrix_mul(dispMatrixHX,sympleMarixJ,tempMatrix1);
-	gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
-	gsl_matrix_scale (tempMatrix2, -1);
-	
-	gsl_matrix_memcpy (H31, tempMatrix2);
+    gsl_matrix * H31   = gsl_matrix_alloc (2, 2); 
+    gsl_matrix * H32   = gsl_matrix_alloc (2, 2);  
 
-	gsl_matrix_transpose(dispMatrixHX);
-	
-	gsl_matrix_set(dispMatrixH,4,0,gsl_matrix_get(H31,0,0));
-	gsl_matrix_set(dispMatrixH,5,0,gsl_matrix_get(H31,1,0));
-	gsl_matrix_set(dispMatrixH,4,1,gsl_matrix_get(H31,0,1));
-	gsl_matrix_set(dispMatrixH,5,1,gsl_matrix_get(H31,1,1));
-	
-	
-//	// get H32 sub_matrix;
-	gsl_matrix_transpose(dispMatrixHY);
 
-	gsl_matrix_mul(dispMatrixHY,sympleMarixJ,tempMatrix1);
-	gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
-	gsl_matrix_scale (tempMatrix2, -1);
+    gsl_matrix_set_identity(dispMatrixH);
+    gsl_matrix_set_zero(dispMatrixHX);
+    gsl_matrix_set_zero(dispMatrixHY);	
+    gsl_matrix_set_zero(H31);
+    gsl_matrix_set_zero(H32);	
+	    
 
-	gsl_matrix_memcpy (H32, tempMatrix2);	
-	gsl_matrix_transpose(dispMatrixHY);
-	
-//	// set H Marix
-	gsl_matrix_set(dispMatrixH,0,5,gsl_matrix_get(dispMatrixHX,0,1));
-	gsl_matrix_set(dispMatrixH,1,5,gsl_matrix_get(dispMatrixHX,1,1));
-	gsl_matrix_set(dispMatrixH,2,5,gsl_matrix_get(dispMatrixHY,0,1));
-	gsl_matrix_set(dispMatrixH,3,5,gsl_matrix_get(dispMatrixHY,1,1));
-	
-	gsl_matrix_set(dispMatrixH,4,0,gsl_matrix_get(H31,0,0));
-	gsl_matrix_set(dispMatrixH,5,0,gsl_matrix_get(H31,1,0));
-	gsl_matrix_set(dispMatrixH,4,1,gsl_matrix_get(H31,0,1));
-	gsl_matrix_set(dispMatrixH,5,1,gsl_matrix_get(H31,1,1));
-	
-	gsl_matrix_set(dispMatrixH,4,2,gsl_matrix_get(H32,0,0));
-	gsl_matrix_set(dispMatrixH,5,2,gsl_matrix_get(H32,1,0));
-	gsl_matrix_set(dispMatrixH,4,3,gsl_matrix_get(H32,0,1));
-	gsl_matrix_set(dispMatrixH,5,3,gsl_matrix_get(H32,1,1));
-	
-	
-	//set Teng Marrix R
-	
-	gsl_matrix * tengMatrixR  = gsl_matrix_alloc (6, 6);
-	gsl_matrix_set_identity(tengMatrixR);
-	
-	gsl_matrix * R2  = gsl_matrix_alloc (2, 2);   //coupling matrix Eq.(6)
-	gsl_matrix_set_identity(R2);
-	
-	double b = get_det(R2);
-	b = sqrt(1-b);
-	
-	gsl_matrix * R12  = gsl_matrix_alloc (2, 2);
-	gsl_matrix * R21  = gsl_matrix_alloc (2, 2);
-	
-	
-//	//set R12
-	gsl_matrix_transpose(R2);
-	gsl_matrix_mul(R2,sympleMarixJ,tempMatrix1);
-	gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
-	gsl_matrix_memcpy (R12, tempMatrix2);
-	gsl_matrix_transpose(R2);
-	//set R21
-	gsl_matrix_memcpy (R21, R2);
 
-	
-	gsl_matrix_set(tengMatrixR,0,0,b);
-	gsl_matrix_set(tengMatrixR,1,1,b);
-	gsl_matrix_set(tengMatrixR,2,2,b);
-	gsl_matrix_set(tengMatrixR,3,3,b);
-	
-	gsl_matrix_set(tengMatrixR,0,2,gsl_matrix_get(R12,0,0));
-	gsl_matrix_set(tengMatrixR,0,3,gsl_matrix_get(R12,0,1));
-	gsl_matrix_set(tengMatrixR,1,2,gsl_matrix_get(R12,1,0));
-	gsl_matrix_set(tengMatrixR,1,3,gsl_matrix_get(R12,1,1));
-	
-	gsl_matrix_set(tengMatrixR,2,0,gsl_matrix_get(R21,0,0));
-	gsl_matrix_set(tengMatrixR,2,1,gsl_matrix_get(R21,0,1));
-	gsl_matrix_set(tengMatrixR,3,0,gsl_matrix_get(R21,1,0));
-	gsl_matrix_set(tengMatrixR,3,1,gsl_matrix_get(R21,1,1));
-	
-	//set Twiss B Matrix  
-	gsl_matrix * twissMatrixB = gsl_matrix_alloc (6, 6);
-	gsl_matrix_set_zero(twissMatrixB);
-	
-	double a00,a01,a10,a11;
-	
-	a00 = 1.0/sqrt(latticeInterActionPoint.twissBetaX[k]);
-	a10 = latticeInterActionPoint.twissAlphaX[k] / sqrt(latticeInterActionPoint.twissBetaX[k]);
-	a11 = sqrt(latticeInterActionPoint.twissBetaX[k]);
-	
-	gsl_matrix_set(twissMatrixB,0,0,a00);
-	gsl_matrix_set(twissMatrixB,1,0,a10);
-	gsl_matrix_set(twissMatrixB,1,1,a11);
-	
-	
-	a00 = 1.0/sqrt(latticeInterActionPoint.twissBetaY[k]);
-	a10 = latticeInterActionPoint.twissAlphaY[k] / sqrt(latticeInterActionPoint.twissBetaY[k]);
-	a11 = sqrt(latticeInterActionPoint.twissBetaY[k]);
-	
-	gsl_matrix_set(twissMatrixB,2,2,a00);
-	gsl_matrix_set(twissMatrixB,3,2,a10);
-	gsl_matrix_set(twissMatrixB,3,3,a11);
-	
-	
-	a00 = 1.0/sqrt(latticeInterActionPoint.twissBetaZ[k]);
-	a10 = latticeInterActionPoint.twissAlphaZ[k] / sqrt(latticeInterActionPoint.twissBetaZ[k]);
-	a11 = sqrt(latticeInterActionPoint.twissBetaZ[k]);
-	
-	gsl_matrix_set(twissMatrixB,4,4,a00);
-	gsl_matrix_set(twissMatrixB,5,4,a10);
-	gsl_matrix_set(twissMatrixB,5,5,a11);
-	
-	
-	
-	gsl_matrix * cordTransfer  = gsl_matrix_alloc (6, 6);
-	gsl_matrix * invCordTransfer  = gsl_matrix_alloc (6, 6);
-	gsl_matrix * cordTransferTemp  = gsl_matrix_alloc (6, 6);
-	gsl_matrix_mul(tengMatrixR,dispMatrixH,cordTransferTemp);
-	gsl_matrix_mul(twissMatrixB,cordTransferTemp,cordTransfer);
-	
+    gsl_matrix_set(dispMatrixHX,0,1,latticeInterActionPoint.twissDispX[k]);
+    gsl_matrix_set(dispMatrixHX,1,1,latticeInterActionPoint.twissDispPX[k]);
+
+    gsl_matrix_set(dispMatrixHY,0,1,latticeInterActionPoint.twissDispY[k]);
+    gsl_matrix_set(dispMatrixHY,1,1,latticeInterActionPoint.twissDispPY[k]);
+
+
+    gsl_matrix * tempMatrix1 = gsl_matrix_alloc (2, 2);
+    gsl_matrix * tempMatrix2 = gsl_matrix_alloc (2, 2);
+    gsl_matrix_set_zero(tempMatrix1);
+    gsl_matrix_set_zero(tempMatrix2);
+    //	
+    //	// get H31 sub_matrix;
+    gsl_matrix_transpose(dispMatrixHX);
+
+    gsl_matrix_mul(dispMatrixHX,sympleMarixJ,tempMatrix1);
+    gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
+    gsl_matrix_scale (tempMatrix2, -1);
+
+    gsl_matrix_memcpy (H31, tempMatrix2);
+
+    gsl_matrix_transpose(dispMatrixHX);
+
+    gsl_matrix_set(dispMatrixH,4,0,gsl_matrix_get(H31,0,0));
+    gsl_matrix_set(dispMatrixH,5,0,gsl_matrix_get(H31,1,0));
+    gsl_matrix_set(dispMatrixH,4,1,gsl_matrix_get(H31,0,1));
+    gsl_matrix_set(dispMatrixH,5,1,gsl_matrix_get(H31,1,1));
+
+
+    //	// get H32 sub_matrix;
+    gsl_matrix_transpose(dispMatrixHY);
+
+    gsl_matrix_mul(dispMatrixHY,sympleMarixJ,tempMatrix1);
+    gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
+    gsl_matrix_scale (tempMatrix2, -1);
+
+    gsl_matrix_memcpy (H32, tempMatrix2);	
+    gsl_matrix_transpose(dispMatrixHY);
+
+    //	// set H Marix
+    gsl_matrix_set(dispMatrixH,0,5,gsl_matrix_get(dispMatrixHX,0,1));
+    gsl_matrix_set(dispMatrixH,1,5,gsl_matrix_get(dispMatrixHX,1,1));
+    gsl_matrix_set(dispMatrixH,2,5,gsl_matrix_get(dispMatrixHY,0,1));
+    gsl_matrix_set(dispMatrixH,3,5,gsl_matrix_get(dispMatrixHY,1,1));
+
+    gsl_matrix_set(dispMatrixH,4,0,gsl_matrix_get(H31,0,0));
+    gsl_matrix_set(dispMatrixH,5,0,gsl_matrix_get(H31,1,0));
+    gsl_matrix_set(dispMatrixH,4,1,gsl_matrix_get(H31,0,1));
+    gsl_matrix_set(dispMatrixH,5,1,gsl_matrix_get(H31,1,1));
+
+    gsl_matrix_set(dispMatrixH,4,2,gsl_matrix_get(H32,0,0));
+    gsl_matrix_set(dispMatrixH,5,2,gsl_matrix_get(H32,1,0));
+    gsl_matrix_set(dispMatrixH,4,3,gsl_matrix_get(H32,0,1));
+    gsl_matrix_set(dispMatrixH,5,3,gsl_matrix_get(H32,1,1));
+
+
+    //set Teng Marrix R
+
+    gsl_matrix * tengMatrixR  = gsl_matrix_alloc (6, 6);
+    gsl_matrix_set_identity(tengMatrixR);
+
+    gsl_matrix * R2  = gsl_matrix_alloc (2, 2);   //coupling matrix Eq.(6)
+    gsl_matrix_set_identity(R2);
+
+    double b = get_det(R2);
+    b = sqrt(1-b);
+
+    gsl_matrix * R12  = gsl_matrix_alloc (2, 2);
+    gsl_matrix * R21  = gsl_matrix_alloc (2, 2);
+
+
+    //	//set R12
+    gsl_matrix_transpose(R2);
+    gsl_matrix_mul(R2,sympleMarixJ,tempMatrix1);
+    gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
+    gsl_matrix_memcpy (R12, tempMatrix2);
+    gsl_matrix_transpose(R2);
+    //set R21
+    gsl_matrix_memcpy (R21, R2);
+
+
+    gsl_matrix_set(tengMatrixR,0,0,b);
+    gsl_matrix_set(tengMatrixR,1,1,b);
+    gsl_matrix_set(tengMatrixR,2,2,b);
+    gsl_matrix_set(tengMatrixR,3,3,b);
+
+    gsl_matrix_set(tengMatrixR,0,2,gsl_matrix_get(R12,0,0));
+    gsl_matrix_set(tengMatrixR,0,3,gsl_matrix_get(R12,0,1));
+    gsl_matrix_set(tengMatrixR,1,2,gsl_matrix_get(R12,1,0));
+    gsl_matrix_set(tengMatrixR,1,3,gsl_matrix_get(R12,1,1));
+
+    gsl_matrix_set(tengMatrixR,2,0,gsl_matrix_get(R21,0,0));
+    gsl_matrix_set(tengMatrixR,2,1,gsl_matrix_get(R21,0,1));
+    gsl_matrix_set(tengMatrixR,3,0,gsl_matrix_get(R21,1,0));
+    gsl_matrix_set(tengMatrixR,3,1,gsl_matrix_get(R21,1,1));
+
+    //set Twiss B Matrix  
+    gsl_matrix * twissMatrixB = gsl_matrix_alloc (6, 6);
+    gsl_matrix_set_zero(twissMatrixB);
+
+    double a00,a01,a10,a11;
+
+    a00 = 1.0/sqrt(latticeInterActionPoint.twissBetaX[k]);
+    a10 = latticeInterActionPoint.twissAlphaX[k] / sqrt(latticeInterActionPoint.twissBetaX[k]);
+    a11 = sqrt(latticeInterActionPoint.twissBetaX[k]);
+
+    gsl_matrix_set(twissMatrixB,0,0,a00);
+    gsl_matrix_set(twissMatrixB,1,0,a10);
+    gsl_matrix_set(twissMatrixB,1,1,a11);
+
+
+    a00 = 1.0/sqrt(latticeInterActionPoint.twissBetaY[k]);
+    a10 = latticeInterActionPoint.twissAlphaY[k] / sqrt(latticeInterActionPoint.twissBetaY[k]);
+    a11 = sqrt(latticeInterActionPoint.twissBetaY[k]);
+
+    gsl_matrix_set(twissMatrixB,2,2,a00);
+    gsl_matrix_set(twissMatrixB,3,2,a10);
+    gsl_matrix_set(twissMatrixB,3,3,a11);
+
+
+    a00 = 1.0/sqrt(latticeInterActionPoint.twissBetaZ[k]);
+    a10 = latticeInterActionPoint.twissAlphaZ[k] / sqrt(latticeInterActionPoint.twissBetaZ[k]);
+    a11 = sqrt(latticeInterActionPoint.twissBetaZ[k]);
+
+    gsl_matrix_set(twissMatrixB,4,4,a00);
+    gsl_matrix_set(twissMatrixB,5,4,a10);
+    gsl_matrix_set(twissMatrixB,5,5,a11);
 
 
 
-	//get the   invCordTransfer =  (cordTransfer)^-1 ---- approach 1 
-	
-	gsl_matrix *  sympleMarixJ6 = gsl_matrix_alloc (6, 6);
-	gsl_matrix_set_zero(sympleMarixJ6);
-	gsl_matrix_set(sympleMarixJ6,0,1, 1);
-	gsl_matrix_set(sympleMarixJ6,1,0,-1);
-	gsl_matrix_set(sympleMarixJ6,2,3, 1);
-	gsl_matrix_set(sympleMarixJ6,3,2,-1);
-	gsl_matrix_set(sympleMarixJ6,4,5, 1);
-	gsl_matrix_set(sympleMarixJ6,5,4,-1);
+    gsl_matrix * cordTransfer  = gsl_matrix_alloc (6, 6);
+    gsl_matrix * invCordTransfer  = gsl_matrix_alloc (6, 6);
+    gsl_matrix * cordTransferTemp  = gsl_matrix_alloc (6, 6);
+    gsl_matrix_mul(tengMatrixR,dispMatrixH,cordTransferTemp);
+    gsl_matrix_mul(twissMatrixB,cordTransferTemp,cordTransfer);
 
-	gsl_matrix_transpose(cordTransfer);
 
-	gsl_matrix_mul(cordTransfer,sympleMarixJ6,cordTransferTemp);
-	gsl_matrix_mul(sympleMarixJ6,cordTransferTemp,invCordTransfer);
-	gsl_matrix_scale (invCordTransfer, -1);
-	gsl_matrix_transpose(cordTransfer);
+
+
+    //get the   invCordTransfer =  (cordTransfer)^-1 ---- approach 1 
+
+    gsl_matrix *  sympleMarixJ6 = gsl_matrix_alloc (6, 6);
+    gsl_matrix_set_zero(sympleMarixJ6);
+    gsl_matrix_set(sympleMarixJ6,0,1, 1);
+    gsl_matrix_set(sympleMarixJ6,1,0,-1);
+    gsl_matrix_set(sympleMarixJ6,2,3, 1);
+    gsl_matrix_set(sympleMarixJ6,3,2,-1);
+    gsl_matrix_set(sympleMarixJ6,4,5, 1);
+    gsl_matrix_set(sympleMarixJ6,5,4,-1);
+
+    gsl_matrix_transpose(cordTransfer);
+
+    gsl_matrix_mul(cordTransfer,sympleMarixJ6,cordTransferTemp);
+    gsl_matrix_mul(sympleMarixJ6,cordTransferTemp,invCordTransfer);
+    gsl_matrix_scale (invCordTransfer, -1);
+    gsl_matrix_transpose(cordTransfer);
 	//	end of approach 1 -------------------------------------------
 	
 //	//get the   invCordTransfer =  (cordTransfer)^-1 ---- approach 2  in a general sense but slower 
@@ -1080,46 +1079,46 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
 //	gsl_matrix_inv(invCordTransfer);
 //	//end of approach 2 -------------------------------------------
 
-	
-	
-	// Ref. Zhang Yuan PRAB 8 074402
 
-	double lambda[3];	
-	double coeff[3];
-	
-	for(int i=0;i<3;i++)
-	{
-		lambda[i] = exp(-1.0/synchRadDampTime[i]);
-	}
-	
-	emittanceZ = rmsBunchLength * rmsEnergySpread;
-	
-	coeff[0] = sqrt(1 - pow(lambda[0],2)) * sqrt(emittanceX); 
-	coeff[1] = sqrt(1 - pow(lambda[1],2)) * sqrt(emittanceY);
-	coeff[2] = sqrt(1 - pow(lambda[2],2)) * sqrt(emittanceZ);
 
-	
-	gsl_matrix * vecX   = gsl_matrix_alloc (6, 1);
-	gsl_matrix * vecNX  = gsl_matrix_alloc (6, 1);
-	
-	double tempX,tempPX,tempY,tempPY,tempZ,tempPZ;
-	double randR[6];
-	
+    // Ref. Zhang Yuan PRAB 8 074402
+
+    double lambda[3];	
+    double coeff[3];
+
+    for(int i=0;i<3;i++)
+    {
+        lambda[i] = exp(-1.0/synchRadDampTime[i]);
+    }
+
+    emittanceZ = rmsBunchLength * rmsEnergySpread;
+
+    coeff[0] = sqrt(1 - pow(lambda[0],2)) * sqrt(emittanceX); 
+    coeff[1] = sqrt(1 - pow(lambda[1],2)) * sqrt(emittanceY);
+    coeff[2] = sqrt(1 - pow(lambda[2],2)) * sqrt(emittanceZ);
+
+
+    gsl_matrix * vecX   = gsl_matrix_alloc (6, 1);
+    gsl_matrix * vecNX  = gsl_matrix_alloc (6, 1);
+
+    double tempX,tempPX,tempY,tempPY,tempZ,tempPZ;
+    double randR[6];
+
     std::random_device rd{};
     std::mt19937 gen{rd()};
- 
+
     std::normal_distribution<> dx{0,1};
-	
-	for(int i=0;i<macroEleNumPerBunch;i++)
-	{
-		//(0) transfer x to X;
-		gsl_matrix_set(vecX,0,0,ePositionX[i]);
-		gsl_matrix_set(vecX,1,0,eMomentumX[i]);
-		gsl_matrix_set(vecX,2,0,ePositionY[i]);
-		gsl_matrix_set(vecX,3,0,eMomentumY[i]);
-		gsl_matrix_set(vecX,4,0,ePositionZ[i]);
-		gsl_matrix_set(vecX,5,0,ePositionZ[i]);
-		
+
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        //(0) transfer x to X;
+        gsl_matrix_set(vecX,0,0,ePositionX[i]);
+        gsl_matrix_set(vecX,1,0,eMomentumX[i]);
+        gsl_matrix_set(vecX,2,0,ePositionY[i]);
+        gsl_matrix_set(vecX,3,0,eMomentumY[i]);
+        gsl_matrix_set(vecX,4,0,ePositionZ[i]);
+        gsl_matrix_set(vecX,5,0,ePositionZ[i]);
+	    
 //		for(int i=0;i<6;i++)
 //		{
 //			cout<<gsl_matrix_get(vecX,i,0)<<endl;
@@ -1134,13 +1133,13 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
 //		cout<<endl;
 		
 		gsl_matrix_mul(cordTransfer,vecX,vecNX);
-		
-		tempX  = gsl_matrix_get(vecNX,0,0);
-		tempPX = gsl_matrix_get(vecNX,1,0);
-		tempY  = gsl_matrix_get(vecNX,2,0);
-		tempPY = gsl_matrix_get(vecNX,3,0);
-		tempZ  = gsl_matrix_get(vecNX,4,0);
-		tempPZ = gsl_matrix_get(vecNX,5,0);	
+
+        tempX  = gsl_matrix_get(vecNX,0,0);
+        tempPX = gsl_matrix_get(vecNX,1,0);
+        tempY  = gsl_matrix_get(vecNX,2,0);
+        tempPY = gsl_matrix_get(vecNX,3,0);
+        tempZ  = gsl_matrix_get(vecNX,4,0);
+        tempPZ = gsl_matrix_get(vecNX,5,0);	
 
 		//(1)   Eq(8~10) dampling and excitation
 
@@ -1151,47 +1150,47 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
 //		}
 //		cout<<endl;
 		
-		// synchron-radiation-damping
-		tempX  = tempX  * lambda[0] ;
-		tempPX = tempPX * lambda[0] ; 	
-		tempY  = tempY  * lambda[1] ;
-		tempPY = tempPY * lambda[1] ; 			
-		tempZ  = tempZ  			;
-		tempPZ = tempPZ * pow(lambda[2],2) ; 
+        // synchron-radiation-damping
+        tempX  = tempX  * lambda[0] ;
+        tempPX = tempPX * lambda[0] ; 	
+        tempY  = tempY  * lambda[1] ;
+        tempPY = tempPY * lambda[1] ; 			
+        tempZ  = tempZ  			;
+        tempPZ = tempPZ * pow(lambda[2],2) ; 
 
 
-		// synchron-radiation-excitiation only in multi-particle case
-		if(macroEleNumPerBunch!=1)
-		{
-			
-			for(int j=0;j<6;j++)
-			{
-				randR[j] = dx(gen);	
-				if(j==4)
-				{
-					randR[j] = 0.E0;
-				}
-			}
-			
-			tempX  = tempX   + coeff[0] * randR[0];
-			tempPX = tempPX  + coeff[0] * randR[1]; 	
-			tempY  = tempY   + coeff[1] * randR[2];
-			tempPY = tempPY  + coeff[1] * randR[3]; 			
-			tempZ  = tempZ   + coeff[2] * randR[4];
-			tempPZ = tempPZ  + coeff[2] * randR[5]; 
-		}		
+        // synchron-radiation-excitiation only in multi-particle case
+        if(macroEleNumPerBunch!=1)
+        {
+            
+            for(int j=0;j<6;j++)
+            {
+                randR[j] = dx(gen);	
+                if(j==4)
+                {
+                    randR[j] = 0.E0;
+                }
+            }
+            
+            tempX  = tempX   + coeff[0] * randR[0];
+            tempPX = tempPX  + coeff[0] * randR[1]; 	
+            tempY  = tempY   + coeff[1] * randR[2];
+            tempPY = tempPY  + coeff[1] * randR[3]; 			
+            tempZ  = tempZ   + coeff[2] * randR[4];
+            tempPZ = tempPZ  + coeff[2] * randR[5]; 
+        }
 
-		
-		
-		
-			
-		gsl_matrix_set(vecNX,0,0,tempX);
-		gsl_matrix_set(vecNX,1,0,tempPX);
-		gsl_matrix_set(vecNX,2,0,tempY);
-		gsl_matrix_set(vecNX,3,0,tempPY);
-		gsl_matrix_set(vecNX,4,0,tempZ);
-		gsl_matrix_set(vecNX,5,0,tempPZ);
-		
+
+
+
+          
+        gsl_matrix_set(vecNX,0,0,tempX);
+        gsl_matrix_set(vecNX,1,0,tempPX);
+        gsl_matrix_set(vecNX,2,0,tempY);
+        gsl_matrix_set(vecNX,3,0,tempPY);
+        gsl_matrix_set(vecNX,4,0,tempZ);
+        gsl_matrix_set(vecNX,5,0,tempPZ);
+
 		//(2) transfer X to x,  Eq(11)
 		
 //		for(int i=0;i<6;i++)
@@ -1199,63 +1198,62 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
 //			cout<<gsl_matrix_get(vecNX,i,0)<<endl;
 //		}
 //		cout<<endl;
-		
-		
-		gsl_matrix_mul(invCordTransfer,vecNX,vecX);
-			 
+
+        gsl_matrix_mul(invCordTransfer,vecNX,vecX);         
+
 //		for(int i=0;i<6;i++)
 //		{
 //			cout<<gsl_matrix_get(vecX,i,0)<<endl;
 //		}
 //			 
 //		getchar(); 
-			 
-			 
-		ePositionX[i] = gsl_matrix_get(vecX,0,0);
-		eMomentumX[i] = gsl_matrix_get(vecX,1,0);
-		ePositionY[i] = gsl_matrix_get(vecX,2,0);
-		eMomentumY[i] = gsl_matrix_get(vecX,3,0);
-		ePositionZ[i] = gsl_matrix_get(vecX,4,0);
-		eMomentumZ[i] = gsl_matrix_get(vecX,5,0);
-		
-        if(pow(ePositionX[i],2) + pow(ePositionY[i],2)>PipeAperatureR)
+         
+         
+        ePositionX[i] = gsl_matrix_get(vecX,0,0);
+        eMomentumX[i] = gsl_matrix_get(vecX,1,0);
+        ePositionY[i] = gsl_matrix_get(vecX,2,0);
+        eMomentumY[i] = gsl_matrix_get(vecX,3,0);
+        ePositionZ[i] = gsl_matrix_get(vecX,4,0);
+        eMomentumZ[i] = gsl_matrix_get(vecX,5,0);
+
+        if(pow(ePositionX[i],2) + pow(ePositionY[i],2)>pipeAperatureR)
         {
             eSurive[i] = 0;
         }     
-	
-	}
-		
 
-	
+    }
+    
 
-	gsl_matrix_free (dispMatrixH);
-	gsl_matrix_free (dispMatrixHX);
-	gsl_matrix_free (dispMatrixHY);
-	
-	gsl_matrix_free (tengMatrixR);
-	gsl_matrix_free (R2);
-	gsl_matrix_free (R21);
-	gsl_matrix_free (R12);
-	
-	gsl_matrix_free (twissMatrixB);
-	gsl_matrix_free (sympleMarixJ);
-	
-	gsl_matrix_free (tempMatrix1);
-	gsl_matrix_free (tempMatrix2);
-	gsl_matrix_free (H31);
-	gsl_matrix_free (H32);
-	
-	gsl_matrix_free (cordTransfer);
-	gsl_matrix_free (invCordTransfer);
-	gsl_matrix_free (cordTransferTemp);
-	gsl_matrix_free (sympleMarixJ6);
-	
-	gsl_matrix_free (vecX);
-	gsl_matrix_free (vecNX);
-		
-	
-	
-	
+
+
+    gsl_matrix_free (dispMatrixH);
+    gsl_matrix_free (dispMatrixHX);
+    gsl_matrix_free (dispMatrixHY);
+
+    gsl_matrix_free (tengMatrixR);
+    gsl_matrix_free (R2);
+    gsl_matrix_free (R21);
+    gsl_matrix_free (R12);
+
+    gsl_matrix_free (twissMatrixB);
+    gsl_matrix_free (sympleMarixJ);
+
+    gsl_matrix_free (tempMatrix1);
+    gsl_matrix_free (tempMatrix2);
+    gsl_matrix_free (H31);
+    gsl_matrix_free (H32);
+
+    gsl_matrix_free (cordTransfer);
+    gsl_matrix_free (invCordTransfer);
+    gsl_matrix_free (cordTransferTemp);
+    gsl_matrix_free (sympleMarixJ6);
+
+    gsl_matrix_free (vecX);
+    gsl_matrix_free (vecNX);
+    
+
+
+
 }
 
 
