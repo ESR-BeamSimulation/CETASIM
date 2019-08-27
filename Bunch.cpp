@@ -444,6 +444,9 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 
 void Bunch::WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
+    // in the calculation In ZhangYuan's Equation (8,9,19) what is the value of emittancex? 
+    // is it obtained from the rms calculation of beam distribution or what else? Seems do not affect too much 
+
     rmsRx = sqrt(emittanceX * latticeInterActionPoint.twissBetaX[k]);
     rmsRy = sqrt(emittanceY * latticeInterActionPoint.twissBetaY[k]);
 
@@ -1117,7 +1120,7 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
         gsl_matrix_set(vecX,2,0,ePositionY[i]);
         gsl_matrix_set(vecX,3,0,eMomentumY[i]);
         gsl_matrix_set(vecX,4,0,ePositionZ[i]);
-        gsl_matrix_set(vecX,5,0,ePositionZ[i]);
+        gsl_matrix_set(vecX,5,0,eMomentumZ[i]);
 	    
 //		for(int i=0;i<6;i++)
 //		{
@@ -1154,7 +1157,7 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
         tempX  = tempX  * lambda[0] ;
         tempPX = tempPX * lambda[0] ; 	
         tempY  = tempY  * lambda[1] ;
-        tempPY = tempPY * lambda[1] ; 			
+        tempPY = tempPY * lambda[1] ; 
         tempZ  = tempZ  			;
         tempPZ = tempPZ * pow(lambda[2],2) ; 
 
@@ -1163,21 +1166,21 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
         if(macroEleNumPerBunch!=1)
         {
             
-            for(int j=0;j<6;j++)
+        for(int j=0;j<6;j++)
+        {
+            randR[j] = dx(gen);	
+            if(j==4)
             {
-                randR[j] = dx(gen);	
-                if(j==4)
-                {
-                    randR[j] = 0.E0;
-                }
+                randR[j] = 0.E0;
             }
-            
-            tempX  = tempX   + coeff[0] * randR[0];
-            tempPX = tempPX  + coeff[0] * randR[1]; 	
-            tempY  = tempY   + coeff[1] * randR[2];
-            tempPY = tempPY  + coeff[1] * randR[3]; 			
-            tempZ  = tempZ   + coeff[2] * randR[4];
-            tempPZ = tempPZ  + coeff[2] * randR[5]; 
+        }
+        
+        tempX  = tempX   + coeff[0] * randR[0];
+        tempPX = tempPX  + coeff[0] * randR[1]; 	
+        tempY  = tempY   + coeff[1] * randR[2];
+        tempPY = tempPY  + coeff[1] * randR[3]; 			
+        tempZ  = tempZ   + coeff[2] * randR[4];
+        tempPZ = tempPZ  + coeff[2] * randR[5]; 
         }
 
 
@@ -1250,10 +1253,7 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
 
     gsl_matrix_free (vecX);
     gsl_matrix_free (vecNX);
-    
-
-
-
+  
 }
 
 

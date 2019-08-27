@@ -36,7 +36,7 @@ public:
     vector<vector<double> > posyData;
     vector<vector<double> > poszData;
     
-    void Initial();
+    void Initial(int totBunchNum);
       
 private:
 

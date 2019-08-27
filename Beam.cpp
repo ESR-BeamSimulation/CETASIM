@@ -118,27 +118,11 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
 
 
 // preapre the data for bunch-by-bunch system --------------- 
-    FIRFeedBack firFeedBack;   
 
+    FIRFeedBack firFeedBack;
     if(fIRBunchByBunchFeedbackFlag)
-    {
-        firFeedBack.Initial();
-        for(int i=0;i<firFeedBack.firCoeffx.size();i++)
-        {
-            firFeedBack.posxData[i].resize(totBunchNum);
-            firFeedBack.posyData[i].resize(totBunchNum);
-            firFeedBack.poszData[i].resize(totBunchNum);
-        }
-
-        for(int i=0;i<firFeedBack.firCoeffx.size();i++)
-        {
-            for(int j=0;j<totBunchNum ;j++)
-            {
-                firFeedBack.posxData[i][j] = 0.E0;
-                firFeedBack.posyData[i][j] = 0.E0;
-                firFeedBack.poszData[i][j] = 0.E0;
-            }
-        }
+    {        
+        firFeedBack.Initial(totBunchNum);
     }
 // ***************end ********************************
 
@@ -174,9 +158,9 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                     if(fIRBunchByBunchFeedbackFlag)
                     {
                         FIRBunchByBunchFeedback(firFeedBack,i);  
+                        
                     }
-
-
+  
                     IonBeamDataPrintPerTurn(i,latticeInterActionPoint,fout);
 
                     cout<<i<<" turns  "<<"  "
@@ -192,12 +176,15 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                         <<endl;
                 }
             }
-            else
+            else   //strong-strong beam model;
             {
+                
+                    
                 for(int i=0;i<nTurns;i++)   
                 { 
+
                     SSBeamIonEffectOneTurn( latticeInterActionPoint, inputParameter,i);
-                    
+                
                     if(intevalofTurnsIonDataPrint && (i%intevalofTurnsIonDataPrint==0))
                     {
                         SSIonDataPrint(latticeInterActionPoint, i);
@@ -211,6 +198,7 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                     }
                     if(fIRBunchByBunchFeedbackFlag)
                     {
+    
                         FIRBunchByBunchFeedback(firFeedBack,i);  
                     }
                 
@@ -782,71 +770,74 @@ void Beam::WSGetMaxBunchInfo()
 void Beam::FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns)
 {
 
-	//y[0] = \sum_0^{N} a_k x[n] 
-	//Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
-	
-	double eta = firFeedBack.kickerDisp;
-	double etaP = firFeedBack.kickerDispP;
+    //y[0] = \sum_0^{N} a_k x[k] 
+    //Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
 
-	vector<double> tranAngleKicky;
-	vector<double> tranAngleKickx;
-	vector<double> energyKickU;
-	
-	tranAngleKicky.resize(beamVec.size());
-	tranAngleKickx.resize(beamVec.size());
-	energyKickU.resize(beamVec.size());
-		
-	int nTaps =  firFeedBack.firCoeffx.size();
-	
-	int tapsIndex = nTurns%nTaps;
+    double eta  = firFeedBack.kickerDisp;
+    double etaP = firFeedBack.kickerDispP;
 
-	
-//	 started from a simpliest case, as Section IX A. Eq. 116 only transverse kick in y direction for test calculation  
-	for(int i=0;i<beamVec.size();i++)
-	{
-		firFeedBack.posxData[tapsIndex][i] = beamVec[i].xAver;
-		firFeedBack.posyData[tapsIndex][i] = beamVec[i].yAver;
-		firFeedBack.poszData[tapsIndex][i] = beamVec[i].zAver;
-	}
-	
-	
-	for(int i=0;i<beamVec.size();i++)
-	{
-		tranAngleKicky[i] = 0.E0;
-		tranAngleKickx[i] = 0.E0;
-		energyKickU[i] = 0.E0; 
-	}
-	
-	for(int i=0;i<beamVec.size();i++)
-	{
-		for(int k=0;k<nTaps;k++)
-		{
-			tranAngleKickx[i] = tranAngleKickx[i] + firFeedBack.firCoeffx[nTaps-k-1] * firFeedBack.posxData[k][i];
-			tranAngleKicky[i] = tranAngleKicky[i] + firFeedBack.firCoeffy[nTaps-k-1] * firFeedBack.posyData[k][i];
-			energyKickU[i]    = energyKickU[i]    + firFeedBack.firCoeffz[nTaps-k-1] * firFeedBack.poszData[k][i]; 
-//			cout<<firFeedBack.firCoeffx[nTaps-k-1] <<"	"<<firFeedBack.posxData[k][i]<<endl;
-		}
-		
+    vector<double> tranAngleKicky;
+    vector<double> tranAngleKickx;
+    vector<double> energyKickU;
 
-		tranAngleKickx[i] =  tranAngleKickx[i] * firFeedBack.kickStrengthKx;
-		tranAngleKicky[i] =  tranAngleKicky[i] * firFeedBack.kickStrengthKy;	
-		energyKickU[i]    =  energyKickU[i]    * firFeedBack.kickStrengthF;
-	}
-	
+    tranAngleKicky.resize(beamVec.size());
+    tranAngleKickx.resize(beamVec.size());
+    energyKickU.resize(beamVec.size());
+    
+    int nTaps =  firFeedBack.firCoeffx.size();
+
+    int tapsIndex = nTurns%nTaps;
 
 
-	for(int i=0;i<beamVec.size();i++)
-	{
-		for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
-		{
-			beamVec[i].eMomentumX[j] = beamVec[i].eMomentumX[j] + tranAngleKickx[i];
-			beamVec[i].eMomentumY[j] = beamVec[i].eMomentumY[j] + tranAngleKicky[i];
-//			beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i];
-		}
+    // started from a simpliest case, as Section IX A. Eq. 116 only transverse kick in y direction for test calculation  
+    for(int i=0;i<beamVec.size();i++)
+    {
+        firFeedBack.posxData[tapsIndex][i] = beamVec[i].xAver;
+        firFeedBack.posyData[tapsIndex][i] = beamVec[i].yAver;
+        firFeedBack.poszData[tapsIndex][i] = beamVec[i].zAver;
+    }
 
-	}
 
-	
+    for(int i=0;i<beamVec.size();i++)
+    {
+        tranAngleKicky[i] = 0.E0;
+        tranAngleKickx[i] = 0.E0;
+        energyKickU[i]    = 0.E0;
+    }
+
+    for(int i=0;i<beamVec.size();i++)
+    {
+        for(int k=0;k<nTaps;k++)
+        {
+            tranAngleKickx[i] +=  firFeedBack.firCoeffx[nTaps-k-1] * firFeedBack.posxData[k][i];
+            tranAngleKicky[i] +=  firFeedBack.firCoeffy[nTaps-k-1] * firFeedBack.posyData[k][i];
+            energyKickU[i]    +=  firFeedBack.firCoeffz[nTaps-k-1] * firFeedBack.poszData[k][i]; 
+//            if(i=beamVec.size()-cout)
+//                1<<k<<"  "<<nTaps-k-1<<"   "<<firFeedBack.firCoeffx[nTaps-k-1] <<"	"<<firFeedBack.posxData[k][i]<<endl;
+            
+        }
+        
+//        getchar();
+
+        tranAngleKickx[i] =  tranAngleKickx[i] * firFeedBack.kickStrengthKx;
+        tranAngleKicky[i] =  tranAngleKicky[i] * firFeedBack.kickStrengthKy;	
+        energyKickU[i]    =  energyKickU[i]    * firFeedBack.kickStrengthF;
+    }
+
+
+
+    for(int i=0;i<beamVec.size();i++)
+    {
+        for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+        {
+            beamVec[i].eMomentumX[j] = beamVec[i].eMomentumX[j] + tranAngleKickx[i];
+            beamVec[i].eMomentumY[j] = beamVec[i].eMomentumY[j] + tranAngleKicky[i];
+//          beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i];
+        }
+
+    }
+
+
 //    char fname[256];
     
 

@@ -25,7 +25,7 @@ FIRFeedBack::~FIRFeedBack()
 
 }
 
-void FIRFeedBack::Initial()
+void FIRFeedBack::Initial(int totBunchNum)
 {
 
     ifstream fin("FIR_input.dat",ios::in);
@@ -75,6 +75,7 @@ void FIRFeedBack::Initial()
     fin.close();
 
 
+
     int firOrder = delay + taps;
 
     gain.resize(firOrder);
@@ -86,6 +87,25 @@ void FIRFeedBack::Initial()
     posxData.resize(firOrder);
     posyData.resize(firOrder);
     poszData.resize(firOrder);
+    
+    
+    for(int i=0;i<firCoeffx.size();i++)
+    {
+        posxData[i].resize(totBunchNum);
+        posyData[i].resize(totBunchNum);
+        poszData[i].resize(totBunchNum);
+    }
+
+    for(int i=0;i<firOrder;i++)
+    {
+        for(int j=0;j<totBunchNum;j++)
+        {
+            posxData[i][j] = 0.E0;
+            posyData[i][j] = 0.E0;
+            poszData[i][j] = 0.E0;
+        }
+    }
+
 
 
     for(int i=0;i<delay;i++)
@@ -98,6 +118,7 @@ void FIRFeedBack::Initial()
     
 
     fin.open("FIR_input.dat");
+
 
 
     while (!fin.eof())
@@ -157,20 +178,17 @@ void FIRFeedBack::Initial()
 
 
 
-
     double tempCoefx=1;
     double tempCoefy=1;
 
-    kickStrengthKx = tempCoefx * 1.0E-1;
-    kickStrengthKy = tempCoefy * 1.0E-1;
+    kickStrengthKx = tempCoefx * 1.0E-3;
+    kickStrengthKy = tempCoefy * 1.0E-3;
     kickStrengthF = 0.E0;
 
 //    double sumx =   accumulate(begin(firCoeffx), end(firCoeffx), 0.0);
 //    double sumy =   accumulate(begin(firCoeffy), end(firCoeffy), 0.0);
 //    cout<<sumx<<"the total is "<<sumy<<endl;
 //    getchar();
-
-
 
 
 }
