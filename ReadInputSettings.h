@@ -31,6 +31,8 @@ public:
     double pipeAperatureY         = 1.1E-3;                      // [m] 
     double pipeAperatureR         = 1.1E-3;                      // [m] 
     double electronBeamEnergy     = 6.0E+9;
+    
+    int macroIonNumberGeneratedPerIP = 0;
 
     int trainNumber;
     int totBunchNumber;
@@ -58,6 +60,7 @@ public:
     int     synRadDampingFlag=0;         // flag to turn on the SynRadDamping
     int     intevalofTurnsIonDataPrint = 0;
     int     fIRBunchByBunchFeedbackFlag = 0;
+
 };
 
 #endif

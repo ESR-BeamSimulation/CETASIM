@@ -213,6 +213,11 @@ int ReadInputSettings::ParamRead()
           fIRBunchByBunchFeedbackFlag = stod(strVec[1]);
           cout<<"WITH FIR bunch by bunch feedback ?                              :"<< stod(strVec[1]) <<endl;
         }
+        if(strVec[0]=="macroionnumbergeneratedperip")
+        {   
+            macroIonNumberGeneratedPerIP = stod(strVec[1]);
+            cout<<"macro Ion generated per interaction                             :"<< stod(strVec[1]) <<endl;
+        }
     }
     
     emittanceY = emittanceX * kappa;

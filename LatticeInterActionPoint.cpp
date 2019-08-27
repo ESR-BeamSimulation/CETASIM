@@ -271,7 +271,7 @@ void LatticeInterActionPoint::InitialLattice(ReadInputSettings &inputParameter)
 
     for(int k=0; k<numberOfInteraction;k++)
     {
-        macroIonNumber[k]=1;              // at each interaction point, one macroIon is generated 
+        macroIonNumber[k]=inputParameter.macroIonNumberGeneratedPerIP;          // at each interaction point, one macroIon is generated 
     }
 
 

@@ -33,6 +33,8 @@ public:
     int printInterval;    
     double actionJxMax;
     double actionJyMax;
+    double emitYMax;
+    double emitXMax;
     double bunchSizeXMax;
     double bunchSizeYMax;
     vector<double> synchRadDampTime;   // in the unit of number of truns, Ref. ZhangYuan and Ohmi, PRAB 8 074402.
@@ -45,11 +47,14 @@ public:
     void Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void SSBunchDataPrint(Bunch &bunch,int count);
     void WSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint,int count, int k);
-    void WSBeamIonEffectOneTurn(Train &train, LatticeInterActionPoint &latticeInterActionPoint, int nTurns, ofstream &fout);
-    void SSBeamIonEffectOneTurn(Train &train, LatticeInterActionPoint &latticeInterActionPoint, int nTurns, ofstream &fout);
+    void SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int nTurns);
+    void SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, int nTurns);
+    
 
+    
     void SingleBunchLongiImpedInterAction(LongImpSingalBunch &longImpSingalBunch, int nTurns, ofstream &fout);
-    void GetMaxBunchInfo();
+    void WSGetMaxBunchInfo();
+    void SSGetMaxBunchInfo();
     void FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns);
 	void IonBeamDataPrintPerTurn(int turns, LatticeInterActionPoint &latticeInterActionPoint, ofstream &fout);
 	void BeamSynRadDamping(vector<double> &synchRadDampTime,LatticeInterActionPoint &latticeInterActionPoint);
