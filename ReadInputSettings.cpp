@@ -218,6 +218,16 @@ int ReadInputSettings::ParamRead()
             macroIonNumberGeneratedPerIP = stod(strVec[1]);
             cout<<"macro Ion generated per interaction                             :"<< stod(strVec[1]) <<endl;
         }
+        if(strVec[0]=="initialdisdx")
+        {   
+            initialDisDx = stod(strVec[1]);
+            cout<<"Max initial bunch displacement   error   Displacement x          :"<< stod(strVec[1]) <<endl;
+        }
+       if(strVec[0]=="initialdisdy")
+        {   
+            initialDisDy = stod(strVec[1]);
+            cout<<"Max initial bunch displacement   error   Displacement y          :"<< stod(strVec[1]) <<endl;
+        }
     }
     
     emittanceY = emittanceX * kappa;

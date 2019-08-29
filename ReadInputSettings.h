@@ -52,6 +52,9 @@ public:
     int    ionMaxNumber           = 1E+5;                        // max limit number of ion generated
     int    numberofIonBeamInterPoint = 1;                           // number of interaction point considered
     int    distributionType;
+    double initialDisDx = 0;
+    double initialDisDy = 0;
+
 //  file read end    
 
     double  omegas=0.E0;                // [Hz] sychronous revolution frequency 
@@ -60,6 +63,8 @@ public:
     int     synRadDampingFlag=0;         // flag to turn on the SynRadDamping
     int     intevalofTurnsIonDataPrint = 0;
     int     fIRBunchByBunchFeedbackFlag = 0;
+    
+    
 
 };
 

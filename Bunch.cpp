@@ -47,6 +47,8 @@ void Bunch::Initial(LatticeInterActionPoint &latticeInterActionPoint, ReadInputS
     eFx.resize(macroEleNumPerBunch);
     eFy.resize(macroEleNumPerBunch);
     eSurive.resize(macroEleNumPerBunch);
+    initialDisDx = inputParameter.initialDisDx;
+    initialDisDy = inputParameter.initialDisDy;
 
     
     bunchBinNumberZ = inputParameter.bunchBinNumberZ;
@@ -132,7 +134,6 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     rY   = sqrt(emittanceY*betaY);
 
 
-
     double f0;
     double if0;
     double fi;
@@ -144,8 +145,18 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     double phaseY;
     double ix;
 
+    double disDx;
+    double disDy;
 
     srand(time(0)+randomIndex);
+    
+    disDx = double(std::rand())/RAND_MAX;
+    disDx = disDx * initialDisDx;
+    
+    disDy = double(std::rand())/RAND_MAX ;
+    disDy = disDy* initialDisDy;
+    
+  
 
     int i=1;   
                // the first is set as reference particle 
@@ -194,8 +205,8 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
 
 
 
-        ePositionX[i] = ax *   sigmaX * cos( phaseX );
-        ePositionY[i] = ay *   sigmaY * cos( phaseY );
+        ePositionX[i] = ax *   sigmaX * cos( phaseX ) + disDx;
+        ePositionY[i] = ay *   sigmaY * cos( phaseY ) + disDy;
         eMomentumX[i] = ax * (dSigmaX * cos( phaseX ) - sin(phaseX)/sigmaX );
         eMomentumY[i] = ay * (dSigmaY * cos( phaseY ) - sin(phaseY)/sigmaY );
 

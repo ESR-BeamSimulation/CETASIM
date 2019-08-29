@@ -87,6 +87,8 @@ public:
     double rmsRingEmitX=0.E0;       
     double rmsRingEmitY=0.E0;       
     double rmsRingEmitZ=0.E0;       
+    double initialDisDx;
+    double initialDisDy;
     
     double rmsBunchLength=0.E0;     
     double rmsEnergySpread=0.E0;    //rad

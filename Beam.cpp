@@ -33,7 +33,7 @@ void Beam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoin
 {
     int totBunchNum = inputParameter.totBunchNumber;
     beamVec.resize(totBunchNum);
-    
+    harmonics = inputParameter.harmonics;
 
     printInterval=inputParameter.printInterval;
 
@@ -81,7 +81,7 @@ void Beam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoin
         }
     }    
     
-    int harmonics = inputParameter.harmonics;
+
 
     for(int i=0;i<totBunchNum-1;i++)
     {
@@ -89,11 +89,11 @@ void Beam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoin
     }
     beamVec[totBunchNum-1].bunchGap = harmonics - bunchGapIndexTemp[totBunchNum-1];
     
-//    for(int i=0;i<totBunchNum;i++)
-//    {
-//        cout<<beamVec[i].bunchGap<<"    "<<i<<endl;
-//    }
-//    getchar();
+    for(int i=0;i<totBunchNum;i++)
+    {
+        cout<<beamVec[i].bunchGap<<"    "<<i<<endl;
+    }
+    getchar();
 }   
 
 
@@ -133,14 +133,17 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
 
         case 1 :    //   calSettings =1 :  beam_ion_interaction      --- multi-bunch-multi-turn
         {
+
             if(beamVec[0].macroEleNumPerBunch==1)
             {
+                cout<<"Press Inter to go on the weak-strong ion-beam simulation"<<endl;
+                getchar();
                 for(int i=0;i<nTurns;i++)   
                 { 
                     for (int k=0;k<inputParameter.numberofIonBeamInterPoint;k++)
                     {
                         WSBeamRMSCal(latticeInterActionPoint,k);
-                        WSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, nTurns,  k);
+                        WSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, i,  k);
                         BeamTransferPerInteractionPointDueToLattice(latticeInterActionPoint,k); 
                         
                         if(intevalofTurnsIonDataPrint && (i%intevalofTurnsIonDataPrint==0))
@@ -178,7 +181,8 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
             }
             else   //strong-strong beam model;
             {
-                
+                cout<<"Press Inter to go on the quasi-strong-strong ion-beam simulation"<<endl;
+                getchar();
                     
                 for(int i=0;i<nTurns;i++)   
                 { 
@@ -431,15 +435,10 @@ void Beam::SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPo
                 bunchInfoOneTurn[j][12] = latticeInterActionPoint.ionAccumuAverY[k];	//13
                 bunchInfoOneTurn[j][13] = latticeInterActionPoint.ionAccumuRMSX[k];     //14
                 bunchInfoOneTurn[j][14] = latticeInterActionPoint.ionAccumuRMSY[k];		//15
-            }           
-
-
+            }
             counter++;
         }
-
     }
-    
-    
 }
 
 
@@ -552,57 +551,110 @@ void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeI
     }
     
 
-    
 
 
-	// print the data on certain turns  at the first interaction point  
+    turns++;
+
+    // print the data on certain turns  at the first interaction point  
     if(turns%printInterval==0)
     {
         char fname[256];
         sprintf(fname, "Aver_%d.dat", turns);
         ofstream fAverOut(fname,ios::out);
         
-        double dataX[2*bunchInfoOneTurn.size()];
-        double dataY[2*bunchInfoOneTurn.size()];
+//        double dataX[2*bunchInfoOneTurn.size()];
+//        double dataY[2*bunchInfoOneTurn.size()];
           
+        double dataX[2*harmonics];
+        double dataY[2*harmonics];
         
-        for(int i=0;i<bunchInfoOneTurn.size();i++)
+        for(int i=0;i<harmonics;i++)
         {
-        	dataX[2*i  ] = bunchInfoOneTurn[i][10];	 
-        	dataX[2*i+1] = 0.E0;
-        	dataY[2*i  ] = bunchInfoOneTurn[i][11];	 
-        	dataY[2*i+1] = 0.E0;
+            dataX[2*i  ] = 0.E0; 
+            dataX[2*i+1] = 0.E0;
+            dataY[2*i  ] = 0.E0;
+            dataY[2*i+1] = 0.E0;
         }
         
- 		gsl_fft_complex_wavetable * wavetable;
-  		gsl_fft_complex_workspace * workspace;
- 		
- 		wavetable = gsl_fft_complex_wavetable_alloc (bunchInfoOneTurn.size());
-  		workspace = gsl_fft_complex_workspace_alloc (bunchInfoOneTurn.size());
-        
-  		gsl_fft_complex_forward (dataX, 1, bunchInfoOneTurn.size(), wavetable, workspace);   // FFT for bunch[i].xAver in one turn;
-  		        
-        vector<complex<double> > beamCentoidXFFT;
-        beamCentoidXFFT.resize(bunchInfoOneTurn.size());
+        int index=0;
         
         for(int i=0;i<bunchInfoOneTurn.size();i++)
         {
-        	beamCentoidXFFT[i] = complex< double > ( dataX[2*i], dataX[2*i+1]  );
+            int j=0;
+            while(j<beamVec[i].bunchGap)
+            {
+                if(j==0)
+                {
+                    dataX[2*index    ] = bunchInfoOneTurn[i][10];
+                    dataX[2*index + 1] = 0.E0;
+                    dataY[2*index    ] = bunchInfoOneTurn[i][11];
+                    dataY[2*index + 1] = 0.E0;
+                }
+                else
+                {
+                    dataX[2*index    ] = 0.E0;
+                    dataX[2*index + 1] = 0.E0;
+                    dataY[2*index    ] = 0.E0;
+                    dataY[2*index + 1] = 0.E0;
+                }
+                
+                index = index + 1;
+                j=j+1;
+            }
+        }
+
+//        for(int i=0;i<harmonics;i++)
+//        {
+//            cout<<i<<"  "<<dataX[2*i]<<"  "<<dataX[2*i+1]<<endl;
+//        }        
+//        
+//        getchar();
+//    
+        
+//        for(int i=0;i<bunchInfoOneTurn.size();i++)
+//        {
+//            dataX[2*i  ] = bunchInfoOneTurn[i][10];	 
+//            dataX[2*i+1] = 0.E0;
+//            dataY[2*i  ] = bunchInfoOneTurn[i][11];	 
+//            dataY[2*i+1] = 0.E0;
+//        }
+
+
+
+
+
+
+        gsl_fft_complex_wavetable * wavetable;
+        gsl_fft_complex_workspace * workspace;
+
+        wavetable = gsl_fft_complex_wavetable_alloc (harmonics);
+        workspace = gsl_fft_complex_workspace_alloc (harmonics);
+
+        gsl_fft_complex_forward (dataX, 1, harmonics, wavetable, workspace);   // FFT for bunch[i].xAver in one turn;
+                
+        vector<complex<double> > beamCentoidXFFT;
+        beamCentoidXFFT.resize(harmonics);
+        
+        for(int i=0;i<harmonics;i++)
+        {
+            beamCentoidXFFT[i] = complex< double > ( dataX[2*i], dataX[2*i+1]  );
         }
         
         
         vector<complex<double> > beamCentoidYFFT;
-        beamCentoidYFFT.resize(bunchInfoOneTurn.size());
+        beamCentoidYFFT.resize(harmonics);
         
-        gsl_fft_complex_forward (dataY, 1, bunchInfoOneTurn.size(), wavetable, workspace);  // FFT for bunch[i].yAver in one turn;
+        gsl_fft_complex_forward (dataY, 1, harmonics, wavetable, workspace);  // FFT for bunch[i].yAver in one turn;
         
-        for(int i=0;i<bunchInfoOneTurn.size();i++)
+        for(int i=0;i<harmonics;i++)
         {
             beamCentoidYFFT[i] = complex< double > ( dataY[2*i], dataY[2*i+1]  );
         }
        
         
         
+        // the FFT calculated with size as harmonics number,  
+        // to print only the bunch number  
         for(int i=0;i<bunchInfoOneTurn.size();i++)
         {
             for(int j=0;j<bunchInfoOneTurn[0].size();j++)
@@ -770,7 +822,7 @@ void Beam::WSGetMaxBunchInfo()
 void Beam::FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns)
 {
 
-    //y[0] = \sum_0^{N} a_k x[k] 
+    //y[0] = \sum_0^{N} a_k x[-k] 
     //Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
 
     double eta  = firFeedBack.kickerDisp;

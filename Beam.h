@@ -30,7 +30,8 @@ public:
 
     
 
-    int printInterval;    
+    int printInterval;  
+    int harmonics;
     double actionJxMax;
     double actionJyMax;
     double emitYMax;

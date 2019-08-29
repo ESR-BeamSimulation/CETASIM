@@ -169,7 +169,7 @@ void FIRFeedBack::Initial(int totBunchNum)
             }
             cout<<endl;
         }
-
+        
     }
     
     strVec.clear();
@@ -181,8 +181,8 @@ void FIRFeedBack::Initial(int totBunchNum)
     double tempCoefx=1;
     double tempCoefy=1;
 
-    kickStrengthKx = tempCoefx * 1.0E-3;
-    kickStrengthKy = tempCoefy * 1.0E-3;
+    kickStrengthKx = tempCoefx * 1.0E-1;
+    kickStrengthKy = tempCoefy * 1.0E-1;
     kickStrengthF = 0.E0;
 
 //    double sumx =   accumulate(begin(firCoeffx), end(firCoeffx), 0.0);
