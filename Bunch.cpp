@@ -73,8 +73,8 @@ void Bunch::Initial(LatticeInterActionPoint &latticeInterActionPoint, ReadInputS
 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
-        ePositionX[i]=0.0E-5;
-        ePositionY[i]=0.0E-5;
+        ePositionX[i]=initialDisDx;
+        ePositionY[i]=initialDisDy;
         ePositionZ[i]=0.E0;
         eMomentumX[i]=0.E0;
         eMomentumY[i]=0.E0;
@@ -85,7 +85,9 @@ void Bunch::Initial(LatticeInterActionPoint &latticeInterActionPoint, ReadInputS
     }
 
 
-    electronNumPerBunch = current / inputParameter.omegas * 2*PI /inputParameter.totBunchNumber/ElectronCharge;
+    electronNumPerBunch = current / inputParameter. omegas * 2*PI /inputParameter.totBunchNumber/ElectronCharge;
+    
+
 
     macroEleCharge = electronNumPerBunch / macroEleNumPerBunch;
     distributionType = inputParameter.distributionType;
@@ -156,7 +158,9 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     disDy = double(std::rand())/RAND_MAX ;
     disDy = disDy* initialDisDy;
     
-  
+    disDx = initialDisDx;
+    disDy = initialDisDy;
+
 
     int i=1;   
                // the first is set as reference particle 
@@ -463,8 +467,8 @@ void Bunch::WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 
     xAver   =  ePositionX[0];
     yAver   =  ePositionY[0];
-    pxAver	=  eMomentumX[0];
-    pyAver	=  eMomentumY[0];
+    pxAver  =  eMomentumX[0];
+    pyAver  =  eMomentumY[0];
 
     actionJx = 0.E0;
     actionJy = 0.E0;

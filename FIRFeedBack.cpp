@@ -31,7 +31,7 @@ void FIRFeedBack::Initial(int totBunchNum)
     ifstream fin("FIR_input.dat",ios::in);
     if (! fin.is_open())
     {
-        cerr<< "Error opening file"; exit (1);
+        cerr<< "Error opening file of the FIR_input.dat"; exit (1);
     }
     
     cout<<"------------ The parameter of the FIR filter- --------"<<endl;

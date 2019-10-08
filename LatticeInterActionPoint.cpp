@@ -300,7 +300,6 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
     macroIonCharge[k] = ionNumber[k]/macroIonNumber[k];
 
 
-
 //    srand(time(0)+randomIndex);
 
 //    std::random_device myseed0{};

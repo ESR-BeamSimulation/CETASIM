@@ -89,11 +89,11 @@ void Beam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoin
     }
     beamVec[totBunchNum-1].bunchGap = harmonics - bunchGapIndexTemp[totBunchNum-1];
     
-    for(int i=0;i<totBunchNum;i++)
-    {
-        cout<<beamVec[i].bunchGap<<"    "<<i<<endl;
-    }
-    getchar();
+//    for(int i=0;i<totBunchNum;i++)
+//    {
+//        cout<<beamVec[i].bunchGap<<"    "<<i<<endl;
+//    }
+//    getchar();
 }   
 
 
@@ -143,7 +143,7 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                     for (int k=0;k<inputParameter.numberofIonBeamInterPoint;k++)
                     {
                         WSBeamRMSCal(latticeInterActionPoint,k);
-                        WSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, i,  k);
+                        WSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, i,  k);  
                         BeamTransferPerInteractionPointDueToLattice(latticeInterActionPoint,k); 
                         
                         if(intevalofTurnsIonDataPrint && (i%intevalofTurnsIonDataPrint==0))
@@ -272,11 +272,11 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
 
 void Beam::BeamTransferPerInteractionPointDueToLattice(LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
-	for(int j=0;j<beamVec.size();j++)
-	{
-		beamVec[j].BunchTransferDueToLattice(latticeInterActionPoint,k);
-	}
-	
+    for(int j=0;j<beamVec.size();j++)
+    {
+        beamVec[j].BunchTransferDueToLattice(latticeInterActionPoint,k);
+    }
+
 }
 
 void Beam::BeamSynRadDamping(vector<double> &synchRadDampTime,LatticeInterActionPoint &latticeInterActionPoint)
@@ -321,6 +321,8 @@ void Beam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,
 
         latticeInterActionPoint.ionLineDensity[k] = corssSectionEI * latticeInterActionPoint.vacuumPressure[k]
                                 /latticeInterActionPoint.temperature[k]/Boltzmann * beamVec[j].electronNumPerBunch;
+                                
+
                                 
         latticeInterActionPoint.ionNumber[k] = latticeInterActionPoint.ionLineDensity[k] * 
                                                latticeInterActionPoint.interactionLength[k];
@@ -499,8 +501,9 @@ void Beam::SSBunchDataPrint( Bunch &bunch, int counter)
 
 void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeInterActionPoint, ofstream &fout)
 {
+    
 
-
+    
     if(beamVec[0].macroEleNumPerBunch==1)
     {
         for (int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
@@ -510,8 +513,8 @@ void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeI
                 <<latticeInterActionPoint.ionAccumuNumber[k]*latticeInterActionPoint.macroIonCharge[k]<<" " 	//3
                 <<log10(sqrt(actionJxMax))<<"    "																//4
                 <<log10(sqrt(actionJyMax))<<"    "																//5
-                <<log10(sqrt(2*beamVec[0].emittanceX))<<"	"  // constant representing the beam size in x 		//6
-                <<log10(sqrt(2*beamVec[0].emittanceY))<<"	"  // constant representing the beam size in y 		//7
+                <<log10(sqrt(beamVec[0].emittanceX))<<"	"  // constant representing the beam size in x 		//6
+                <<log10(sqrt(beamVec[0].emittanceY))<<"	"  // constant representing the beam size in y 		//7
                 <<bunchSizeXMax<<"    "																			//8
                 <<bunchSizeYMax<<"    "																			//9
                 <<beamVec[beamVec.size()-1].xAver<<"   "														//10
@@ -533,9 +536,9 @@ void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeI
                 <<k<<"	"																						//2
                 <<latticeInterActionPoint.ionAccumuNumber[k]*latticeInterActionPoint.macroIonCharge[k]<<" " 	//3
                 <<emitXMax<<"    "													                			//4
-                <<emitXMax<<"    "												                				//5
-                <<log10(sqrt(2*beamVec[0].emittanceX))<<"	"  // constant representing the beam size in x 		//6
-                <<log10(sqrt(2*beamVec[0].emittanceY))<<"	"  // constant representing the beam size in y 		//7
+                <<emitYMax<<"    "												                				//5
+                <<log10(sqrt(beamVec[0].emittanceX))<<"	"  // constant representing the beam size in x 		//6
+                <<log10(sqrt(beamVec[0].emittanceY))<<"	"  // constant representing the beam size in y 		//7
                 <<bunchSizeXMax<<"    "																			//8
                 <<bunchSizeYMax<<"    "																			//9
                 <<beamVec[beamVec.size()-1].xAver<<"   "														//10
@@ -553,7 +556,7 @@ void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeI
 
 
 
-    turns++;
+
 
     // print the data on certain turns  at the first interaction point  
     if(turns%printInterval==0)

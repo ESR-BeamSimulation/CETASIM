@@ -1,6 +1,6 @@
 
 CircRing               = 1360.4E0    
-WorkQx                 = 114.05E0 
+WorkQx                 = 114.141E0 
 WorkQy                 = 106.231E0
 WorkQz                 = 0.00521 
 RFBaseFrequency        = 166.6E6 
@@ -16,14 +16,20 @@ numberofIonBeamInterPoint   = 1
 electronBeamEnergy          = 6.0E+9
 macroEleNumPerBunch         = 1
 distributionType            = 1                       // 1: KV 2:WB  3: GS  For  longitudian is Gausion 3sigma truncted
+initialDisDx                = 1E-5                    // Max initial displacement error 
+initialDisDy                = 1E-5 
+
+
 nTurns                      = 10000
+macroIonNumberGeneratedPerIP = 1
+
 
 trainNumber = 1
 totBunchNumber = 680;
 bunchNumberPerTrain  680  
 trainGaps  76  
 
-SynRadDampingFlag = 1
+SynRadDampingFlag = 0
 synchRadDampTimex =  2386.34   // in the unit of truns
 synchRadDampTimey =  4536.4  
 synchRadDampTimez =  4126.1
@@ -36,12 +42,11 @@ rmsBunchLength  = 30.E-3
 rmsEnergySpread = 1.E-3
 
 
-fIRBunchByBunchFeedbackFlag = 1
+fIRBunchByBunchFeedbackFlag = 0
 
-calSettings = 1;
+calSettings = 1
 
 
-printInterval =10000
+printInterval = 100
 intevalofTurnsIonDataPrint = 0
-
 
