@@ -201,12 +201,12 @@ int ReadInputSettings::ParamRead()
         if(strVec[0]=="synraddampingflag")
         {
           synRadDampingFlag = stod(strVec[1]);
-          cout<<"to the    SynRadDamping ?                                      :"<< stod(strVec[1]) <<endl;
+          cout<<"include the SynRadDamping ?                                      :"<< stod(strVec[1]) <<endl;
         }
         if(strVec[0]=="intevalofturnsiondataprint")
         {
           intevalofTurnsIonDataPrint = stod(strVec[1]);
-          cout<<"to the    SynRadDamping ?                                      :"<< stod(strVec[1]) <<endl;
+          cout<<"interval of turns to save iondata                               :"<< stod(strVec[1]) <<endl;
         }
         if(strVec[0]=="firbunchbybunchfeedbackflag")
         {

@@ -22,11 +22,11 @@ using std::complex;
 int main(int argc,char *argv[])
 {
 
-    MPI_Init(&argc,&argv);
-    MPI_Status status;
+//    MPI_Init(&argc,&argv);
+//    MPI_Status status;
 
-    MPI_Comm_size(MPI_COMM_WORLD,&numProcess);
-    MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
+//    MPI_Comm_size(MPI_COMM_WORLD,&numProcess);
+//    MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
 
 
     ReadInputSettings inputParameter;
@@ -47,7 +47,7 @@ int main(int argc,char *argv[])
 
     beam.Run(train,latticeInterActionPoint,inputParameter);
 
-    MPI_Finalize();
+//    MPI_Finalize();
     return 0;
 }
 

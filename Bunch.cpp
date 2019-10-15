@@ -73,8 +73,8 @@ void Bunch::Initial(LatticeInterActionPoint &latticeInterActionPoint, ReadInputS
 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
-        ePositionX[i]=initialDisDx;
-        ePositionY[i]=initialDisDy;
+        ePositionX[i]=0.E0;
+        ePositionY[i]=0.E0;
         ePositionZ[i]=0.E0;
         eMomentumX[i]=0.E0;
         eMomentumY[i]=0.E0;
@@ -86,12 +86,9 @@ void Bunch::Initial(LatticeInterActionPoint &latticeInterActionPoint, ReadInputS
 
 
     electronNumPerBunch = current / inputParameter. omegas * 2*PI /inputParameter.totBunchNumber/ElectronCharge;
-    
-
 
     macroEleCharge = electronNumPerBunch / macroEleNumPerBunch;
     distributionType = inputParameter.distributionType;
-    
 
 }
 
@@ -128,13 +125,16 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     dSigmaY = -alphaY/sqrt(betaY);
 
 
-
     double rX;
     double rY;
 
     rX   = sqrt(emittanceX*betaX);
     rY   = sqrt(emittanceY*betaY);
 
+
+//    cout<<rX<<" "<<rY<<endl;
+//    cout<<emittanceX<<" "<<betaX<<endl;
+//    cout<<emittanceY<<" "<<betaY<<endl;
 
     double f0;
     double if0;
@@ -152,15 +152,8 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
 
     srand(time(0)+randomIndex);
     
-    disDx = double(std::rand())/RAND_MAX;
-    disDx = disDx * initialDisDx;
-    
-    disDy = double(std::rand())/RAND_MAX ;
-    disDy = disDy* initialDisDy;
-    
-    disDx = initialDisDx;
-    disDy = initialDisDy;
-
+    disDx = 2*(double(std::rand())/RAND_MAX - 0.5) * initialDisDx;
+    disDy = 2*(double(std::rand())/RAND_MAX - 0.5) * initialDisDy;
 
     int i=1;   
                // the first is set as reference particle 
@@ -209,10 +202,24 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
 
 
 
+
+
         ePositionX[i] = ax *   sigmaX * cos( phaseX ) + disDx;
         ePositionY[i] = ay *   sigmaY * cos( phaseY ) + disDy;
         eMomentumX[i] = ax * (dSigmaX * cos( phaseX ) - sin(phaseX)/sigmaX );
         eMomentumY[i] = ay * (dSigmaY * cos( phaseY ) - sin(phaseY)/sigmaY );
+
+
+
+        // to suppress the numerical noise on average calculation
+        ePositionX[i+1] = -ePositionX[i];
+        ePositionY[i+1] = -ePositionY[i];
+        eMomentumX[i+1] = -eMomentumX[i];
+        eMomentumY[i+1] = -eMomentumY[i];
+        
+    
+
+    
 
         if(distributionType==3)
         {
@@ -220,12 +227,42 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
             {
                 continue;
             }
+            
+            if(pow(ePositionX[i+1]/rX,2) + pow(ePositionY[i+1]/rY,2)>9)
+            {
+                continue;
+            }
         }
 
-
-        i++;
+        i=i+2;
     }
+    
+    
+    
 
+
+//    double tempAverXTest=0;
+//    double tempAverYTest=0;
+//    double tempAverpXTest=0;
+//    double tempAverpYTest=0;
+//    tempAverXTest  =  accumulate(begin(ePositionX), end(ePositionX), 0.0); 
+//    tempAverYTest  =  accumulate(begin(ePositionY), end(ePositionY), 0.0); 
+//    tempAverpXTest =  accumulate(begin(eMomentumX), end(eMomentumX), 0.0); 
+//    tempAverpYTest =  accumulate(begin(eMomentumY), end(eMomentumY), 0.0); 
+//    tempAverXTest  =  tempAverXTest/1000;
+//    tempAverYTest  =  tempAverYTest/1000;
+//    tempAverpXTest =  tempAverpXTest/1000;
+//    tempAverpYTest =  tempAverpYTest/1000;
+
+
+//    cout<<__LINE__<<"   "
+//        <<tempAverXTest<<"  "
+//        <<tempAverYTest<<"  "
+//        <<tempAverpXTest<<" "
+//        <<tempAverpYTest<<endl;
+//        
+//        cout<<ePositionX[0]<<"  "<<ePositionX[1]<<endl;
+//        getchar();
 
 //    ofstream fout("dist_test.dat");
 //    for(int i=0;i<macroEleNumPerBunch;i++)
@@ -263,7 +300,7 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
 
     double tempx;
     double tempy;
-    
+
     i=0;
     while(i<macroEleNumPerBunch)
     {
@@ -345,19 +382,12 @@ void Bunch::InducedIonDensity(LatticeInterActionPoint &latticeInterActionPoint)
 void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
 
-    double x2Aver=0.E0;
-    double y2Aver=0.E0;
-    double px2Aver=0.E0;
-    double py2Aver=0.E0;
-    double xpxAver=0.E0;
-    double ypyAver=0.E0;
-    
 
 
     pxAver=0.E0;
     pyAver=0.E0;
-    xAver = 0.E0;
-    yAver = 0.E0;
+    xAver =0.E0;
+    yAver =0.E0;
     
     macroEleNumSurivePerBunch = 0;
     
@@ -388,6 +418,14 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 
 
 
+
+    double x2Aver=0.E0;
+    double y2Aver=0.E0;
+    double px2Aver=0.E0;
+    double py2Aver=0.E0;
+    double xpxAver=0.E0;
+    double ypyAver=0.E0;
+
 // The below section is used to calculate the center rms emittance
 
 //    for(int i=0;i<macroEleNumPerBunch;i++)
@@ -415,10 +453,6 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 //    ypyAver = ypyAver /macroEleNumSurivePerBunch;
     
 
-
-
-
-
 // The below section is used to calculate the effective emittance
 
     for(int i=0;i<macroEleNumPerBunch;i++)
@@ -438,12 +472,12 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 
 
 
-    x2Aver  = x2Aver  /macroEleNumPerBunch;
-    y2Aver  = y2Aver  /macroEleNumPerBunch;
-    px2Aver = px2Aver /macroEleNumPerBunch;
-    py2Aver = py2Aver /macroEleNumPerBunch;
-    xpxAver = xpxAver /macroEleNumPerBunch;
-    ypyAver = ypyAver /macroEleNumPerBunch;
+    x2Aver  = x2Aver  /macroEleNumSurivePerBunch;
+    y2Aver  = y2Aver  /macroEleNumSurivePerBunch;
+    px2Aver = px2Aver /macroEleNumSurivePerBunch;
+    py2Aver = py2Aver /macroEleNumSurivePerBunch;
+    xpxAver = xpxAver /macroEleNumSurivePerBunch;
+    ypyAver = ypyAver /macroEleNumSurivePerBunch;
 
     rmsEmitX = sqrt(x2Aver * px2Aver - pow(xpxAver,2));
     rmsEmitY = sqrt(y2Aver * py2Aver - pow(ypyAver,2));
@@ -465,10 +499,11 @@ void Bunch::WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
     rmsRx = sqrt(emittanceX * latticeInterActionPoint.twissBetaX[k]);
     rmsRy = sqrt(emittanceY * latticeInterActionPoint.twissBetaY[k]);
 
-    xAver   =  ePositionX[0];
-    yAver   =  ePositionY[0];
-    pxAver  =  eMomentumX[0];
-    pyAver  =  eMomentumY[0];
+    xAver = ePositionX[0];
+    yAver = ePositionY[0];
+
+    pxAver = eMomentumX[0];
+    pyAver = eMomentumY[0];
 
     actionJx = 0.E0;
     actionJy = 0.E0;
@@ -482,27 +517,19 @@ void Bunch::WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
     twissAlphaYTemp = latticeInterActionPoint.twissAlphaY[k];
     twissBetaXTemp  = latticeInterActionPoint.twissBetaX[k];
     twissBetaYTemp  = latticeInterActionPoint.twissBetaY[k];
-    
 
 
-    actionJx = (1+pow(twissAlphaXTemp,2))/twissBetaXTemp * pow(ePositionX[0],2) 
-             + 2*twissAlphaXTemp* ePositionX[0] * eMomentumX[0] 
-             +   twissBetaXTemp * pow(eMomentumX[0],2);
+    actionJx = (1+pow(twissAlphaXTemp,2))/twissBetaXTemp * pow(xAver,2) 
+             + 2*twissAlphaXTemp* xAver * pxAver 
+             +   twissBetaXTemp * pow(pxAver,2);
 
 
-    actionJy = (1+pow(twissAlphaYTemp,2))/twissBetaYTemp * pow(ePositionY[0],2) 
-            + 2*twissAlphaYTemp* ePositionY[0] * eMomentumY[0] 
-            +   twissBetaYTemp * pow(eMomentumY[0],2);
+    actionJy = (1+pow(twissAlphaYTemp,2))/twissBetaYTemp * pow(yAver,2) 
+            + 2*twissAlphaYTemp* yAver * pyAver 
+            +   twissBetaYTemp * pow(pyAver,2);
     
     actionJx = actionJx /2.;
     actionJy = actionJy /2.;
-    
-//    if(ePositionX[0]!=0.E0 && eMomentumX[0]!=0.E0 )
-//    {
-//        cout<<ePositionX[0]<<"  "<<eMomentumX[0]<<endl;
-//            getchar();
-//    }
-
     
 }
 
@@ -530,6 +557,8 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     rmsRxTemp = rmsRx;
     rmsRyTemp = rmsRy;
 
+    
+ 
 
     for(int j=0;j<latticeInterActionPoint.ionAccumuNumber[k];j++)
     {
@@ -538,15 +567,20 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
         latticeInterActionPoint.ionAccumuFy[k][j]=0.E0;
 
 
+
         posx    =  latticeInterActionPoint.ionAccumuPositionX[k][j] - xAver;
         posy    =  latticeInterActionPoint.ionAccumuPositionY[k][j] - yAver;
 
-
         BassettiErskine(posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy);
-        
+
         latticeInterActionPoint.ionAccumuFx[k][j]= coeffI*tempFx;
         latticeInterActionPoint.ionAccumuFy[k][j]= coeffI*tempFy;
+
     }
+//    cout<< latticeInterActionPoint.ionAccumuFx[k][0]<<endl;
+//    cout<< latticeInterActionPoint.ionAccumuFy[k][0]<<endl;
+//    cout<<__LINE__<<endl;
+//    getchar();
 
 
 // (2) get the force of certain bunched beam due to accumulated ions --- BassettiErskine model.
@@ -558,11 +592,11 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     nI0 = latticeInterActionPoint.macroIonCharge[k] * latticeInterActionPoint.ionAccumuNumber[k];
     coeffE = 2.0*nI0*ElecClassicRadius/rGamma; 
 
-//    cout<<nI0<<endl;
-//    getchar();
 
     rmsRxTemp = latticeInterActionPoint.ionAccumuRMSX[k];
     rmsRyTemp = latticeInterActionPoint.ionAccumuRMSY[k];
+
+
 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
@@ -584,12 +618,15 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
         posy    =  ePositionY[i] - latticeInterActionPoint.ionAccumuAverY[k];
 
         BassettiErskine(posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy);
-        
+    
         eFx[i] =    coeffE * tempFx;
         eFy[i] =    coeffE * tempFy;
 
-    }
 
+    }
+//    cout<<eFx[0]<<"  "<<eFx[0]<<" "<<__LINE__<<"  strong strong force of Electron "<<endl;
+//    
+//    getchar();   
 }
 
 
@@ -604,9 +641,9 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     nI0 = latticeInterActionPoint.macroIonCharge[k];
     
 
+    
     omegaE =0.E0;
     omegaI =0.E0;
-    
 
     double coeffI;
     double coeffE;
@@ -630,10 +667,13 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
 
 
 
+
     eFx[0] =0.E0;
     eFy[0] =0.E0;
     eFxTemp = 0.E0;
     eFyTemp = 0.E0;
+
+
 
     for(int j=0;j<latticeInterActionPoint.ionAccumuNumber[k];j++)
     {
@@ -645,7 +685,6 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
         posx    =  latticeInterActionPoint.ionAccumuPositionX[k][j] - xAver;
         posy    =  latticeInterActionPoint.ionAccumuPositionY[k][j] - yAver;
 
-
         BassettiErskine(posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy);
 
         latticeInterActionPoint.ionAccumuFx[k][j]= coeffI*tempFx;
@@ -653,21 +692,17 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
 
         eFxTemp = eFxTemp + tempFx;
         eFyTemp = eFyTemp + tempFy;
-        
 
-        
-//        cout<<j<<" sss "
-//            <<latticeInterActionPoint.ionAccumuPositionX[k][j]<<"  "
-//            <<latticeInterActionPoint.ionAccumuPositionY[k][j]<<"  "
-//            <<latticeInterActionPoint.ionAccumuFx[k][j]<<"  "
-//            <<latticeInterActionPoint.ionAccumuFy[k][j]<<"  "
-//            <<endl;
     }
-    
-    eFx[0] = eFxTemp * coeffE * nI0;
-    eFy[0] = eFyTemp * coeffE * nI0;
-    
 
+    eFx[0] = -1*eFxTemp * coeffE * nI0;    // since the e and ion with oppsite charge state
+    eFy[0] = -1*eFyTemp * coeffE * nI0;    // since the e and ion with oppsite charge state
+    
+//    cout<<latticeInterActionPoint.ionAccumuFx[k][0]<<endl;
+//    cout<<latticeInterActionPoint.ionAccumuFy[k][0]<<endl;
+//    cout<<posx<<"   "<<posy<<"   "<<eFx[0]<<" "<<eFy[0]<<"   "<<__LINE__<<"  "<< "weak strong force of electron"<<endl;
+    
+    //    getchar();
     
     omegaE = coeffE * nI0 * pow(CLight,2) /rmsRy/(rmsRx+rmsRy);
     omegaE = sqrt(omegaE);
@@ -706,6 +741,7 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
     temp    =0.E0;
 
 
+
     if(pow(rmsRxTemp,2)<pow(rmsRyTemp,2))
     {
         temp        = rmsRyTemp;
@@ -720,12 +756,12 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
         tempPosiy    =  abs(posy);
     }
     
-    
-    
-    if(abs(rmsRxTemp)<1.0E-20 && abs(rmsRyTemp)<1.0E-20)
+
+    if(abs(tempPosix/rmsRxTemp) + abs(tempPosiy/rmsRyTemp)<1.0E-6)
     {
         tempFx=0.E0;
         tempFy=0.E0;
+
     }
     else
     {
@@ -766,7 +802,7 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
     }
 
 
-    if(pow(rmsRyTemp,2)<pow(rmsRyTemp,2))
+    if(pow(rmsRxTemp,2)<pow(rmsRyTemp,2))
     {
         temp     = tempFy;
         tempFy   = tempFx;
@@ -844,9 +880,10 @@ void Bunch::BunchTransferDueToIon(LatticeInterActionPoint &latticeInterActionPoi
         {
             continue;
         }
-
+        
         eMomentumX[i] +=  eFx[i]  ;    // rad
         eMomentumY[i] +=  eFy[i]  ;    // rad 
+
     }
 
 }
@@ -996,7 +1033,8 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
     gsl_matrix_set_identity(tengMatrixR);
 
     gsl_matrix * R2  = gsl_matrix_alloc (2, 2);   //coupling matrix Eq.(6)
-    gsl_matrix_set_identity(R2);
+//    gsl_matrix_set_identity(R2);                  // full coupling
+    gsl_matrix_set_zero(R2);                        // no coupling at the point in SR calculation
 
     double b = get_det(R2);
     b = sqrt(1-b);
@@ -1090,12 +1128,12 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
     gsl_matrix_mul(sympleMarixJ6,cordTransferTemp,invCordTransfer);
     gsl_matrix_scale (invCordTransfer, -1);
     gsl_matrix_transpose(cordTransfer);
-	//	end of approach 1 -------------------------------------------
-	
-//	//get the   invCordTransfer =  (cordTransfer)^-1 ---- approach 2  in a general sense but slower 
-//	gsl_matrix_memcpy(invCordTransfer,cordTransfer);
-//	gsl_matrix_inv(invCordTransfer);
-//	//end of approach 2 -------------------------------------------
+    //  end of approach 1 -------------------------------------------
+
+    //  get the   invCordTransfer =  (cordTransfer)^-1 ---- approach 2  in a general sense but slower 
+    //  gsl_matrix_memcpy(invCordTransfer,cordTransfer);
+    //  gsl_matrix_inv(invCordTransfer);
+    ////end of approach 2 -------------------------------------------
 
 
 

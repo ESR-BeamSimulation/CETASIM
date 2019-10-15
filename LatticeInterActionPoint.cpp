@@ -285,11 +285,6 @@ void LatticeInterActionPoint::InitialLattice(ReadInputSettings &inputParameter)
         ionVelocityY[k].resize(macroIonNumber[k]);
         
     }
-
-
-
-
-
 }
 
 
@@ -341,23 +336,20 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
 
         tempx = dx(gen);
         tempy = dy(gen);
+    
+//        cout<<tempx<<"   "<<tempy<<" "<<__LINE__<<endl;
+//        getchar();
 
 
-
-        if( pow( (tempx-xAver)/rmsRx, 2)  + pow( (tempy-yAver)/rmsRy, 2) > 9.E0  ) // beam is 3 sigma truncted.
+        if( pow( (tempx-xAver)/rmsRx, 2)  + pow( (tempy-yAver)/rmsRy, 2) > 4.E0  ) // beam is 1 sigma truncted.
         {
             continue;
         }
-        
 
 
-//        ionPositionX[k][i]=tempx;
-//        ionPositionY[k][i]=tempy;
-        
-        ionPositionX[k][i]=rmsRx;
-        ionPositionY[k][i]=rmsRy;
-        
-        
+
+        ionPositionX[k][i]=tempx;
+        ionPositionY[k][i]=tempy;
         ionVelocityX[k][i]=0.E0;
         ionVelocityY[k][i]=0.E0;
 
@@ -369,7 +361,7 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
 
 }
 
-void LatticeInterActionPoint::IonsUpdate(int k)
+void LatticeInterActionPoint::SSIonsUpdate(int k, double rmsRx, double rmsRy)
 {
     vector<int> lossIonIndex;
 
@@ -431,6 +423,57 @@ void LatticeInterActionPoint::IonsUpdate(int k)
     
     while(i<ionAccumuPositionX[k].size())
     {
+        if(pow(ionAccumuPositionX[k][i]/rmsRx,2)+pow(ionAccumuPositionY[k][i]/rmsRx,2)>9.E0)
+        {
+            ionAccumuPositionX[k].erase(ionAccumuPositionX[k].begin()+i);
+            ionAccumuPositionY[k].erase(ionAccumuPositionY[k].begin()+i);
+            ionAccumuVelocityX[k].erase(ionAccumuVelocityX[k].begin()+i);
+            ionAccumuVelocityY[k].erase(ionAccumuVelocityY[k].begin()+i);
+            ionAccumuFx[k].erase(ionAccumuFx[k].begin()+i);
+            ionAccumuFy[k].erase(ionAccumuFy[k].begin()+i);
+            i--;
+        }
+        
+        
+        i++;
+    }
+    
+    ionAccumuNumber[k]  =  ionAccumuPositionX[k].size(); 
+    
+
+//*******************end ****************************************************************
+
+    if(ionAccumuNumber[k]>ionMaxNumberOneInterPoint)
+    {
+        cerr<<"Ions accumulated are larger than setting limit "<<ionMaxNumberOneInterPoint<<endl;
+        exit(0);
+    }
+
+
+}
+
+
+void LatticeInterActionPoint::WSIonsUpdate(int k)
+{
+    vector<int> lossIonIndex;
+
+// ********modified 2019-04-22, the ionAccumuNumber[k] dynamically changed with calculation*******
+
+    for(int i=0;i<macroIonNumber[k];i++)
+    {
+            ionAccumuPositionX[k].push_back(ionPositionX[k][i]);
+            ionAccumuPositionY[k].push_back(ionPositionY[k][i]);
+            ionAccumuVelocityX[k].push_back(ionVelocityX[k][i]);
+            ionAccumuVelocityY[k].push_back(ionVelocityY[k][i]);
+            ionAccumuFx[k].push_back(0.E0);
+            ionAccumuFy[k].push_back(0.E0);
+    }
+
+
+    int i=0;
+    
+    while(i<ionAccumuPositionX[k].size())
+    {
         if(pow(ionAccumuPositionX[k][i],2)+pow(ionAccumuPositionY[k][i],2)>pow(pipeAperatureR,2))
         {
             ionAccumuPositionX[k].erase(ionAccumuPositionX[k].begin()+i);
@@ -462,6 +505,9 @@ void LatticeInterActionPoint::IonsUpdate(int k)
 
 
 
+
+
+
 void LatticeInterActionPoint::IonRMSCal(int k)
 {
 
@@ -488,8 +534,11 @@ void LatticeInterActionPoint::IonRMSCal(int k)
 
     for(int i=0;i<ionAccumuNumber[k];i++)
     {
-        x2Aver  +=  pow(ionAccumuPositionX[k][i]-ionAccumuAverX[k] ,2);
-        y2Aver  +=  pow(ionAccumuPositionY[k][i]-ionAccumuAverY[k] ,2);
+//        x2Aver  +=  pow(ionAccumuPositionX[k][i]-ionAccumuAverX[k] ,2);
+//        y2Aver  +=  pow(ionAccumuPositionY[k][i]-ionAccumuAverY[k] ,2);
+        
+        x2Aver  +=  pow(ionAccumuPositionX[k][i],2);
+        y2Aver  +=  pow(ionAccumuPositionY[k][i],2);
         
     }
 

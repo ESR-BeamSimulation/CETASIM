@@ -38,6 +38,9 @@ public:
     double emitXMax;
     double bunchSizeXMax;
     double bunchSizeYMax;
+    double bunchAverXMax;
+    double bunchAverYMax;
+    
     vector<double> synchRadDampTime;   // in the unit of number of truns, Ref. ZhangYuan and Ohmi, PRAB 8 074402.
 
 	vector<vector<double> > bunchInfoOneTurn;
@@ -57,13 +60,14 @@ public:
     void WSGetMaxBunchInfo();
     void SSGetMaxBunchInfo();
     void FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns);
-	void IonBeamDataPrintPerTurn(int turns, LatticeInterActionPoint &latticeInterActionPoint, ofstream &fout);
-	void BeamSynRadDamping(vector<double> &synchRadDampTime,LatticeInterActionPoint &latticeInterActionPoint);
-	void WSBeamRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
-	void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint);
-	void WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
-	void BeamTransferPerInteractionPointDueToLattice(LatticeInterActionPoint &latticeInterActionPoint, int k);
-	
+    void IonBeamDataPrintPerTurn(int turns, LatticeInterActionPoint &latticeInterActionPoint, ofstream &fout);
+    void BeamSynRadDamping(vector<double> &synchRadDampTime,LatticeInterActionPoint &latticeInterActionPoint);
+    void WSBeamRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
+/*    void SSBeamRMSCal();*/
+    void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint);
+    void WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
+    void BeamTransferPerInteractionPointDueToLattice(LatticeInterActionPoint &latticeInterActionPoint, int k);
+    
 private:
 };
 

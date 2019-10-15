@@ -14,7 +14,7 @@ PipeAperatureR         = 1.1E-3                      // [m]
 ionMaxNumber                = 1E+5
 numberofIonBeamInterPoint   = 1   
 electronBeamEnergy          = 6.0E+9
-macroEleNumPerBunch         = 1
+macroEleNumPerBunch         = 1000
 distributionType            = 1                       // 1: KV 2:WB  3: GS  For  longitudian is Gausion 3sigma truncted
 initialDisDx                = 1E-5                    // Max initial displacement error 
 initialDisDy                = 1E-5 
@@ -29,12 +29,12 @@ totBunchNumber = 680;
 bunchNumberPerTrain  680  
 trainGaps  76  
 
-SynRadDampingFlag = 0
+SynRadDampingFlag = 1
 synchRadDampTimex =  2386.34   // in the unit of truns
 synchRadDampTimey =  4536.4  
 synchRadDampTimez =  4126.1
 bunchBinNumberZ   =  256
-current           = 0.2
+current           = 0.001
 
 emittanceX      = 34.2E-10
 kappa           = 0.1
@@ -42,11 +42,11 @@ rmsBunchLength  = 30.E-3
 rmsEnergySpread = 1.E-3
 
 
-fIRBunchByBunchFeedbackFlag = 0
+fIRBunchByBunchFeedbackFlag =1 
 
 calSettings = 1
 
 
-printInterval = 100
+printInterval = 10
 intevalofTurnsIonDataPrint = 0
 
