@@ -330,7 +330,6 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
     while(i<macroIonNumber[k])
     {
 
-
 //        tempx = Gaussrand(rmsRx,xAver,i);
 //        tempy = Gaussrand(rmsRy,yAver,i);
 
@@ -346,14 +345,20 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
             continue;
         }
 
-
+        
 
         ionPositionX[k][i]=tempx;
         ionPositionY[k][i]=tempy;
         ionVelocityX[k][i]=0.E0;
         ionVelocityY[k][i]=0.E0;
 
-        i++;
+//        ionPositionX[k][i+1]=-tempx;
+//        ionPositionY[k][i+1]=-tempy;
+//        ionVelocityX[k][i+1]=0.E0;
+//        ionVelocityY[k][i+1]=0.E0;
+
+
+        i=i+1;
     }
     
 
@@ -423,7 +428,7 @@ void LatticeInterActionPoint::SSIonsUpdate(int k, double rmsRx, double rmsRy)
     
     while(i<ionAccumuPositionX[k].size())
     {
-        if(pow(ionAccumuPositionX[k][i]/rmsRx,2)+pow(ionAccumuPositionY[k][i]/rmsRx,2)>9.E0)
+        if(pow(ionAccumuPositionX[k][i]/rmsRx,2)+pow(ionAccumuPositionY[k][i]/rmsRx,2)>16.E0)
         {
             ionAccumuPositionX[k].erase(ionAccumuPositionX[k].begin()+i);
             ionAccumuPositionY[k].erase(ionAccumuPositionY[k].begin()+i);

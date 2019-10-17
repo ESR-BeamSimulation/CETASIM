@@ -514,7 +514,7 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
 
 
 
-void Beam::SSBunchDataPrint( Bunch &bunch, int nTurn)
+void Beam::SSBunchDataPrint( Bunch &bunch, int nTurn) 
 {
 
 
@@ -529,7 +529,7 @@ void Beam::SSBunchDataPrint( Bunch &bunch, int nTurn)
             <<bunch.ePositionX[i]   <<"      "       
             <<bunch.ePositionY[i]   <<"      "       
             <<bunch.eMomentumX[i]   <<"      "       
-            <<bunch.eMomentumX[i]   <<"      "       
+            <<bunch.eMomentumY[i]   <<"      "       
             <<bunch.eFx[i]          <<"      "       
             <<bunch.eFy[i]          <<"      "       
             <<endl;

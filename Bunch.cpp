@@ -627,6 +627,41 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
 //    cout<<eFx[0]<<"  "<<eFx[0]<<" "<<__LINE__<<"  strong strong force of Electron "<<endl;
 //    
 //    getchar();   
+
+
+
+
+
+
+
+// test of the bassettin formular
+//    ofstream sctestfile("SC_test.dat");
+//    double sc_x;
+//    double sc_y;
+//    tempFx=0;
+//    tempFy=0;
+//    
+//    for (int i=-25;i<=25;i++)
+//    {
+//        for (int j=-50;j<=50;j++)
+//            {
+//                posx =i;
+//                posy =j;
+//                
+//                BassettiErskine(posx,posy,2.,4.,tempFx,tempFy);
+//                
+//                sctestfile<<i<<"  "<<j<<"   "<<tempFx<<"   "<<tempFy<<endl;
+//            }
+//    }
+//    
+//    cout<<__LINE__<<endl;
+//    getchar();
+
+
+
+
+
+
 }
 
 
@@ -713,6 +748,10 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
 //    cout<<"ssss "<<omegaE/Omegas<<"  "<<omegaI/Omegas<<endl;
 //    getchar();
 
+
+
+
+
 }
 
 
@@ -742,72 +781,199 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
 
 
 
-    if(pow(rmsRxTemp,2)<pow(rmsRyTemp,2))
-    {
-        temp        = rmsRyTemp;
-        rmsRyTemp   = rmsRxTemp;
-        rmsRxTemp   = temp;
-        tempPosix   = abs(posy);
-        tempPosiy   = abs(posx);
-    }
-    else
+
+
+    if (pow(rmsRxTemp,2)>pow(rmsRyTemp,2))
     {
         tempPosix    =  abs(posx);
         tempPosiy    =  abs(posy);
-    }
-    
+        
+        if(abs(tempPosix/rmsRxTemp) + abs(tempPosiy/rmsRyTemp)<1.0E-6)
+        {
+            tempFx=0.E0;
+            tempFy=0.E0;
+        }
+        else
+        {
+            sigma    = sqrt(2*pow(rmsRxTemp,2)-2*pow(rmsRyTemp,2));
+            ryOverRx = rmsRyTemp/rmsRxTemp;
+        
 
-    if(abs(tempPosix/rmsRxTemp) + abs(tempPosiy/rmsRyTemp)<1.0E-6)
-    {
-        tempFx=0.E0;
-        tempFy=0.E0;
+
+            double coeffBE;
+            coeffBE    = sqrt(PI)/sigma;
+
+
+            z1           =  {tempPosix/sigma,tempPosiy/sigma};
+            w1           =  Faddeeva::w(z1);
+
+            z2           =  {ryOverRx*tempPosix/sigma,tempPosiy/sigma/ryOverRx};
+            w2           =  Faddeeva::w(z2);
+
+            z3           =  - pow(tempPosix/rmsRxTemp,2)/2 - pow(tempPosiy/rmsRyTemp,2)/2;
+            w3           =  - exp(z3); 
+            
+            w0           =  coeffBE * (w1 + w3 * w2 ); 
+            
+            tempFx       = w0.imag();
+            tempFy       = w0.real();
+            
+
+            if(posx<=0)
+            {
+                tempFx  = -tempFx;
+            }
+
+            if(posy<=0)
+            {
+                tempFy = -tempFy; 
+            }
+
+            }
 
     }
     else
     {
-        sigma    = sqrt(2*pow(rmsRxTemp,2)-2*pow(rmsRyTemp,2));
-        ryOverRx = rmsRyTemp/rmsRxTemp;
-    
+        temp  = posx;
+        posx  = posy;
+        posy  = -temp;
 
-
-        double coeffBE;
-        coeffBE    = sqrt(PI)/sigma;
-
-
-        z1           =  {tempPosix/sigma,tempPosiy/sigma};
-        w1           =  Faddeeva::w(z1);
-
-        z2           =  {ryOverRx*tempPosix/sigma,tempPosiy/sigma/ryOverRx};
-        w2           =  Faddeeva::w(z2);
-
-        z3           =  - pow(tempPosix/rmsRxTemp,2)/2 - pow(tempPosiy/rmsRyTemp,2)/2;
-        w3           =  - exp(z3); 
         
-        w0           =  coeffBE * (w1 + w3 * w2 ); 
+        temp        = rmsRyTemp;
+        rmsRyTemp   = rmsRxTemp;
+        rmsRxTemp   = temp;
         
-        tempFx       = w0.imag();
-        tempFy       = w0.real();
         
-
-        if(posx<=0)
+        tempPosix    =  abs(posx);
+        tempPosiy    =  abs(posy);
+        
+        if(abs(tempPosix/rmsRxTemp) + abs(tempPosiy/rmsRyTemp)<1.0E-6)
         {
-            tempFx  = -tempFx;
+            tempFx=0.E0;
+            tempFy=0.E0;
         }
-
-        if(posy<=0)
+        else
         {
-            tempFy = -tempFy; 
-        }
+            sigma    = sqrt(2*pow(rmsRxTemp,2)-2*pow(rmsRyTemp,2));
+            ryOverRx = rmsRyTemp/rmsRxTemp;
+        
 
+
+            double coeffBE;
+            coeffBE    = sqrt(PI)/sigma;
+
+
+            z1           =  {tempPosix/sigma,tempPosiy/sigma};
+            w1           =  Faddeeva::w(z1);
+
+            z2           =  {ryOverRx*tempPosix/sigma,tempPosiy/sigma/ryOverRx};
+            w2           =  Faddeeva::w(z2);
+
+            z3           =  - pow(tempPosix/rmsRxTemp,2)/2 - pow(tempPosiy/rmsRyTemp,2)/2;
+            w3           =  - exp(z3); 
+            
+            w0           =  coeffBE * (w1 + w3 * w2 ); 
+            
+            tempFx       = w0.imag();
+            tempFy       = w0.real();
+            
+
+            if(posx<=0)
+            {
+                tempFx  = -tempFx;
+            }
+
+            if(posy<=0)
+            {
+                tempFy = -tempFy; 
+            }
+
+        
+            temp     = tempFy;
+            tempFy   = tempFx;
+            tempFx   = -temp;
+            
+        
+        }
+        
+        
     }
 
 
-    if(pow(rmsRxTemp,2)<pow(rmsRyTemp,2))
-    {
-        temp     = tempFy;
-        tempFy   = tempFx;
-        tempFx   = temp;
-    }
+
+
+
+
+
+
+
+
+//    tempPosix   = abs(posx);
+//    tempPosiy   = abs(posy);
+
+
+//    if(pow(rmsRxTemp,2)<pow(rmsRyTemp,2))
+//    {
+//        temp        = rmsRyTemp;
+//        rmsRyTemp   = rmsRxTemp;
+//        rmsRxTemp   = temp;
+////        tempPosix   = abs(posy);
+////        tempPosiy   = abs(posx);
+
+//    }
+
+
+//    if(abs(tempPosix/rmsRxTemp) + abs(tempPosiy/rmsRyTemp)<1.0E-6)
+//    {
+//        tempFx=0.E0;
+//        tempFy=0.E0;
+
+//    }
+//    else
+//    {
+//        sigma    = sqrt(2*pow(rmsRxTemp,2)-2*pow(rmsRyTemp,2));
+//        ryOverRx = rmsRyTemp/rmsRxTemp;
+//    
+
+
+//        double coeffBE;
+//        coeffBE    = sqrt(PI)/sigma;
+
+
+//        z1           =  {tempPosix/sigma,tempPosiy/sigma};
+//        w1           =  Faddeeva::w(z1);
+
+//        z2           =  {ryOverRx*tempPosix/sigma,tempPosiy/sigma/ryOverRx};
+//        w2           =  Faddeeva::w(z2);
+
+//        z3           =  - pow(tempPosix/rmsRxTemp,2)/2 - pow(tempPosiy/rmsRyTemp,2)/2;
+//        w3           =  - exp(z3); 
+//        
+//        w0           =  coeffBE * (w1 + w3 * w2 ); 
+//        
+//        tempFx       = w0.imag();
+//        tempFy       = w0.real();
+//        
+
+//        if(posx<=0)
+//        {
+//            tempFx  = -tempFx;
+//        }
+
+//        if(posy<=0)
+//        {
+//            tempFy = -tempFy; 
+//        }
+
+//    }
+
+
+//    if(pow(rmsRxTemp,2)<pow(rmsRyTemp,2))
+//    {
+//        temp     = tempFy;
+//        tempFy   = tempFx;
+//        tempFx   = temp;
+//    }
 
         tempFx = -tempFx;
         tempFy = -tempFy;
