@@ -86,7 +86,7 @@ int ReadInputSettings::ParamRead()
         
         if(strVec[0]=="pipeaperaturey")
         {
-          workQz = stod(strVec[1]);
+          pipeAperatureY = stod(strVec[1]);
           cout<<"half of pipe aperture in  y direction  (tangl boundary)    :"<< stod(strVec[1])<<"[m]"<<endl;
         }
                 
@@ -131,17 +131,17 @@ int ReadInputSettings::ParamRead()
         if(strVec[0]=="synchraddamptimex")
         {
           synchRadDampTime.push_back( stod(strVec[1]));
-          cout<<"synchraddamptimex in x direction (turns)                     :"<<stod(strVec[1])  <<endl;
+          cout<<"synchrad damptime in x direction (turns)                     :"<<stod(strVec[1])  <<endl;
         }
         if(strVec[0]=="synchraddamptimey")
         {
           synchRadDampTime.push_back( stod(strVec[1]));
-          cout<<"synchraddamptimex in y direction (turns)                     :" <<  stod(strVec[1]) <<endl;
+          cout<<"synchrad damptime in y direction (turns)                     :" <<  stod(strVec[1]) <<endl;
         }
         if(strVec[0]=="synchraddamptimez")
         {
           synchRadDampTime.push_back( stod(strVec[1]));
-          cout<<"synchraddamptimez in z direction (turns)                     :"<< stod(strVec[1]) <<endl;
+          cout<<"synchrad damptimez in z direction (turns)                     :"<< stod(strVec[1]) <<endl;
         }
         if(strVec[0]=="macroelenumperbunch")
         {
@@ -235,7 +235,7 @@ int ReadInputSettings::ParamRead()
     
     cout<<"-------------------------------------------------------"<<endl;
 
-    fin.close();
+    fin.close();    
     
     
     double rGamma;

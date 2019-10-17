@@ -84,9 +84,11 @@ public:
     double pxAver=0.E0;
     double pyAver=0.E0;
     double pzAver=0.E0;
-    double rmsRingEmitX=0.E0;       
-    double rmsRingEmitY=0.E0;       
-    double rmsRingEmitZ=0.E0;       
+    double rmsEffectiveRingEmitX=0.E0;       
+    double rmsEffectiveRingEmitY=0.E0;       
+    double rmsEffectiveRingEmitZ=0.E0;
+    double rmsEffectiveRx=0.E0;
+    double rmsEffectiveRy=0.E0;
     double initialDisDx;
     double initialDisDy;
     

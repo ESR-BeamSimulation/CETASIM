@@ -87,8 +87,8 @@ public:
     void Initial(ReadInputSettings &inputParameter);
     void InitialLattice(ReadInputSettings &inputParameter);
     void IonGenerator(double rmsRx, double rmsRy, double xAver,double yAver, int k);
-    void SSIonsUpdate(int k, double rmsRx, double rmsRy);
-    void WSIonsUpdate(int k);
+    void SSIonsUpdate(double rmsRx, double rmsRy, double xAver,double yAver, int k);
+    void WSIonsUpdate(double rmsRx, double rmsRy, double xAver,double yAver, int k);
     void IonTransferDueToBunch(int bunchGap, int k);
     void IonRMSCal(int k);
 

@@ -426,34 +426,8 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
     double xpxAver=0.E0;
     double ypyAver=0.E0;
 
-// The below section is used to calculate the center rms emittance
-
-//    for(int i=0;i<macroEleNumPerBunch;i++)
-//    {
-//        if(eSurive[i]==0)    
-//        {
-//            continue;
-//        }
-//        x2Aver  = x2Aver    + pow(ePositionX[i]-xAver ,2);
-//        y2Aver  = y2Aver    + pow(ePositionY[i]-yAver ,2);
-//        px2Aver = px2Aver   + pow(eMomentumX[i]-pxAver,2);
-//        py2Aver = py2Aver   + pow(eMomentumY[i]-pyAver,2);
-
-//        xpxAver = xpxAver   + (ePositionX[i]-xAver) * (eMomentumX[i]-pxAver);
-//        ypyAver = ypyAver   + (ePositionY[i]-yAver) * (eMomentumY[i]-pyAver);
-//    }
-
-
-
-//    x2Aver  = x2Aver  /macroEleNumSurivePerBunch;
-//    y2Aver  = y2Aver  /macroEleNumSurivePerBunch;
-//    px2Aver = px2Aver /macroEleNumSurivePerBunch;
-//    py2Aver = py2Aver /macroEleNumSurivePerBunch;
-//    xpxAver = xpxAver /macroEleNumSurivePerBunch;
-//    ypyAver = ypyAver /macroEleNumSurivePerBunch;
-    
-
 // The below section is used to calculate the effective emittance
+
 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
@@ -461,6 +435,7 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
         {
             continue;
         }
+
         x2Aver  = x2Aver    + pow(ePositionX[i],2);
         y2Aver  = y2Aver    + pow(ePositionY[i],2);
         px2Aver = px2Aver   + pow(eMomentumX[i],2);
@@ -468,6 +443,54 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 
         xpxAver = xpxAver   + (ePositionX[i]) * (eMomentumX[i]);
         ypyAver = ypyAver   + (ePositionY[i]) * (eMomentumY[i]);
+
+    }
+
+
+
+    x2Aver  = x2Aver  /macroEleNumSurivePerBunch;
+    y2Aver  = y2Aver  /macroEleNumSurivePerBunch;
+    px2Aver = px2Aver /macroEleNumSurivePerBunch;
+    py2Aver = py2Aver /macroEleNumSurivePerBunch;
+    xpxAver = xpxAver /macroEleNumSurivePerBunch;
+    ypyAver = ypyAver /macroEleNumSurivePerBunch;
+    
+    rmsEffectiveRingEmitX = sqrt(x2Aver * px2Aver - pow(xpxAver,2));
+    rmsEffectiveRingEmitY = sqrt(y2Aver * py2Aver - pow(ypyAver,2));
+    
+
+    rmsEffectiveRx = sqrt(rmsEffectiveRingEmitX * latticeInterActionPoint.twissBetaX[k]);
+    rmsEffectiveRy = sqrt(rmsEffectiveRingEmitY * latticeInterActionPoint.twissBetaY[k]);
+
+
+
+
+
+// The below section is used to calculate the  rms emittance
+// the obtained rms size is used to calculate the interaction between beam and ion
+
+    x2Aver=0.E0;
+    y2Aver=0.E0;
+    px2Aver=0.E0;
+    py2Aver=0.E0;
+    xpxAver=0.E0;
+    ypyAver=0.E0;
+
+
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        if(eSurive[i]==0)    
+        {
+            continue;
+        }
+        
+        x2Aver  = x2Aver    + pow(ePositionX[i]-xAver ,2);
+        y2Aver  = y2Aver    + pow(ePositionY[i]-yAver ,2);
+        px2Aver = px2Aver   + pow(eMomentumX[i]-pxAver,2);
+        py2Aver = py2Aver   + pow(eMomentumY[i]-pyAver,2);
+
+        xpxAver = xpxAver   + (ePositionX[i]-xAver) * (eMomentumX[i]-pxAver);
+        ypyAver = ypyAver   + (ePositionY[i]-yAver) * (eMomentumY[i]-pyAver);
     }
 
 
