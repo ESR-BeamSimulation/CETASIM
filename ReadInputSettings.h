@@ -63,6 +63,7 @@ public:
     int     synRadDampingFlag=0;         // flag to turn on the SynRadDamping
     int     intevalofTurnsIonDataPrint = 0;
     int     fIRBunchByBunchFeedbackFlag = 0;
+
     
     
 

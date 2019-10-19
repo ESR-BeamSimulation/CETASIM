@@ -140,16 +140,28 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                 getchar();
                 
                 for(int i=0;i<nTurns;i++)   
-                { 
-                    for (int k=0;k<inputParameter.numberofIonBeamInterPoint;k++)
+                {
+
+                    for(int k=0;k<inputParameter.numberofIonBeamInterPoint;k++)
                     {
                         WSBeamRMSCal(latticeInterActionPoint,k);
+                    }
+                    WSGetMaxBunchInfo();
+
+                    for (int k=0;k<inputParameter.numberofIonBeamInterPoint;k++)
+                    {
                         WSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, i,  k);  
                         BeamTransferPerInteractionPointDueToLattice(latticeInterActionPoint,k); 
-                        
+
                         if(intevalofTurnsIonDataPrint && (i%intevalofTurnsIonDataPrint==0))
                         {
                             WSIonDataPrint(latticeInterActionPoint, i, k);
+                        }
+                        
+                        // print the ion data at the before kick from beam
+                        for(int j=0;j<totBunchNum;j++)
+                        {
+                            beamVec[j].BunchTransferDueToIon(latticeInterActionPoint,k);
                         }
                     }
 
@@ -191,6 +203,14 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                 for(int i=0;i<nTurns;i++)   
                 { 
                     
+
+                    for(int j=0;j<totBunchNum;j++)
+                    {
+                        beamVec[j].RMSCal(latticeInterActionPoint,0);
+                    }
+
+                    SSGetMaxBunchInfo();
+                    
                     SSBeamIonEffectOneTurn( latticeInterActionPoint, inputParameter,i);
                     SSGetMaxBunchInfo();
                     if(synRadDampingFlag)
@@ -210,17 +230,18 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                     }
 
                     IonBeamDataPrintPerTurn(i,latticeInterActionPoint,fout);
-                    
+
+
                     cout<<i<<" turns  "<<"  "
                         <<latticeInterActionPoint.ionAccumuNumber[0]<<"     "
-                        <<beamVec[0].rmsEmitX<<"  "
-                        <<beamVec[0].rmsEmitY<<"  "
-                        <<beamVec[0].rmsEffectiveRingEmitX<<"  "
-                        <<beamVec[0].rmsEffectiveRingEmitY<<"  "
+                        <<emitXMax<<"  "
+                        <<emitYMax<<"  "
+                        <<effectivEemitXMax<<"  "
+                        <<effectivEemitYMax<<"  "
                         <<bunchSizeXMax<<"    "
                         <<bunchSizeYMax<<"    "
-                        <<beamVec[0].rmsEffectiveRx<<"   "
-                        <<beamVec[0].rmsEffectiveRy<<"   "
+                        <<bunchEffectiveSizeXMax<<"   "
+                        <<bunchEffectiveSizeYMax<<"   "
                         <<beamVec[beamVec.size()-1].macroEleNumPerBunch<<"  "
                         <<endl;
                 }
@@ -331,33 +352,35 @@ void Beam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,
     int totBunchNum = beamVec.size();
     
     double corssSectionEI = inputParameter.corssSectionEI;
+    
+
 
     for(int j=0;j<totBunchNum;j++)
     {
 
         latticeInterActionPoint.ionLineDensity[k] = corssSectionEI * latticeInterActionPoint.vacuumPressure[k]
                                 /latticeInterActionPoint.temperature[k]/Boltzmann * beamVec[j].electronNumPerBunch;
-                                
 
-                                
+
         latticeInterActionPoint.ionNumber[k] = latticeInterActionPoint.ionLineDensity[k] * 
                                                latticeInterActionPoint.interactionLength[k];
 
         beamVec[j].WSRMSCal(latticeInterActionPoint,k);
-        
+
         latticeInterActionPoint.IonGenerator(beamVec[j].rmsRx,beamVec[j].rmsRy,beamVec[j].xAver,beamVec[j].yAver,k);
 
-        latticeInterActionPoint.WSIonsUpdate(beamVec[j].rmsRx,beamVec[j].rmsRy,beamVec[j].xAver,beamVec[j].yAver,k);
+
+        latticeInterActionPoint.WSIonsUpdate(bunchEffectiveSizeXMax,bunchEffectiveSizeYMax,beamVec[j].xAver,beamVec[j].yAver,k);
+
         latticeInterActionPoint.IonRMSCal(k);
 
-
         beamVec[j].WSIonBunchInteraction(latticeInterActionPoint,k);
-        
-        
-        latticeInterActionPoint.IonTransferDueToBunch(beamVec[j].bunchGap,k);     
-        
 
-        beamVec[j].BunchTransferDueToIon(latticeInterActionPoint,k); 
+        latticeInterActionPoint.IonTransferDueToBunch(beamVec[j].bunchGap,k,bunchEffectiveSizeXMax,bunchEffectiveSizeYMax);
+    
+ 
+
+//        beamVec[j].BunchTransferDueToIon(latticeInterActionPoint,k);
 
         if(nTurns%printInterval==0 && k==0)
         {
@@ -388,9 +411,6 @@ void Beam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,
 
 
 
-
-
-
 void Beam::SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPoint, ReadInputSettings &inputParameter, int nTurns)
 {
 
@@ -418,9 +438,10 @@ void Beam::SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPo
 
             //(3) get the rms size of jth beam at kth interaction point, rmsRx rmsRy
             latticeInterActionPoint.IonGenerator(beamVec[j].rmsRx,beamVec[j].rmsRy,beamVec[j].xAver,beamVec[j].yAver,k);
-            //(4) generate the ions randomly (Gausion distribution truncated 3*rmsRx) at the kth interaction point 
+            //(4) generate the ions randomly (Gausion distribution truncated n*rms) at the kth interaction point 
 
-            latticeInterActionPoint.SSIonsUpdate(beamVec[j].rmsRx,beamVec[j].rmsRy,beamVec[j].xAver,beamVec[j].yAver,k);
+
+            latticeInterActionPoint.SSIonsUpdate(bunchEffectiveSizeXMax, bunchEffectiveSizeYMax,beamVec[j].xAver,beamVec[j].yAver,k);
             latticeInterActionPoint.IonRMSCal(k);
             //(5) get the accumulated ions information at the kth point (new ions plus old ions)
             //    get the rms vaues of the accumulated ion distribution.
@@ -433,7 +454,7 @@ void Beam::SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPo
             //(7) kick the jth electron beam bunch due to accumulated ions at the kth interactoin point 
 
 
-            latticeInterActionPoint.IonTransferDueToBunch(beamVec[j].bunchGap,k);         
+            latticeInterActionPoint.IonTransferDueToBunch(beamVec[j].bunchGap,k,bunchEffectiveSizeXMax, bunchEffectiveSizeYMax);         
             //(8) kick the accumulated ions due to jth electron bunch 
             
             beamVec[j].BunchTransferDueToLattice(latticeInterActionPoint,k); 
@@ -535,11 +556,10 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
     for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
     {
 
-        x_max =  latticeInterActionPoint.pipeAperatureX;
-        x_min = -latticeInterActionPoint.pipeAperatureX;
-        y_max =  latticeInterActionPoint.pipeAperatureY;
-        y_min = -latticeInterActionPoint.pipeAperatureY;
-
+        x_max =  ionLossBoundary*bunchEffectiveSizeXMax;
+        x_min = -ionLossBoundary*bunchEffectiveSizeXMax;
+        y_max =  ionLossBoundary*bunchEffectiveSizeYMax;
+        y_min = -ionLossBoundary*bunchEffectiveSizeYMax;
 
 //        x_max = latticeInterActionPoint.ionAccumuAverX[k]  + latticeInterActionPoint.pipeAperatureX;
 //        x_min = latticeInterActionPoint.ionAccumuAverX[k]  - latticeInterActionPoint.pipeAperatureX;
@@ -560,8 +580,8 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
             indexY = floor(temp);
             if(indexX<0 || indexY<0 || indexX>bins || indexY>bins) continue;
             
-            histogrameX[indexX]++;
-            histogrameY[indexY]++;
+            histogrameX[indexX] = histogrameX[indexX] +1;
+            histogrameY[indexY] = histogrameY[indexY] +1;
         }
         
         
@@ -574,8 +594,10 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
         for(int i=0;i<bins;i++)
         {
             foutHis<<i<<"    "
-                   <<x_min+i*binSizeX<<"  "
-                   <<y_min+i*binSizeY<<"  "
+                   <<(x_min+i*binSizeX)/bunchEffectiveSizeXMax<<"  "
+                   <<(y_min+i*binSizeY)/bunchEffectiveSizeYMax<<"  "
+                   <<(x_min+i*binSizeX)<<"  "
+                   <<(y_min+i*binSizeY)<<"  "
                    <<histogrameX[i]<<"  "
                    <<histogrameY[i]<<"  "
                    <<endl;
@@ -583,12 +605,6 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
      
         foutHis.close();
     }
-
-
-
-
-
-
 
 }
 
@@ -657,35 +673,21 @@ void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeI
                 <<latticeInterActionPoint.ionAccumuNumber[k]*latticeInterActionPoint.macroIonCharge[k]<<" "     //3
                 <<emitXMax<<"    "													                            //4
                 <<emitYMax<<"    "												                                //5
-                <<beamVec[0].rmsEffectiveRingEmitX<<"	"                                                       //6
-                <<beamVec[0].rmsEffectiveRingEmitY<<"	"                                                       //7
-                <<beamVec[beamVec.size()-1].rmsEffectiveRingEmitX<<"    "                                       //8
-                <<beamVec[beamVec.size()-1].rmsEffectiveRingEmitY<<"    "                                       //9
-                <<bunchAverXMax<<"  "                                                                           //10
-                <<bunchAverYMax<<"  "                                                                           //11
-                <<beamVec[0].xAver<<"   "                                                                       //12
-                <<beamVec[0].yAver<<"   "                                                                       //13
-                <<beamVec[beamVec.size()-1].xAver<<"   "                                                        //14
-                <<beamVec[beamVec.size()-1].yAver<<"   "														//15
-                <<latticeInterActionPoint.ionAccumuAverX[k]<<"  "												//16
-                <<latticeInterActionPoint.ionAccumuAverY[k]<<"  "												//17
-                <<latticeInterActionPoint.ionAccumuRMSX[k]<<"  "												//18
-                <<latticeInterActionPoint.ionAccumuRMSY[k]<<"  "												//19
+                <<effectivEemitXMax<<"	"                                                                       //6
+                <<effectivEemitYMax<<"	"                                                                       //7
+                <<bunchSizeXMax<<"  "                                                                           //8  
+                <<bunchSizeYMax<<"  "                                                                           //9  
+                <<bunchEffectiveSizeXMax<<"     "                                                               //10
+                <<bunchEffectiveSizeYMax<<"     "                                                               //11
+                <<bunchAverXMax<<"  "                                                                           //12
+                <<bunchAverYMax<<"  "                                                                           //13
+                <<latticeInterActionPoint.ionAccumuAverX[k]<<"  "												//14
+                <<latticeInterActionPoint.ionAccumuAverY[k]<<"  "												//15
+                <<latticeInterActionPoint.ionAccumuRMSX[k]<<"  "												//16
+                <<latticeInterActionPoint.ionAccumuRMSY[k]<<"  "												//17
                 <<endl;
-        
-//                <<bunchSizeXMax<<"    "																			//8
-//                <<bunchSizeYMax<<"    "		
-//                <<beamVec[0].rmsRx<<"	"               // constant representing the beam size in x 		//6
-//                <<beamVec[0].rmsRY<<"	"               // constant representing the beam size in y 		//7
-//                <<beamVec[beamVec.size()-1].rmsEmitX<<"	"               // constant representing the beam size in x 		//6
-//                <<beamVec[beamVec.size()-1].rmsEmitY<<"	"               // constant representing the beam size in y 		//7
-        
         }
     }
-    
-
-
-
 
 
     // print the data on certain turns  at the first interaction point  
@@ -821,6 +823,85 @@ void Beam::WSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
     }
     
     fout.close();
+    
+    
+
+    vector<double> histogrameX;
+    vector<double> histogrameY;
+    
+    double x_max = 0;
+    double x_min = 0;
+    
+    double y_max = 0;
+    double y_min = 0;
+    int bins = 100;
+    histogrameX.resize(bins);
+    histogrameY.resize(bins);
+    
+    
+    double binSizeX =0;
+    double binSizeY =0;
+    
+
+    double temp;
+    int indexX;
+    int indexY;
+    
+    for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
+    {
+
+        x_max =  ionLossBoundary*bunchEffectiveSizeXMax;
+        x_min = -ionLossBoundary*bunchEffectiveSizeXMax;
+        y_max =  ionLossBoundary*bunchEffectiveSizeYMax;
+        y_min = -ionLossBoundary*bunchEffectiveSizeYMax;
+
+
+
+//        x_max = latticeInterActionPoint.ionAccumuAverX[k]  + latticeInterActionPoint.pipeAperatureX;
+//        x_min = latticeInterActionPoint.ionAccumuAverX[k]  - latticeInterActionPoint.pipeAperatureX;
+//        y_max = latticeInterActionPoint.ionAccumuAverY[k]  + latticeInterActionPoint.pipeAperatureY;
+//        y_min = latticeInterActionPoint.ionAccumuAverY[k]  - latticeInterActionPoint.pipeAperatureY;
+
+
+
+        binSizeX  = (x_max - x_min)/bins;
+        binSizeY  = (y_max - y_min)/bins;
+
+        for(int i=0;i<latticeInterActionPoint.ionAccumuNumber[k];i++)
+        {
+            temp   = (latticeInterActionPoint.ionAccumuPositionX[k][i] - x_min)/binSizeX;
+            indexX = floor(temp);
+            
+            temp   = (latticeInterActionPoint.ionAccumuPositionY[k][i] - y_min)/binSizeY;
+            indexY = floor(temp);
+            if(indexX<0 || indexY<0 || indexX>bins || indexY>bins) continue;
+            
+            histogrameX[indexX] = histogrameX[indexX] +1;
+            histogrameY[indexY] = histogrameY[indexY] +1;
+        }
+        
+
+        string fname;
+
+        fname = "WSionAccumuHis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+        ofstream foutHis(fname,ios::out);
+
+        for(int i=0;i<bins;i++)
+        {
+            foutHis<<i<<"    "
+                   <<(x_min+i*binSizeX)/bunchEffectiveSizeXMax<<"  "
+                   <<(y_min+i*binSizeY)/bunchEffectiveSizeYMax<<"  "
+                   <<(x_min+i*binSizeX)<<"  "
+                   <<(y_min+i*binSizeY)<<"  "
+                   <<histogrameX[i]<<"  "
+                   <<histogrameY[i]<<"  "
+                   <<endl;
+        }
+
+        foutHis.close();
+    }
+
+
 }
 
 void Beam::SSGetMaxBunchInfo()
@@ -828,41 +909,83 @@ void Beam::SSGetMaxBunchInfo()
     double totBunchNum = beamVec.size();
     double tempEmitx;
     double tempEmity;
+    double tempEffectiveEmitx;
+    double tempEffectiveEmity;
+    double tempRMSSizeX;
+    double tempRMSSizeY;
+    double tempEffectiveRMSSizeX;
+    double tempEffectiveRMSSizeY;
     double tempSizeX;
     double tempSizeY;
+    
     double tempAverX;
     double tempAverY;
     
-    tempEmitx   = beamVec[0].rmsEffectiveRingEmitX;
-    tempEmity   = beamVec[0].rmsEffectiveRingEmitY;
-    tempSizeX   = beamVec[0].rmsEffectiveRx;
-    tempSizeY   = beamVec[0].rmsEffectiveRy;
+    tempEmitx   = beamVec[0].rmsEmitX;
+    tempEmity   = beamVec[0].rmsEmitY;
+
+    tempEffectiveEmitx   = beamVec[0].rmsEffectiveRingEmitX;
+    tempEffectiveEmity   = beamVec[0].rmsEffectiveRingEmitY;
+
+    tempRMSSizeX   = beamVec[0].rmsRx;
+    tempRMSSizeY   = beamVec[0].rmsRy;
+
+    tempEffectiveRMSSizeX = beamVec[0].rmsEffectiveRx;
+    tempEffectiveRMSSizeY = beamVec[0].rmsEffectiveRy;
+
+
     tempAverX   = beamVec[0].xAver;
     tempAverY   = beamVec[0].yAver;
     
     
     for(int i=1;i<totBunchNum;i++)
     {
-        if(beamVec[i].rmsEffectiveRingEmitX>tempEmitx)
+        if(beamVec[i].rmsEmitX>tempEmitx)
         {
-            tempEmitx = beamVec[i].rmsEffectiveRingEmitX;
+            tempEmitx = beamVec[i].rmsEmitX;
         }
         
-        if(beamVec[i].rmsEffectiveRingEmitY>tempEmity)
+        if(beamVec[i].rmsEmitY>tempEmity)
         {
-            tempEmity = beamVec[i].rmsEffectiveRingEmitY;
+            tempEmity = beamVec[i].rmsEmitY;
+        }
+
+
+        if(beamVec[i].rmsEffectiveRingEmitX>tempEffectiveEmitx)
+        {
+            tempEffectiveEmitx = beamVec[i].rmsEffectiveRingEmitX;
         }
         
-        if(beamVec[i].rmsEffectiveRx>tempSizeX)
+        if(beamVec[i].rmsEffectiveRingEmitY>tempEffectiveEmity)
         {
-            tempSizeX = beamVec[i].rmsEffectiveRx;
+            tempEffectiveEmity = beamVec[i].rmsEffectiveRingEmitY;
         }
         
-        if(beamVec[i].rmsEffectiveRy>tempSizeY)
+
+        
+        if(beamVec[i].rmsRx>tempRMSSizeX)
         {
-            tempSizeY = beamVec[i].rmsEffectiveRy;
+            tempRMSSizeX = beamVec[i].rmsRx;
         }
         
+        if(beamVec[i].rmsRy>tempRMSSizeY)
+        {
+            tempRMSSizeY = beamVec[i].rmsRy;
+        }
+        
+        
+         
+        if(beamVec[i].rmsEffectiveRx>tempEffectiveRMSSizeX)
+        {
+            tempEffectiveRMSSizeX = beamVec[i].rmsEffectiveRx;
+        }
+        
+        if(beamVec[i].rmsEffectiveRy>tempEffectiveRMSSizeY)
+        {
+            tempEffectiveRMSSizeY = beamVec[i].rmsEffectiveRy;
+        }
+
+
         if(beamVec[i].xAver>tempAverX)
         {
             tempAverX = beamVec[i].xAver;
@@ -877,8 +1000,16 @@ void Beam::SSGetMaxBunchInfo()
     
     emitXMax = tempEmitx;
     emitYMax = tempEmity;
-    bunchSizeXMax = tempSizeX;
-    bunchSizeYMax = tempSizeY;
+    effectivEemitXMax = tempEffectiveEmitx;
+    effectivEemitYMax = tempEffectiveEmity;
+    
+    bunchEffectiveSizeXMax = tempEffectiveRMSSizeX;
+    bunchEffectiveSizeYMax = tempEffectiveRMSSizeY;
+    
+    
+    bunchSizeXMax = tempRMSSizeX;
+    bunchSizeYMax = tempRMSSizeY;
+    
     bunchAverXMax  = tempAverX;
     bunchAverYMax  = tempAverY;
     
@@ -890,16 +1021,13 @@ void Beam::WSGetMaxBunchInfo()
     double totBunchNum = beamVec.size();
     double tempJx;
     double tempJy;
-    double tempSizeX;
-    double tempSizeY;
+
     double tempMaxAverX;
     double tempMaxAverY;
     
     tempJx      = beamVec[0].actionJx;
     tempJy      = beamVec[0].actionJy;
-    tempSizeX   = beamVec[0].rmsRx;
-    tempSizeY   = beamVec[0].rmsRy;
-    
+
     tempMaxAverX = beamVec[0].xAver;
     tempMaxAverY = beamVec[0].yAver;
 
@@ -915,16 +1043,7 @@ void Beam::WSGetMaxBunchInfo()
         {
             tempJy = beamVec[i].actionJy;
         }
-        
-        if(beamVec[i].rmsRx>tempSizeX)
-        {
-            tempSizeX = beamVec[i].rmsRx;
-        }
-        
-        if(beamVec[i].rmsRy>tempSizeY)
-        {
-            tempSizeY = beamVec[i].rmsRy;
-        }
+
         
         if(beamVec[i].xAver>tempMaxAverX)
         {
@@ -940,12 +1059,12 @@ void Beam::WSGetMaxBunchInfo()
     
     actionJyMax = tempJy;
     actionJxMax = tempJx;
-    bunchSizeXMax = tempSizeX;
-    bunchSizeYMax = tempSizeY;
-    
+
     bunchAverXMax = tempMaxAverX;
     bunchAverYMax = tempMaxAverY;
     
+    bunchEffectiveSizeXMax = beamVec[0].rmsRx + bunchAverXMax;
+    bunchEffectiveSizeYMax = beamVec[0].rmsRy + bunchAverYMax;
 
 }
 

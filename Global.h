@@ -25,6 +25,7 @@ const double PI                     = 4*atan(1.E0);
 const double ElecClassicRadius      = 2.81794092E-15;             // m
 const double Boltzmann              = 1.3806505E-23;             // J/K
 const  complex<double> li(0,1);
+const double ionLossBoundary        = 7;                             // ion loss boundary with unit of rms beam size (x/y) 
 
 
 

@@ -509,6 +509,7 @@ void Bunch::RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
     rmsRx = sqrt(rmsEmitX * latticeInterActionPoint.twissBetaX[k]);
     rmsRy = sqrt(rmsEmitY * latticeInterActionPoint.twissBetaY[k]);
 
+
 }
 
 
@@ -580,15 +581,12 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     rmsRxTemp = rmsRx;
     rmsRyTemp = rmsRy;
 
-    
- 
 
     for(int j=0;j<latticeInterActionPoint.ionAccumuNumber[k];j++)
     {
 
         latticeInterActionPoint.ionAccumuFx[k][j]=0.E0;
         latticeInterActionPoint.ionAccumuFy[k][j]=0.E0;
-
 
 
         posx    =  latticeInterActionPoint.ionAccumuPositionX[k][j] - xAver;
@@ -630,7 +628,7 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
         posy   =0.E0;
         tempFx =0.E0;
         tempFy =0.E0;
-        
+
 
         if(eSurive[i] == 0)
         {
@@ -658,20 +656,20 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
 
 
 // test of the bassettin formular
-//    ofstream sctestfile("SC_test.dat");
+//    ofstream sctestfile("SC_test_1.dat");
 //    double sc_x;
 //    double sc_y;
 //    tempFx=0;
 //    tempFy=0;
 //    
-//    for (int i=-25;i<=25;i++)
+//    for (int i=-50;i<=50;i++)
 //    {
-//        for (int j=-50;j<=50;j++)
+//        for (int j=-25;j<=25;j++)
 //            {
 //                posx =i;
 //                posy =j;
 //                
-//                BassettiErskine(posx,posy,2.,4.,tempFx,tempFy);
+//                BassettiErskine(posx,posy,4.,2.,tempFx,tempFy);
 //                
 //                sctestfile<<i<<"  "<<j<<"   "<<tempFx<<"   "<<tempFy<<endl;
 //            }
@@ -681,7 +679,7 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
 //    getchar();
 
 
-
+//getchar();
 
 
 
@@ -756,24 +754,13 @@ void Bunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     eFx[0] = -1*eFxTemp * coeffE * nI0;    // since the e and ion with oppsite charge state
     eFy[0] = -1*eFyTemp * coeffE * nI0;    // since the e and ion with oppsite charge state
     
-//    cout<<latticeInterActionPoint.ionAccumuFx[k][0]<<endl;
-//    cout<<latticeInterActionPoint.ionAccumuFy[k][0]<<endl;
-//    cout<<posx<<"   "<<posy<<"   "<<eFx[0]<<" "<<eFy[0]<<"   "<<__LINE__<<"  "<< "weak strong force of electron"<<endl;
-    
-    //    getchar();
-    
-    omegaE = coeffE * nI0 * pow(CLight,2) /rmsRy/(rmsRx+rmsRy);
-    omegaE = sqrt(omegaE);
-    
-    omegaI = coeffI * CLight /rmsRy/(rmsRx+rmsRy);
-    omegaI = sqrt(omegaI);
-    
-//    cout<<"ssss "<<omegaE/Omegas<<"  "<<omegaI/Omegas<<endl;
-//    getchar();
 
-
-
-
+    
+//    omegaE = coeffE * nI0 * pow(CLight,2) /rmsRy/(rmsRx+rmsRy);
+//    omegaE = sqrt(omegaE);
+//    
+//    omegaI = coeffI * CLight /rmsRy/(rmsRx+rmsRy);
+//    omegaI = sqrt(omegaI);
 
 }
 
@@ -923,14 +910,6 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
     }
 
 
-
-
-
-
-
-
-
-
 //    tempPosix   = abs(posx);
 //    tempPosiy   = abs(posy);
 
@@ -940,8 +919,8 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
 //        temp        = rmsRyTemp;
 //        rmsRyTemp   = rmsRxTemp;
 //        rmsRxTemp   = temp;
-////        tempPosix   = abs(posy);
-////        tempPosiy   = abs(posx);
+//        tempPosix   = abs(posy);
+//        tempPosiy   = abs(posx);
 
 //    }
 
@@ -1002,58 +981,6 @@ void Bunch::BassettiErskine(double posx,double posy,double rmsRxTemp, double rms
         tempFy = -tempFy;
 
 
-//    cout<<"Bunch:: BassettiErskine  "<<tempFx<<" "<<tempFy<<"   "<<w0<<"    "<<z1<<"    "<<z2<<"    "<<z3<<"    "
-//        <<w1<<"    "<<w2<<"    "<<w3<<"    "<<tempPosix<<"    "<<tempPosiy<<" "<<sigma <<"  "<<rmsRx<<" "<<rmsRy<<endl;
-
-////////////////// this part is used to check the calculation of the complex error functions//////////
-//    for(int i=0;i<=100;i++)
-//    {
-//        for(int j=0;j<=20;j++)
-//        {
-//            posx        = -10*rmsRx + 10*rmsRx/50*i;
-//            posy        = -10*rmsRy + 10*rmsRy/10*j;
-//            
-//            tempPosix = abs(posx);
-//            tempPosiy = abs(posy);
-//            
-//            z1           =  {tempPosix/sigma,tempPosiy/sigma};
-//            w1           =  Faddeeva::w(z1);
-//            z2           =  {ryOverRx*tempPosix/sigma,tempPosiy/sigma/ryOverRx};
-//            w2           =  Faddeeva::w(z2);
-
-//            z3           =  - pow(tempPosix/rmsRx,2)/2 - pow(tempPosiy/rmsRy,2)/2;
-//            w3           =  - exp(z3); 
-//            
-//            w0           =  coeff * (w1 + w3 * w2 );
-
-
-//            tempFx      =   w0.imag();          
-//            tempFy      =   w0.real();
-
-//            if(posx<=0.E0)
-//            {
-//                tempFx  = -tempFx;
-//            }
-
-//            if(posy<0.E0)
-//            {
-//                tempFy = -tempFy; 
-//            }
-//       
-//          
-//            fout<<i<<"     "
-//                <<j<<"     "
-//                <<posx<<"     "
-//                <<posy<<"     "
-//                <<tempFx<<"     "
-//                <<tempFy<<"     "
-//                <<endl;
-//       
-//        }
-//    }
-//  cout<<"over1111ssssssssss11111"<<endl;
-//  getchar();
-////////////////////////////////////test is over ///////////////////////
 
 
 }
@@ -1088,7 +1015,7 @@ void Bunch::BunchTransferDueToLattice(LatticeInterActionPoint &latticeInterActio
     double ztemp=0.E0;
     double xPtemp=0.E0;
     double yPtemp=0.E0;
-	double zPtemp=0.E0;
+    double zPtemp=0.E0;
 
 
     for(int i=0;i<macroEleNumPerBunch;i++)
