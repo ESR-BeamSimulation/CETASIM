@@ -100,6 +100,11 @@ int ReadInputSettings::ParamRead()
           ionMaxNumber = stod(strVec[1]);
           cout<<"Max number of ions can be stored                           :"<< stod(strVec[1])<<endl;
         }   
+        if(strVec[0]=="ionlossboundary")
+        {
+          ionLossBoundary = stod(strVec[1]);
+          cout<<"ion loss criteria in the unit of beam rms size             :"<< stod(strVec[1])<<endl;
+        }    
         
         if(strVec[0]=="numberofionbeaminterpoint")
         {

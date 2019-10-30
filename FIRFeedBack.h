@@ -20,14 +20,16 @@ public:
     FIRFeedBack();
     ~FIRFeedBack();
 
-	int delay;
-	int taps;
-	double kickStrengthKx;		// Eq. 116
-	double kickStrengthKy;		// Eq. 116
-	double kickStrengthF;		// Eq. 117
-	double kickerDisp;			// [m] disperson function at kicker
-	double kickerDispP;			//     D(disperson)/Ds function at kicker
-	vector<double >  gain;
+    int delay;
+    int taps;
+    double kickStrengthKx;		// Eq. 116
+    double kickStrengthKy;		// Eq. 116
+    double kickStrengthF;		// Eq. 117
+    double kickerDisp;			// [m] disperson function at kicker
+    double kickerDispP;			//     D(disperson)/Ds function at kicker
+    vector<double >  gain;
+/*    vector<double >  gainY;*/
+/*    vector<double >  gainZ;*/
     vector<double >  firCoeffx;
     vector<double >  firCoeffy;
     vector<double >  firCoeffz;
@@ -36,7 +38,13 @@ public:
     vector<vector<double> > posyData;
     vector<vector<double> > poszData;
     
-    void Initial(int totBunchNum);
+
+    double fIRBunchByBunchFeedbackPowerLimit =1000;                 // power wat limit on feedback
+    double fIRBunchByBunchFeedbackKickerImped =123E+3;              // Ohm
+    double fIRBunchByBunchFeedbackKickLimit =0.E0;
+    
+    void Initial(int totBunchNum, double beamEnergy);
+    
       
 private:
 

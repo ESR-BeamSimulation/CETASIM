@@ -43,7 +43,8 @@ int main(int argc,char *argv[])
 
     Beam beam;
     beam.Initial(train,latticeInterActionPoint,inputParameter);
-
+    
+ 
 
     beam.Run(train,latticeInterActionPoint,inputParameter);
 

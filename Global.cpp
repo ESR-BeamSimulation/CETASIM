@@ -14,6 +14,7 @@ using namespace std;
 
 int         numProcess;
 int         myRank;
+
 //double      Omegas;               //sychronous revolution frequency Hz
 //double      T0;                   //evolution period [s]
 //int         Harmonics;     

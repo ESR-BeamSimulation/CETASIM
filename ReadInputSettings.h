@@ -54,6 +54,8 @@ public:
     int    distributionType;
     double initialDisDx = 0;
     double initialDisDy = 0;
+    double ionLossBoundary =10;
+
 
 //  file read end    
 

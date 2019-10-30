@@ -136,6 +136,8 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
 //    cout<<emittanceX<<" "<<betaX<<endl;
 //    cout<<emittanceY<<" "<<betaY<<endl;
 
+//getchar();
+
     double f0;
     double if0;
     double fi;

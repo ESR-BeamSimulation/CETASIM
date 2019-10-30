@@ -83,13 +83,14 @@ public:
     vector<double> yPhaseAdv;
     vector<double> zPhaseAdv;
     
+    double ionLossBoundary;
 
     void Initial(ReadInputSettings &inputParameter);
     void InitialLattice(ReadInputSettings &inputParameter);
     void IonGenerator(double rmsRx, double rmsRy, double xAver,double yAver, int k);
     void SSIonsUpdate(double bunchEffectiveSizeXMax, double bunchEffectiveSizeYMax, double xAver,double yAver, int k);
     void WSIonsUpdate(double bunchEffectiveSizeXMax, double bunchEffectiveSizeYMax, double xAver,double yAver, int k);
-    void IonTransferDueToBunch(int bunchGap, int k, double bunchSizeXMax, double bunchSizeYMax);
+    void IonTransferDueToBunch(int bunchGap, int k, double bunchSizeXMax, double bunchSizeYMax, int macroEleNumPerBunch);
     void IonRMSCal(int k);
 
 private:

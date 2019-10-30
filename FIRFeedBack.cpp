@@ -25,7 +25,7 @@ FIRFeedBack::~FIRFeedBack()
 
 }
 
-void FIRFeedBack::Initial(int totBunchNum)
+void FIRFeedBack::Initial(int totBunchNum, double beamEnergy)
 {
 
     ifstream fin("FIR_input.dat",ios::in);
@@ -69,16 +69,42 @@ void FIRFeedBack::Initial(int totBunchNum)
           cout<<"the Ddispersion/Ds at kicker                         :"<< stod(strVec[1])<<""<<endl;
         }
         
+        if(strVec[0]=="firbunchbybunchfeedbackpowerlimit")
+        {
+          fIRBunchByBunchFeedbackPowerLimit = stod(strVec[1]);
+          cout<<"the feed back power limit is                         :"<< stod(strVec[1])<<" W"<<endl;
+        }
+
+        if(strVec[0]=="firbunchbybunchfeedbackkickerimped")
+        {
+          fIRBunchByBunchFeedbackKickerImped = stod(strVec[1]);
+          cout<<"the kicker impedance of feedback system               :"<< stod(strVec[1])<<" ohm"<<endl;
+        }
+        
+        
     }
     strVec.clear();
     fin.clear();
     fin.close();
 
+    
+    fIRBunchByBunchFeedbackKickLimit = sqrt(2*fIRBunchByBunchFeedbackPowerLimit*fIRBunchByBunchFeedbackKickerImped)/beamEnergy;
+    //    cout<<fIRBunchByBunchFeedbackKickLimit<<endl;
+    //    getchar();
 
 
     int firOrder = delay + taps;
+    
+    gain.resize(3); 
+    gain[0] =  1.0E+5;   //gain in x direction
+    gain[1] =  1.1E+5;   //gain in y direction
+    gain[2] =  1.0E+5;   //gain in z direction
+    
 
-    gain.resize(firOrder);
+//    gainX.resize(totBunchNum);
+//    gainY.resize(totBunchNum);
+//    gainZ.resize(totBunchNum);
+//    
     firCoeffx.resize(firOrder);
     firCoeffy.resize(firOrder);
     firCoeffz.resize(firOrder);
@@ -178,12 +204,19 @@ void FIRFeedBack::Initial(int totBunchNum)
 
 
 
-    double tempCoefx=1;
-    double tempCoefy=1;
+    kickStrengthKx = 1.0E-6; 
+    kickStrengthKy = 1.0E-6;
+    kickStrengthF = 0.E0;   
 
-    kickStrengthKx = tempCoefx * 1.0E-1;
-    kickStrengthKy = tempCoefy * 1.0E-1;
-    kickStrengthF = 0.E0;
+
+    
+
+//    double tempCoefx=1;
+//    double tempCoefy=1;
+
+//    kickStrengthKx = tempCoefx * 1.0E-1; 
+//    kickStrengthKy = tempCoefy * 1.0E-1;
+//    kickStrengthF = 0.E0;
 
 //    double sumx =   accumulate(begin(firCoeffx), end(firCoeffx), 0.0);
 //    double sumy =   accumulate(begin(firCoeffy), end(firCoeffy), 0.0);
