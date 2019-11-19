@@ -570,7 +570,7 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     double coeffI;
 
     nE0 = electronNumPerBunch;
-    coeffI = 2.0*nE0*ElecClassicRadius*ElectronMassEV/IonMassEV/28*CLight;
+    coeffI = 2.0*nE0*ElecClassicRadius*ElectronMassEV/IonMassEV/28* ;
 
 
     double tempFx;
