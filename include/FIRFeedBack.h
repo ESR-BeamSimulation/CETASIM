@@ -39,9 +39,9 @@ public:
     vector<vector<double> > poszData;
     
 
-    double fIRBunchByBunchFeedbackPowerLimit =1000;                 // power wat limit on feedback
-    double fIRBunchByBunchFeedbackKickerImped =123E+3;              // Ohm
-    double fIRBunchByBunchFeedbackKickLimit =0.E0;
+    double fIRBunchByBunchFeedbackPowerLimit;// =1000;                 // power wat limit on feedback
+    double fIRBunchByBunchFeedbackKickerImped;// =123E+3;              // Ohm
+    double fIRBunchByBunchFeedbackKickLimit;// =0.E0;
     
     void Initial(int totBunchNum, double beamEnergy);
     

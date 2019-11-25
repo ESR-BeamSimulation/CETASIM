@@ -524,8 +524,12 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
 {
     for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
     {
-        string fname;
-        fname = "SSionAccumudis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+//        string fname;
+//        fname = "SSionAccumudis_"+std::to_string(nTurns)+"_"+to_string(k)+".dat";
+        
+        char fname[256];
+        sprintf(fname, "SSionAccumudis_%d_%d.dat", nTurns, k);
+        
         ofstream fout(fname,ios::out);
         for(int i=0;i<latticeInterActionPoint.ionAccumuNumber[k];i++)
         {
@@ -597,9 +601,13 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
         
         
         
-        string fname;
-
-        fname = "SSionAccumuHis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+//        string fname;
+//        fname = "SSionAccumuHis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+        
+        char fname[256];
+        sprintf(fname, "SSionAccumuHis_%d_%d.dat", nTurns, k);
+        
+        
         ofstream foutHis(fname,ios::out);
 
         for(int i=0;i<bins;i++)
@@ -625,8 +633,14 @@ void Beam::SSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
 void Beam::SSIonDataPrint1(LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k)
 {
 
-    string fname;
-    fname = "SSionAccumudis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+
+
+//    string fname;
+//    fname = "SSionAccumudis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+    
+    char fname[256];
+    sprintf(fname, "SSionAccumudis_%d_%d.dat", nTurns, k);
+    
     ofstream fout(fname,ios::out);
     for(int i=0;i<latticeInterActionPoint.ionAccumuNumber[k];i++)
     {
@@ -698,7 +712,9 @@ void Beam::SSIonDataPrint1(LatticeInterActionPoint &latticeInterActionPoint, int
     
 
 
-    fname = "SSionAccumuHis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+
+//    fname = "SSionAccumuHis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+    sprintf(fname, "SSionAccumuHis_%d_%d.dat", nTurns, k);
     ofstream foutHis(fname,ios::out);
 
     for(int i=0;i<bins;i++)
@@ -724,8 +740,12 @@ void Beam::SSBunchDataPrint( Bunch &bunch, int nTurn)
 {
 
 
-    string fname;
-    fname  = "SSbeamdis_"+to_string(nTurn)+".dat";
+//    string fname;
+//    fname  = "SSbeamdis_"+to_string(nTurn)+".dat";
+    
+    char fname[256];
+    sprintf(fname, "SSbeamdis_%d.dat", nTurn);
+    
     ofstream fout(fname);
 
     for(int i=0;i<bunch.macroEleNumPerBunch;i++)
@@ -803,10 +823,15 @@ void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeI
     // print the data on certain turns  at the first interaction point  
     if(turns%printInterval==0)
     {
-        string fname;
-        fname = "Aver_"+to_string(turns)+".dat";
+//        string fname;
+//        fname = "Aver_"+to_string(turns)+".dat";
+        
+        char fname[256];
+        sprintf(fname, "Aver_%d.dat", turns);
+        
         ofstream fAverOut(fname,ios::out);
         
+
 
         double dataX[2*harmonics];
         double dataY[2*harmonics];
@@ -916,8 +941,12 @@ void Beam::IonBeamDataPrintPerTurn(int turns,  LatticeInterActionPoint &latticeI
 
 void Beam::WSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k)
 {
-    string fname;
-    fname = "WSionAccumudis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+//    string fname;
+//    fname = "WSionAccumudis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+    
+    char fname[256];
+    sprintf(fname, "WSionAccumudis_%d_%d.dat", nTurns, k);
+    
     ofstream fout(fname);
 
     for(int i=0;i<latticeInterActionPoint.ionAccumuNumber[k];i++)
@@ -936,7 +965,8 @@ void Beam::WSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
 
 
  
-    fname = "WSionCenter_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+//    fname = "WSionCenter_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+    sprintf(fname, "WSionCenter_%d_%d.dat", nTurns, k);
     ofstream fionCenter(fname);
 
 
@@ -1024,7 +1054,9 @@ void Beam::WSIonDataPrint(LatticeInterActionPoint &latticeInterActionPoint, int 
         }
         
 
-        fname = "WSionAccumuHis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+//        fname = "WSionAccumuHis_"+to_string(nTurns)+"_"+to_string(k)+".dat";
+
+        sprintf(fname, "WSionAccumuHis_%d_%d.dat", nTurns, k);
         ofstream foutHis(fname,ios::out);
 
         for(int i=0;i<bins;i++)

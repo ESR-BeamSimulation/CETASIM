@@ -76,26 +76,26 @@ public:
     
     double rmsRx;
     double rmsRy;
-    double rmsEmitX=0.E0;
-    double rmsEmitY=0.E0;
-    double xAver=0.E0;
-    double yAver=0.E0;
-    double zAver=0.E0;
-    double pxAver=0.E0;
-    double pyAver=0.E0;
-    double pzAver=0.E0;
-    double rmsEffectiveRingEmitX=0.E0;       
-    double rmsEffectiveRingEmitY=0.E0;       
-    double rmsEffectiveRingEmitZ=0.E0;
-    double rmsEffectiveRx=0.E0;
-    double rmsEffectiveRy=0.E0;
+    double rmsEmitX;//=0.E0;
+    double rmsEmitY;//=0.E0;
+    double xAver;//=0.E0;
+    double yAver;//=0.E0;
+    double zAver;//=0.E0;
+    double pxAver;//=0.E0;
+    double pyAver;//=0.E0;
+    double pzAver;//=0.E0;
+    double rmsEffectiveRingEmitX;//=0.E0;       
+    double rmsEffectiveRingEmitY;//=0.E0;       
+    double rmsEffectiveRingEmitZ;//=0.E0;
+    double rmsEffectiveRx;//=0.E0;
+    double rmsEffectiveRy;//=0.E0;
     double initialDisDx;
     double initialDisDy;
     
-    double rmsBunchLength=0.E0;     
-    double rmsEnergySpread=0.E0;    //rad
-    double omegaE=0.E0;				// Ohmi's paper Eq.10
-    double omegaI=0.E0;				// Ohmi's paper Eq.10
+    double rmsBunchLength;//=0.E0;     
+    double rmsEnergySpread;//=0.E0;    //rad
+    double omegaE;//=0.E0;				// Ohmi's paper Eq.10
+    double omegaI;//=0.E0;				// Ohmi's paper Eq.10
     void RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
     void WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
     

@@ -570,7 +570,7 @@ void Bunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoi
     double coeffI;
 
     nE0 = electronNumPerBunch;
-    coeffI = 2.0*nE0*ElecClassicRadius*ElectronMassEV/IonMassEV/28* ;
+    coeffI = 2.0*nE0*ElecClassicRadius*ElectronMassEV/IonMassEV/28 ;
 
 
     double tempFx;
@@ -1433,59 +1433,59 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
 void Bunch::InitialBeamCurDenZProf()
 {
     
-    std::vector<double>::iterator zMax = std::max_element(std::begin(ePositionZ), std::end(ePositionZ));
-    std::cout << "Max element is " << *zMax<< " at position " << std::distance(std::begin(ePositionZ), zMax) << std::endl;
-    
-    
-    std::vector<double>::iterator zMin = std::min_element(std::begin(ePositionZ), std::end(ePositionZ));
-    std::cout << "Max element is " << *zMin<< " at position " << std::distance(std::begin(ePositionZ), zMin) << std::endl;
+//    std::vector<double>::iterator zMax = std::max_element(std::begin(ePositionZ), std::end(ePositionZ));
+//    std::cout << "Max element is " << *zMax<< " at position " << std::distance(std::begin(ePositionZ), zMax) << std::endl;
+//    
+//    
+//    std::vector<double>::iterator zMin = std::min_element(std::begin(ePositionZ), std::end(ePositionZ));
+//    std::cout << "Max element is " << *zMin<< " at position " << std::distance(std::begin(ePositionZ), zMin) << std::endl;
 
-    double rangeBeamSizeZ;
-    if(abs(*zMin)>abs(*zMax))
-    {
-        rangeBeamSizeZ = abs(*zMin);
-    }
-    else
-    {
-        rangeBeamSizeZ = abs(*zMax);
-    }
+//    double rangeBeamSizeZ;
+//    if(abs(*zMin)>abs(*zMax))
+//    {
+//        rangeBeamSizeZ = abs(*zMin);
+//    }
+//    else
+//    {
+//        rangeBeamSizeZ = abs(*zMax);
+//    }
 
-    double binZSize;
-    
-    binZSize = 2 * rangeBeamSizeZ / bunchBinNumberZ;
-    
-    for(int i=0;i<beamCurDenZProf.size();i++)
-    {
-        beamCurDenZProf[i]=0.E0 ;
-    }
-
-
-    ofstream fout("beamCurDenZProf.dat");
+//    double binZSize;
+//    
+//    binZSize = 2 * rangeBeamSizeZ / bunchBinNumberZ;
+//    
+//    for(int i=0;i<beamCurDenZProf.size();i++)
+//    {
+//        beamCurDenZProf[i]=0.E0 ;
+//    }
 
 
-    double tempDeltaz;
-    double poszTemp;
-    int poszTempIndex;
-    for(int i=0;i<macroEleNumPerBunch;i++)
-    {
-        poszTemp         = abs(rangeBeamSizeZ-ePositionZ[i]) / binZSize;
-        poszTempIndex    = floor(poszTemp);
-//        tempDeltaz       = poszTemp - poszTempIndex;
+//    ofstream fout("beamCurDenZProf.dat");
 
-        beamCurDenZProf[poszTempIndex  ]  = beamCurDenZProf[poszTempIndex  ]+1-tempDeltaz;
-        beamCurDenZProf[poszTempIndex+1]  = beamCurDenZProf[poszTempIndex+1]+  tempDeltaz;
 
-//        beamCurDenZProf[poszTempIndex]  =   beamCurDenZProf[poszTempIndex] +1;
-    }
+//    double tempDeltaz;
+//    double poszTemp;
+//    int poszTempIndex;
+//    for(int i=0;i<macroEleNumPerBunch;i++)
+//    {
+//        poszTemp         = abs(rangeBeamSizeZ-ePositionZ[i]) / binZSize;
+//        poszTempIndex    = floor(poszTemp);
+////        tempDeltaz       = poszTemp - poszTempIndex;
 
-    for(int i=0;i<beamCurDenZProf.size();i++)
-    {
-        fout<< i<<" "<<beamCurDenZProf[i]<<endl ;
-    }
-    
-    cout<<"TTTTTT"<<endl;
-    getchar();
-    fout.close();
+//        beamCurDenZProf[poszTempIndex  ]  = beamCurDenZProf[poszTempIndex  ]+1-tempDeltaz;
+//        beamCurDenZProf[poszTempIndex+1]  = beamCurDenZProf[poszTempIndex+1]+  tempDeltaz;
+
+////        beamCurDenZProf[poszTempIndex]  =   beamCurDenZProf[poszTempIndex] +1;
+//    }
+
+//    for(int i=0;i<beamCurDenZProf.size();i++)
+//    {
+//        fout<< i<<" "<<beamCurDenZProf[i]<<endl ;
+//    }
+//    
+//    cout<<"TTTTTT"<<endl;
+//    getchar();
+//    fout.close();
     
 }
 

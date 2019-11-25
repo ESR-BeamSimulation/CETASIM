@@ -569,9 +569,16 @@ void LatticeInterActionPoint::IonRMSCal(int k)
     ionAccumuNumber[k]=ionAccumuPositionX[k].size();
     
 
+    for(int i=0;i<ionAccumuNumber[k];i++)
+    {
+        ionAccumuAverX[k] += ionAccumuPositionX[k][i];
+        ionAccumuAverY[k] += ionAccumuPositionY[k][i];
+    }
+    
 
-    ionAccumuAverX[k]   =   accumulate(begin(ionAccumuPositionX[k]), end(ionAccumuPositionX[k]), 0.0); 
-    ionAccumuAverY[k]   =   accumulate(begin(ionAccumuPositionY[k]), end(ionAccumuPositionY[k]), 0.0); 
+
+//    ionAccumuAverX[k]   =   accumulate(begin(ionAccumuPositionX[k]), end(ionAccumuPositionX[k]), 0.0); 
+//    ionAccumuAverY[k]   =   accumulate(begin(ionAccumuPositionY[k]), end(ionAccumuPositionY[k]), 0.0); 
 
 
     ionAccumuAverX[k]   = ionAccumuAverX[k]   /ionAccumuNumber[k];
