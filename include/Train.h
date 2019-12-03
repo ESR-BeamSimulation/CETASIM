@@ -22,7 +22,7 @@ public:
     ~Train();
     
     int trainNumber;
-    int totBunchNum=0;
+    int totBunchNum;
     vector<int> trainGaps;     //  number of buckets between adjacent trains 
     vector<int> trainStart;    //  start index of each train 
     

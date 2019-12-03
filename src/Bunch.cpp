@@ -125,6 +125,9 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     dSigmaY = -alphaY/sqrt(betaY);
 
 
+
+
+
     double rX;
     double rY;
 
@@ -132,9 +135,9 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     rY   = sqrt(emittanceY*betaY);
 
 
-//    cout<<rX<<" "<<rY<<endl;
-//    cout<<emittanceX<<" "<<betaX<<endl;
-//    cout<<emittanceY<<" "<<betaY<<endl;
+    //cout<<rX<<" "<<rY<<endl;
+    //cout<<emittanceX<<" "<<betaX<<endl;
+    //cout<<emittanceY<<" "<<betaY<<endl;
 
 //getchar();
 
@@ -167,7 +170,8 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     while(i<macroEleNumPerBunch)
     {
 
-        switch(distributionType)
+    
+      switch(distributionType)
         {
             case 1:
                 f0  = 4*emittanceX; 
@@ -299,29 +303,28 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     std::normal_distribution<> dx{0,rmsBunchLength};
     std::normal_distribution<> dy{0,rmsEnergySpread};
 
-
     double tempx;
     double tempy;
 
     i=0;
-    while(i<macroEleNumPerBunch)
-    {
-        tempx = dx(gen);
-        tempy = dy(gen);
+    //while(i<macroEleNumPerBunch)
+    //{
+    //    tempx = dx(gen);
+    //    tempy = dy(gen);
+    //    cout<<tempx<<"  "<<tempy<<"     "<<__LINE__<<endl;
+    //    // Longitudinally, beam is 3 sigma truncted.
+    //    if( abs((tempx-rmsBunchLength)/rmsBunchLength)<3 || abs((tempy-rmsEnergySpread)/rmsEnergySpread)<3)  
+    //    {
+    //        ePositionZ[i]=tempx;
+    //        eMomentumZ[i]=tempy;
+    //    }
+    //    else
+    //    {
+    //        continue;
+    //    }
 
-        // Longitudinally, beam is 3 sigma truncted.
-        if( abs((tempx-rmsBunchLength)/rmsBunchLength)<3 || abs((tempy-rmsEnergySpread)/rmsEnergySpread)<3)  
-        {
-            ePositionZ[i]=tempx;
-            eMomentumZ[i]=tempy;
-        }
-        else
-        {
-            continue;
-        }
-
-        i++;
-    }
+    //    i++;
+    //}
 
     
 }
@@ -1339,13 +1342,18 @@ void Bunch::BunchSynRadDamping(vector<double> &synchRadDampTime, LatticeInterAct
             
         for(int j=0;j<6;j++)
         {
-            randR[j] = dx(gen);	
+            //randR[j] = dx(gen);	
+            //if(j==4)
+            //{
+            //    randR[j] = 0.E0;
+            //}
+            randR[j]=Gaussrand(1,0,100.0*j);
             if(j==4)
             {
-                randR[j] = 0.E0;
+                randR[j]=0.E0;
             }
         }
-        
+
         tempX  = tempX   + coeff[0] * randR[0];
         tempPX = tempPX  + coeff[0] * randR[1]; 	
         tempY  = tempY   + coeff[1] * randR[2];

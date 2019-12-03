@@ -19,7 +19,7 @@ int         myRank;
 //double      T0;                   //evolution period [s]
 //int         Harmonics;     
 
-double Gaussrand(double rms, double aver,int randomIndex)
+double Gaussrand(double rms, double aver,double randomIndex)
 {
     static double V1, V2, S;
     static int phase = 0;

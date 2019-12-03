@@ -34,7 +34,6 @@ void Beam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoin
     int totBunchNum = inputParameter.totBunchNumber;
     beamVec.resize(totBunchNum);
     harmonics = inputParameter.harmonics;
-
     printInterval=inputParameter.printInterval;
     ionLossBoundary = inputParameter.ionLossBoundary;
 
@@ -67,6 +66,7 @@ void Beam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoin
     {
         beamVec[i].Initial(latticeInterActionPoint, inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,i);
+
     }
 
 
@@ -92,10 +92,12 @@ void Beam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoin
     
 //    for(int i=0;i<totBunchNum;i++)
 //    {
-//        cout<<beamVec[i].bunchGap<<"    "<<i<<endl;
+//        cout<<beamVec[i].bunchGap<<"    "<<i<<" "<<__LINE__<<endl;
 //    }
 //    getchar();
+
 }   
+
 
 
 
@@ -190,12 +192,11 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
             else   //strong-strong beam model;
             {
                 cout<<"Press Inter to go on the quasi-strong-strong ion-beam simulation"<<endl;
-//                getchar();
+                getchar();
 
                 for(int i=0;i<nTurns;i++)   
                 { 
                     
-
                     for(int j=0;j<totBunchNum;j++)
                     {
                         beamVec[j].RMSCal(latticeInterActionPoint,0);
@@ -204,7 +205,9 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                     SSGetMaxBunchInfo();
                     
                     SSBeamIonEffectOneTurn(latticeInterActionPoint, inputParameter,i,  intevalofTurnsIonDataPrint,  printInterval);
+                    
                     SSGetMaxBunchInfo();
+                    
                     if(synRadDampingFlag)
                     {
                          BeamSynRadDamping(synchRadDampTime,latticeInterActionPoint);
@@ -214,12 +217,12 @@ void Beam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,Re
                     {
                         FIRBunchByBunchFeedback(firFeedBack,i);  
                     }
-                    
-//                    if(intevalofTurnsIonDataPrint && (i%intevalofTurnsIonDataPrint==0))
-//                    {
-//                        SSIonDataPrint(latticeInterActionPoint, i);
-//                        SSBunchDataPrint(beamVec[beamVec.size()-1],i);
-//                    }
+                  
+                    if(intevalofTurnsIonDataPrint && (i%intevalofTurnsIonDataPrint==0))
+                    {
+                        SSIonDataPrint(latticeInterActionPoint, i);
+                        SSBunchDataPrint(beamVec[beamVec.size()-1],i);
+                    }
 
                     IonBeamDataPrintPerTurn(i,latticeInterActionPoint,fout);
 
@@ -417,7 +420,6 @@ void Beam::SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPo
     double corssSectionEI = inputParameter.corssSectionEI;
     int totBunchNum = inputParameter.totBunchNumber;
 
-
     int counter=nTurns*latticeInterActionPoint.numberOfInteraction*totBunchNum;
     
     for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)  
@@ -428,7 +430,6 @@ void Beam::SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPo
             latticeInterActionPoint.ionLineDensity[k] = corssSectionEI * latticeInterActionPoint.vacuumPressure[k]
                                     /latticeInterActionPoint.temperature[k]/Boltzmann * beamVec[j].electronNumPerBunch;
             //(1) get the ion beam line density at the kth interaction points due to the jth beam bunch
-
 
             latticeInterActionPoint.ionNumber[k] = latticeInterActionPoint.ionLineDensity[k] * 
                                                    latticeInterActionPoint.interactionLength[k];
@@ -442,6 +443,7 @@ void Beam::SSBeamIonEffectOneTurn( LatticeInterActionPoint &latticeInterActionPo
 
 
             latticeInterActionPoint.SSIonsUpdate(bunchEffectiveSizeXMax, bunchEffectiveSizeYMax,beamVec[j].xAver,beamVec[j].yAver,k);
+            
             latticeInterActionPoint.IonRMSCal(k);
             //(5) get the accumulated ions information at the kth point (new ions plus old ions)
             //    get the rms vaues of the accumulated ion distribution.

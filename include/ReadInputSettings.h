@@ -19,17 +19,17 @@ public:
 
 // read from initial file;
 
-    double circRing;//               = 1360.4E0   ;                 
-    double workQx;//                 = 114.05E0 ;
-    double workQy;//                 = 106.231E0;
-    double workQz;//                 = 0.00521 ;
-    double rfBaseFrequency;//        = 166.6E6 ;
+    double circRing;           //    = 1360.4E0   ;                 
+    double workQx;             //    = 114.05E0 ;
+    double workQy;             //    = 106.231E0;
+    double workQz;             //    = 0.00521 ;
+    double rfBaseFrequency;    //    = 166.6E6 ;
 
 
-    double corssSectionEI;//         = 2.0e-22;                     //  [m^2] Collision crossing section of CO
-    double pipeAperatureX;//         = 1.1E-3;                      // [m] 
-    double pipeAperatureY;//         = 1.1E-3;                      // [m] 
-    double pipeAperatureR;//         = 1.1E-3;                      // [m] 
+    double corssSectionEI;    //     = 2.0e-22;                     //  [m^2] Collision crossing section of CO
+    double pipeAperatureX;    //     = 1.1E-3;                      // [m] 
+    double pipeAperatureY;    //     = 1.1E-3;                      // [m] 
+    double pipeAperatureR;    //     = 1.1E-3;                      // [m] 
     double electronBeamEnergy;//     = 6.0E+9;
     
     int macroIonNumberGeneratedPerIP;// = 0;
@@ -43,7 +43,7 @@ public:
     double current;
     
     double emittanceX;//      = 34.2E-10;
-    double kappa;//           = 0.1;
+    double kappa;     //      = 0.1;
     double emittanceY;//      = emittanceX * kappa;
     double rmsBunchLength;//  = 30.E-3;        
     double rmsEnergySpread;// = 1.E-3;

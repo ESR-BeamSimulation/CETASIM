@@ -314,14 +314,14 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
 //    std::normal_distribution<double> nx(xAver, rmsRx);
 //    std::normal_distribution<double> ny(yAver, rmsRy);
 
-
-
-    std::random_device rd{};
-    std::mt19937 gen{rd()};
- 
-
-    std::normal_distribution<> dx{xAver,rmsRx};
-    std::normal_distribution<> dy{yAver,rmsRy};
+//
+//
+//    std::random_device rd{};
+//    std::mt19937 gen{rd()};
+// 
+//
+//    std::normal_distribution<> dx{xAver,rmsRx};
+//    std::normal_distribution<> dy{yAver,rmsRy};
     
     double tempx;
     double tempy;
@@ -331,11 +331,11 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
     while(i<macroIonNumber[k])
     {
 
-//        tempx = Gaussrand(rmsRx,xAver,i);
-//        tempy = Gaussrand(rmsRy,yAver,i);
+       tempx = Gaussrand(rmsRx,xAver,100*i);
+       tempy = Gaussrand(rmsRy,yAver,100*i);
 
-        tempx = dx(gen);
-        tempy = dy(gen);
+//        tempx = dx(gen);
+//        tempy = dy(gen);
     
 //        cout<<tempx<<"   "<<tempy<<" "<<__LINE__<<endl;
 //        getchar();

@@ -80,7 +80,7 @@ void Train::Initial(ReadInputSettings &inputParameter)
      cout<<"--------------------------------------------------------------------"  <<endl;
 
     int bunchNumberCheck = 0;
-       int gapsNumberCheck = 0;
+    int gapsNumberCheck = 0;
     for(int i=0;i<trainNumber;i++)
     {
          bunchNumberCheck +=  bunchNumberPerTrain[i];
