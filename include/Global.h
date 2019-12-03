@@ -30,7 +30,7 @@ extern int      numProcess;
 extern int      myRank;
 
 
-double Gaussrand(double rms, double aver,int randomIndex);
+double Gaussrand(double rms, double aver,double randomIndex);
 void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c);
 void gsl_matrix_inv(gsl_matrix *a);
 double get_det(gsl_matrix * A);

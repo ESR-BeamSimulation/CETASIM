@@ -326,7 +326,6 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,int
     //    i++;
     //}
 
-    
 }
 
 double Bunch::GSSlover(double if0)

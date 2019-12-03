@@ -49,7 +49,8 @@ void Train::Initial(ReadInputSettings &inputParameter)
     {
         getline(fin,str);
         if(str.length()==0 )  continue;
-
+        strVec.clear() ;
+        cout<<str<<endl;
         StringSplit(str, strVec);
         
         transform(strVec[0].begin(), strVec[0].end(), strVec[0].begin(), ::tolower);

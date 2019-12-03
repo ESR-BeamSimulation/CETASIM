@@ -84,13 +84,12 @@ void FIRFeedBack::Initial(int totBunchNum, double beamEnergy)
         
     }
     strVec.clear();
-    fin.clear();
     fin.close();
 
     
     fIRBunchByBunchFeedbackKickLimit = sqrt(2*fIRBunchByBunchFeedbackPowerLimit*fIRBunchByBunchFeedbackKickerImped)/beamEnergy;
-    //    cout<<fIRBunchByBunchFeedbackKickLimit<<endl;
-    //    getchar();
+//     cout<<fIRBunchByBunchFeedbackKickLimit<<endl;
+//     getchar();
 
 
     int firOrder = delay + taps;
@@ -114,7 +113,8 @@ void FIRFeedBack::Initial(int totBunchNum, double beamEnergy)
     posyData.resize(firOrder);
     poszData.resize(firOrder);
     
-    
+
+
     for(int i=0;i<firCoeffx.size();i++)
     {
         posxData[i].resize(totBunchNum);
@@ -146,56 +146,61 @@ void FIRFeedBack::Initial(int totBunchNum, double beamEnergy)
     fin.open("FIR_input.dat");
 
 
+        
+        
 
     while (!fin.eof())
     {
         getline(fin,str);
-        StringSplit(str, strVec);
         if(str.length()==0 )  continue;
+       
+        strVec.clear();        
+        StringSplit(str, strVec);
+      
         transform(strVec[0].begin(), strVec[0].end(), strVec[0].begin(), ::tolower);
 
-        if(strVec[0]=="fircoeffx")
-        {
-            cout<<"the coefficients of of FIR for x direction  :";
-            for(int i=1;i<strVec.size();i++)
-            {
-                firCoeffx[i-1+delay] = stod(strVec[i]);
-                cout<<firCoeffx[i-1+delay]<<"       ";
-            }
-            cout<<endl;
-        }
-        
-        if(strVec[0]=="fircoeffy")
-        {
-            cout<<"the coefficients of of FIR for y direction  :";
-            for(int i=1;i<strVec.size();i++)
-            {
-                firCoeffy[i-1+delay] = stod(strVec[i]);
-                cout<<firCoeffy[i-1+delay]<<"       ";
-            }
-            cout<<endl;
-        }
-        if(strVec[0]=="fircoeffz")
-        {
-            cout<<"the coefficients of of FIR for z direction  :";
-            for(int i=1;i<strVec.size();i++)
-            {
-                firCoeffz[i-1+delay] = stod(strVec[i]);
-                cout<<firCoeffz[i-1+delay]<<"       ";
-            }
-            cout<<endl;
-        }
-        if(strVec[0]=="fircoeffxy")
-        {
-            cout<<"the coefficients of of FIR for x-y coupling  :";
-            for(int i=1;i<strVec.size();i++)
-            {
-                firCoeffxy[i-1+delay] = stod(strVec[i]);
-                cout<<firCoeffxy[i-1+delay]<<"       ";
-            }
-            cout<<endl;
-        }
-        
+       if(strVec[0]=="fircoeffx")
+       {
+           cout<<"the coefficients of of FIR for x direction  :";
+           for(int i=1;i<strVec.size();i++)
+           {
+               firCoeffx[i-1+delay] = stod(strVec[i]);
+               cout<<firCoeffx[i-1+delay]<<"       ";
+           }
+           cout<<endl;
+       }
+       
+       if(strVec[0]=="fircoeffy")
+       {
+           cout<<"the coefficients of of FIR for y direction  :";
+           for(int i=1;i<strVec.size();i++)
+           {
+               firCoeffy[i-1+delay] = stod(strVec[i]);
+               cout<<firCoeffy[i-1+delay]<<"       ";
+           }
+           cout<<endl;
+       }
+       if(strVec[0]=="fircoeffz")
+       {
+           cout<<"the coefficients of of FIR for z direction  :";
+           for(int i=1;i<strVec.size();i++)
+           {
+               firCoeffz[i-1+delay] = stod(strVec[i]);
+               cout<<firCoeffz[i-1+delay]<<"       ";
+           }
+           cout<<endl;
+       }
+       if(strVec[0]=="fircoeffxy")
+       {
+           cout<<"the coefficients of of FIR for x-y coupling  :";
+           for(int i=1;i<strVec.size();i++)
+           {
+               firCoeffxy[i-1+delay] = stod(strVec[i]);
+               cout<<firCoeffxy[i-1+delay]<<"       ";
+           }
+           cout<<endl;
+       }
+       
     }
     
     strVec.clear();

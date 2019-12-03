@@ -155,6 +155,18 @@ int StringVecSplit(string str, vector<string> &strVec)
         {
             temp.push_back(str[i]);
         }
+
+//        if(str[i]!=' ')
+//        {
+//            int  j=i;
+//            while(str[j]!=' ')
+//            {
+//                j++;
+//            }
+//            strVec.push_back(str.substr(i,j - i));
+//            i=j;
+//        }
+
     }
 
     strVec.push_back(temp);
