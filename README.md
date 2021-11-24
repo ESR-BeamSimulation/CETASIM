@@ -6,5 +6,5 @@ All files printed out are changed to sdds format.
 
 
 This code is delveped with C++ by Chao Li.
-Any problems, please contract the author lichao@ihep.ac.cn supperli.imp@gmail.com.
+Any problems, please contract the author li.chao@desy.de supperli.imp@gmail.com.
 
