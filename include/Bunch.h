@@ -23,8 +23,9 @@ public:
 
     double CorssSectionEI;
     double pipeAperatureR;
-    double PipeAperatureX;
-    double PipeAperatureY;
+    double pipeAperatureX;
+    double pipeAperatureY;
+
 
     int    distributionType;
     int    macroEleNumPerBunch;
@@ -35,16 +36,24 @@ public:
     double electronEnergy;              // [eV]
     double rGamma;
     double rBeta;
- 
+
+
     vector<double > ePositionX; // [m]
     vector<double > ePositionY; // [m]
     vector<double > ePositionZ; // [m]
+    vector<double > ePositionT; // [s]  -- ePositionZ = ePositionT * c;  -- refer to Sy. Lee Eq. 3.30 and 3.31
+
     vector<double > eMomentumX; // [rad]  -- BeamTransferDueToIon(), px(i)/pz 
     vector<double > eMomentumY; // [rad]  -- BeamTransferDueToIon(), py(i)/pz
     vector<double > eMomentumZ; // [rad]  -- BeamTransferDueToIon(), pz(i)/pz
+    
     vector<double > eFx;        // [rad]
     vector<double > eFy;        // [rad]
-    vector<int    >  eSurive;
+    vector<int    > eSurive;
+
+	
+	vector<double> wakeForceAver{0,0,0};
+
     
     double actionJx;    // used for weak-strong simulation
     double actionJy;    // used for weak-strong simulation
@@ -64,16 +73,16 @@ public:
     void Initial(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
 
 
+
     double emittanceX;          // [m rad] non-normalized rms emittance of beam in one bunch
     double emittanceY;          // [m rad] non-normalized rms emittance of beam in one bunch
     double emittanceZ; 			// [m rad] non-normalized rms emittance of beam in one bunch
     double kappa;               // emittance coupling factor   emittanceYNorm/emittanceXNorm <1 in light source
-    void   DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint, int i);
+    void   DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,  int i);
     double GSSlover(double if0);
     
-    void InducedIonDensity(LatticeInterActionPoint &latticeInterActionPoint); // ion density induced by per bunch
     int    bunchGap;            // the number of rf period needed for the coming bunch 
-    
+	int    bunchHarmNum;  
     double rmsRx;
     double rmsRy;
     double rmsEmitX;//=0.E0;
@@ -89,24 +98,26 @@ public:
     double rmsEffectiveRingEmitZ;//=0.E0;
     double rmsEffectiveRx;//=0.E0;
     double rmsEffectiveRy;//=0.E0;
-    double initialDisDx;
-    double initialDisDy;
+
+
     
     double rmsBunchLength;//=0.E0;     
     double rmsEnergySpread;//=0.E0;    //rad
-    double omegaE;//=0.E0;				// Ohmi's paper Eq.10
-    double omegaI;//=0.E0;				// Ohmi's paper Eq.10
+
     void RMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
     void WSRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
     
     void SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k);
     void WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BassettiErskine(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
+    void BassettiErskine0(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
+    void BassettiErskine1(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
+    void GaussianField(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
     
-    void BunchTransferDueToLattice(LatticeInterActionPoint &latticeInterActionPoint, int k);
+    void BunchTransferDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k);
+    void BunchTransferDueToLatticeL(ReadInputSettings &inputParameter);
     void BunchTransferDueToIon(LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BunchSynRadDamping(vector<double> &synchRadDampTime,LatticeInterActionPoint &latticeInterActionPoint);
-
+    void BunchSynRadDamping(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
+    void BunchTransferDueToWake();
     
 private:
 

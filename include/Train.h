@@ -24,11 +24,15 @@ public:
     int trainNumber;
     int totBunchNum;
     vector<int> trainGaps;     //  number of buckets between adjacent trains 
+    vector<int> bunchGaps;     //  number of buckets between adjacent bunch 
+    
     vector<int> trainStart;    //  start index of each train 
     
     
     vector<double> bunchNumberPerTrain;
     void Initial(ReadInputSettings &inputParameter);
+	void InitialDesy(ReadInputSettings &inputParameter);
+	void InitialUSSR310(ReadInputSettings &inputParameter);
 
 private:
 

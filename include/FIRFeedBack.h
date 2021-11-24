@@ -4,7 +4,7 @@
 #include <vector>
 #include <complex>
 #include "Global.h"
-
+#include "ReadInputSettings.h"
 
 
 using namespace std;
@@ -26,10 +26,9 @@ public:
     double kickStrengthKy;		// Eq. 116
     double kickStrengthF;		// Eq. 117
     double kickerDisp;			// [m] disperson function at kicker
-    double kickerDispP;			//     D(disperson)/Ds function at kicker
-    vector<double >  gain;
-/*    vector<double >  gainY;*/
-/*    vector<double >  gainZ;*/
+    double kickerDispP;			// D(disperson)/Ds function at kicker
+    double gain;
+
     vector<double >  firCoeffx;
     vector<double >  firCoeffy;
     vector<double >  firCoeffz;
@@ -43,7 +42,7 @@ public:
     double fIRBunchByBunchFeedbackKickerImped;// =123E+3;              // Ohm
     double fIRBunchByBunchFeedbackKickLimit;// =0.E0;
     
-    void Initial(int totBunchNum, double beamEnergy);
+    void Initial(ReadInputSettings &inputParameter);
     
       
 private:
