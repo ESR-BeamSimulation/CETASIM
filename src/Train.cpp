@@ -5,6 +5,10 @@
 #include "Train.h"
 #include <iostream>
 #include<fstream>
+#include<iomanip>
+	
+#include <numeric>
+#include <cmath>
 
 using namespace std;
 using std::vector;
@@ -26,59 +30,95 @@ Train::~Train()
 void Train::Initial(ReadInputSettings &inputParameter)
 {
 
-    trainNumber = inputParameter.trainNumber;
+    int harmonics = inputParameter.ringParBasic->harmonics;
+    trainNumber   = inputParameter.ringFillPatt->trainNumber; 
+    totBunchNum   = inputParameter.ringFillPatt->totBunchNumber;  
 
+
+    bunchNumberPerTrain.resize(trainNumber);
+    trainGaps.resize(trainNumber);
+    bunchGaps.resize(trainNumber);
+    trainStart.resize(trainNumber);
+    
+
+    for (int i=0; i<trainNumber; i++)
+    {
+        bunchNumberPerTrain[i] = inputParameter.ringFillPatt->bunchNumberPerTrain[i];
+        trainGaps[i]           = inputParameter.ringFillPatt->trainGaps[i];
+        bunchGaps[i]           = inputParameter.ringFillPatt->bunchGaps[i];  
+    }
+    
+ 
+    int bunchNumberCheck = 0;
+    int harmonicCheck=0;
+
+    cout<<"---------------------- bunch filling pattern--------------------------"<<endl;
+
+    for(int i=0;i<trainNumber;i++)
+    {
+        bunchNumberCheck +=  bunchNumberPerTrain[i]; 
+        harmonicCheck    +=  bunchNumberPerTrain[i] * (bunchGaps[i]+1) + trainGaps[i];
+        
+        cout<<"train "<<i<<": "
+            <<setw(5)<<bunchNumberPerTrain[i] <<" bunches   "
+            <<setw(5)<<(bunchGaps[i]+1) * bunchNumberPerTrain[i] <<" buckets   "
+            <<setw(5)<<trainGaps[i]<<" buckets-train-gaps"
+            <<endl;        
+    }
+
+    
+        
+    if(bunchNumberCheck!=totBunchNum || harmonicCheck != harmonics)
+    {
+        cerr<<"mistakes in settings for bunch filling pattern, sum of gaps + totBunchNumber has to be harmonics"<<endl;
+        exit(0);
+    }
+
+
+    for(int i=0;i<trainNumber;i++)
+    {
+        trainStart[i] = 0;        
+        if(i>0)
+        {
+            for(int j=0;j<i;j++)
+            {
+                trainStart[i] = trainStart[i] +  bunchNumberPerTrain[j] * (bunchGaps[i]+1)  + trainGaps[j];
+            }
+        }
+    }
+
+
+}
+
+
+
+
+
+void Train::InitialDesy(ReadInputSettings &inputParameter)
+{
+	trainNumber = inputParameter.ringFillPatt->trainNumber;
 
     bunchNumberPerTrain.resize(trainNumber);
     trainGaps.resize(trainNumber);
     trainStart.resize(trainNumber);
     
+    int harmonics = inputParameter.ringParBasic->harmonics;
 
-    int harmonics = inputParameter.harmonics;
+	totBunchNum = inputParameter.ringFillPatt->totBunchNumber;
+	
+	
+	for(int trainIndex=0;trainIndex<trainNumber;trainIndex++)
+	{
+		bunchNumberPerTrain[trainIndex]=1;
+		trainGaps[trainIndex]=1;
+		if((trainIndex+1)%20==0)
+		{
+			trainGaps[trainIndex]=9;
+		}
+	}
+	
+	
 
-    
-
-//  need to re-write this part to have a flexibility to cover various problems
-    
-    ifstream fin("input.dat");
-    
-    vector<string> strVec;
-    string         str;
-    
-    while (!fin.eof())
-    {
-        getline(fin,str);
-        if(str.length()==0 )  continue;
-        strVec.clear() ;
-        cout<<str<<endl;
-        StringSplit(str, strVec);
-        
-        transform(strVec[0].begin(), strVec[0].end(), strVec[0].begin(), ::tolower);
-        
-
-        if(strVec[0]=="bunchnumberpertrain")
-        {
-            cout<<"the number of bunches in trains                            ";
-            for(int i=1;i<strVec.size();i++)
-            {
-                bunchNumberPerTrain[i-1] = stod(strVec[i]);
-                cout<<bunchNumberPerTrain[i-1]<<"       ";
-            }
-            cout<<endl;
-        }
-        if(strVec[0]=="traingaps")
-        {
-            cout<<"the gaps betweens bunch trains                             ";
-            for(int i=1;i<strVec.size();i++)
-            {
-                trainGaps[i-1]           = stod(strVec[i]);
-                cout<<trainGaps[i-1]<<"     ";
-            }
-            cout<<endl;
-        }
-    }
-
-     cout<<"--------------------------------------------------------------------"  <<endl;
 
     int bunchNumberCheck = 0;
     int gapsNumberCheck = 0;
@@ -88,12 +128,8 @@ void Train::Initial(ReadInputSettings &inputParameter)
          gapsNumberCheck  +=  trainGaps[i];
     }
 
-    totBunchNum = inputParameter.totBunchNumber;
-    
-//    cout<<bunchNumberCheck<<endl;
-//    cout<<gapsNumberCheck<<endl;
-//    getchar();
-    
+
+   
     if(bunchNumberCheck!=totBunchNum || gapsNumberCheck != harmonics -bunchNumberCheck )
     {
         cerr<<"mistakes in settings for bunch filling pattern "<<endl;
@@ -110,7 +146,81 @@ void Train::Initial(ReadInputSettings &inputParameter)
             {
                 trainStart[i] = trainStart[i] +  bunchNumberPerTrain[j] + trainGaps[j];
             }
-        }
+
+		}
     }
 
+	
 }
+
+
+void Train::InitialUSSR310(ReadInputSettings &inputParameter)
+{
+	
+	trainNumber = inputParameter.ringFillPatt->trainNumber;
+
+    bunchNumberPerTrain.resize(trainNumber);
+    trainGaps.resize(trainNumber);
+    trainStart.resize(trainNumber);
+    
+    int harmonics = inputParameter.ringParBasic->harmonics;
+
+	totBunchNum = inputParameter.ringFillPatt->totBunchNumber;
+	
+	// 310*4 = 1240  
+	for(int trainIndex=0;trainIndex<trainNumber;trainIndex++)
+	{
+		bunchNumberPerTrain[trainIndex]=1;			
+		trainGaps[trainIndex]=3;		
+	}
+	
+	//trainGaps[trainNumber-1]=343;
+
+
+    int bunchNumberCheck = 0;
+    int gapsNumberCheck = 0;
+    for(int i=0;i<trainNumber;i++)
+    {
+         bunchNumberCheck +=  bunchNumberPerTrain[i];
+         gapsNumberCheck  +=  trainGaps[i];
+    }
+
+
+
+   
+    if(bunchNumberCheck!=totBunchNum || gapsNumberCheck != harmonics -bunchNumberCheck )
+    {
+        cerr<<"mistakes in settings for bunch filling pattern "<<endl;
+        exit(0);
+    }
+
+
+    for(int i=0;i<trainNumber;i++)
+    {
+        trainStart[i] = 0;
+        
+        if(i>0)
+        {
+            for(int j=0;j<i;j++)
+            {
+                trainStart[i] = trainStart[i] +  bunchNumberPerTrain[j] + trainGaps[j];
+            }
+
+		}
+    }
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+

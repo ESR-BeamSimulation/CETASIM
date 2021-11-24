@@ -6,6 +6,7 @@
 #include<string>
 #include<vector>
 #include <gsl/gsl_matrix.h>
+#include <sstream>
 
 
 using std::complex;
@@ -130,14 +131,16 @@ double get_det(gsl_matrix * A)
 
 int StringVecSplit(string str, vector<string> &strVec)
 {
-    if(strVec.size()>0) strVec.clear();
-
+   if(strVec.size()>0) strVec.clear();
+   str = str + " ";
+   
    int position = str.find('=');
+      
    string temp="";
     
    for(int i=0;i<position;i++)
    {
-        if(str[i]!=' ')
+        if(!isblank(str[i]))
         {
             temp.push_back(str[i]);
         }
@@ -151,21 +154,23 @@ int StringVecSplit(string str, vector<string> &strVec)
    
     for(int i=position+1;i<str.size();i++)
     {
+        /*
         if(str[i]!=' ')
         {
             temp.push_back(str[i]);
         }
+        */
 
-//        if(str[i]!=' ')
-//        {
-//            int  j=i;
-//            while(str[j]!=' ')
-//            {
-//                j++;
-//            }
-//            strVec.push_back(str.substr(i,j - i));
-//            i=j;
-//        }
+        if(!isblank(str[i]))
+        {
+            int  j=i;
+            while(!isblank(str[j]))
+            {
+                j++;
+            }
+            strVec.push_back(str.substr(i,j - i));
+            i=j;
+        }
 
     }
 
@@ -185,10 +190,10 @@ int StringSplit(string s,vector<string> &vec)
   for(int i=0;i<s.length();i++)
   {
     
-    if(s[i]!=' ')
+    if(!isblank(s[i]))
     {
         int  j=i;
-        while(s[j]!=' ')
+        while(!isblank(s[j]))
         {
             j++;
         }
@@ -197,31 +202,18 @@ int StringSplit(string s,vector<string> &vec)
     }
 
   }
-
-
-
-//  for(unsigned int i=0;i<length;i++)
-//  {
-//    if (s[i]=='!')
-//    {
-//      i=length;
-//    }
-//    else if((s[i] == splitchar || s[i] == splitchar2) && i==start)
-//    {
-//      start++;
-//    }
-//    else if(s[i] == splitchar || s[i] == splitchar2)
-//    {
-//      vec.push_back(s.substr(start,i - start));
-//      start = i+1;
-//    }
-//    else if(i == length-1)
-//    {
-//      vec.push_back(s.substr(start,i+1 - start));
-//    }
-//  }
-    return 0;
+  return 0;
 }
 
+int StringSplit2(string s, vector<string> &vec)
+{
 
+    vec.clear(); 
+    stringstream iss(s);
+
+	for(s; iss >> s; ) 
+	    vec.push_back(s);
+	
+    return 0;
+}
 
