@@ -1,4 +1,4 @@
-CXX := mpic++
+CXX :=g++
 CXXFLAGS:=  -g -fopenmp -O2 -std=c++11 -pg
 LIBFLAGS:=   -lgsl -lgslcblas -lm            #-lfftw3_omp  -lfftw3
 INCFLAG:= -I ./include  -I/usr/local/include/gsl 
