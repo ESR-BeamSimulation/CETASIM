@@ -304,7 +304,7 @@ void Bunch::DistriGenerator(LatticeInterActionPoint &latticeInterActionPoint,Rea
 		eMomentumY[i] +=  disMy + dispersionPY * eMomentumZ[i];		   
 	}
 
-    eMomentumZ[0] +=  0.0001; 
+    //eMomentumZ[0] +=  0.0001; 
 
 	
 }
