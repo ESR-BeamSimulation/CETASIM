@@ -334,7 +334,7 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
     
     }
     eMomentumZ[0]  = eMomentumZ[0] - u0 / electronBeamEnergy;
-    eMomentumZ[0]  = eMomentumZ[0] * (1.0-2.0/synchRadDampTime[2]) ;                  // to maintain the symetric,
+    eMomentumZ[0]  = eMomentumZ[0] * (1.0-2.0/synchRadDampTime[2]);                   // to maintain the symetric,
     ePositionZ[0] -= eta * t0  * CLight * rBeta * eMomentumZ[0];                      // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight         
 }
 

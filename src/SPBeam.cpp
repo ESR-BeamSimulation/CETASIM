@@ -332,25 +332,24 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
     ofstream fout(inputParameter.ringParRf->transResonParWriteTo+".sdds");
 	fout<<"SDDS1"<<endl;
-    fout<<"&parameter name=CavVolIdeal,      units=V,   type=float,  &end"<<endl;
+    fout<<"&parameter name=CavAmpIdeal,   units=V,   type=float,  &end"<<endl;
 	fout<<"&parameter name=CavPhaseIdeal,    units=rad, type=float,  &end"<<endl;
 	fout<<"&parameter name=CavFreq,          units=Hz,  type=float,  &end"<<endl;
-	fout<<"&parameter name=GenVol,           units=V,   type=float,  &end"<<endl;
+	fout<<"&parameter name=GenAmp,           units=V,   type=float,  &end"<<endl;
 	fout<<"&parameter name=GenPhase,         units=rad, type=float,  &end"<<endl;
-    fout<<"&parameter name=beamIndVol,     units=V,   type=float,  &end"<<endl;
-	fout<<"&parameter name=beamIndPhase,   units=rad, type=float,  &end"<<endl;
+    fout<<"&parameter name=beamIndAmp,       units=V,   type=float,  &end"<<endl;
+	fout<<"&parameter name=beamIndPhase,     units=rad, type=float,  &end"<<endl;
     fout<<"&parameter name=CavDetunPsi,      units=rad, type=float,  &end"<<endl;
 
-	fout<<"&column name=Turns,               units=s       type=float,  &end"<<endl;
-	fout<<"&column name=CavVolAmpReq,       units=V,      type=float,  &end"<<endl;
-    fout<<"&column name=CavVolPhaseReq,     units=rad,    type=float,  &end"<<endl;
-    fout<<"&column name=CavVolAbs,          units=V,      type=float,  &end"<<endl;
+	fout<<"&column name=Turns,              units=s       type=float,  &end"<<endl;
+	fout<<"&column name=CavAmpReq,          units=V,      type=float,  &end"<<endl;
+    fout<<"&column name=CavPhaseReq,        units=rad,    type=float,  &end"<<endl;
+    fout<<"&column name=CavAmp,             units=V,      type=float,  &end"<<endl;
     fout<<"&column name=CavPhase,           units=rad,    type=float,  &end"<<endl;
-	fout<<"&column name=BeamIndVolAmp,      units=V,      type=float,  &end"<<endl;
-    fout<<"&column name=BeamIndVolPhase,    units=rad,    type=float,  &end"<<endl;
-    fout<<"&column name=GenVolAmp,          units=V,      type=float,  &end"<<endl;
-    fout<<"&column name=GenVolPhase,        units=rad,    type=float,  &end"<<endl;
-    fout<<"&column name=CavVolReal,         units=V,      type=float,  &end"<<endl;
+	fout<<"&column name=BeamIndAmp,         units=V,      type=float,  &end"<<endl;
+    fout<<"&column name=BeamIndPhase,       units=rad,    type=float,  &end"<<endl;
+    fout<<"&column name=GenAmp,             units=V,      type=float,  &end"<<endl;
+    fout<<"&column name=GenPhase,           units=rad,    type=float,  &end"<<endl;
 	fout<<"&data mode=ascii, &end"<<endl;
 
 
@@ -399,7 +398,6 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                     <<setw(15)<<left<<arg(vbAccum)
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resGenVol)
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resGenVol)
-                    <<setw(15)<<left<<   (vbAccum    + cavityResonator.resonatorVec[i].resGenVol).real()
                     <<endl;
 
                 vbAccum = vbAccum * exp(- deltaL ) * exp (li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
@@ -472,7 +470,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
     for(int j=0;j<inputParameter.ringRun->TBTBunchPrintNum;j++)
     {
-         string colname = string("&column name=") + string("x_")     + to_string(j) + string(", units=m,   type=float,  &end");
+        string colname = string("&column name=") + string("x_")     + to_string(j) + string(", units=m,   type=float,  &end");
         fout<<colname<<endl;
         colname = string("&column name=") + string("px_")            + to_string(j) + string(", units=rad, type=float,  &end");
         fout<<colname<<endl;
@@ -488,9 +486,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     fout<<"&data mode=ascii, &end"<<endl;
     fout<<"! page number "<<1<<endl;
     fout<<nTurns<<endl;
-    //fout<<100<<endl;
-    
-         
+             
     // run loop starts, for nTrns and each trun for k interaction-points
     for(int n=0;n<nTurns;n++)
     {
@@ -498,7 +494,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
         SPBeamRMSCal(latticeInterActionPoint, 0);
         SPGetBeamInfo();
-        SetBeamPosHistoryDataWithinWindow();
+        //SetBeamPosHistoryDataWithinWindow(); -- Maro's approaches to get the coupled bunch growthrate.. PRAB
                 
         if(beamIonFlag) 
         {
@@ -556,7 +552,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             <<setw(15)<<left<< weakStrongBeamInfo->bunchRmsSizeZ     // over all bunches
             <<setw(15)<<left<< weakStrongBeamInfo->bunchRmsSizePX    // over all bunches
             <<setw(15)<<left<< weakStrongBeamInfo->bunchRmsSizePY    // over all bunches
-            <<setw(15)<<left<< weakStrongBeamInfo->bunchRmsSizePZ   // over all bunches
+            <<setw(15)<<left<< weakStrongBeamInfo->bunchRmsSizePZ    // over all bunches
             <<setw(15)<<left<< log10(sqrt(weakStrongBeamInfo->actionJxMax))    
             <<setw(15)<<left<< log10(sqrt(weakStrongBeamInfo->actionJyMax));
         
@@ -605,6 +601,7 @@ void SPBeam::SetBeamPosHistoryDataWithinWindow()
         beamVec[j].SetBunchPosHistoryDataWithinWindow();
     }
 }
+
 void SPBeam::SPBeamRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
     for(int j=0;j<beamVec.size();j++)

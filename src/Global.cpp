@@ -250,3 +250,8 @@ int StringSplit2(string s, vector<string> &vec)
     return 0;
 }
 
+string convertToString(char* a, int size)
+{
+    string s(a);
+    return s;
+}

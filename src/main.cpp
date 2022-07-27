@@ -16,7 +16,7 @@
 #include <vector>
 #include <omp.h>
 #include "Global.h"
-#include "SDDS.h"    // refer to Makefile, just at compliable stage
+//#include "SDDS.h"    // refer to Makefile, only ensure compliable
 #include"ReadInputSettings.h"
 #include "LatticeInterActionPoint.h"
 #include "Train.h"
@@ -24,13 +24,6 @@
 #include "SPBeam.h"
 #include "MPBeam.h"
 
-/*
-#include "MPBeam.h"
-*/
-
-/*
-#include "LongImpSingalBunch.h"
-*/
 
 using namespace std;
 using std::vector;
@@ -54,10 +47,9 @@ int main(int argc,char *argv[])
     }
     getchar();
     */
-
         
     ReadInputSettings inputParameter;
-    inputParameter.ParamRead();
+    inputParameter.ParamRead(argc, argv);
  
     LatticeInterActionPoint latticeInterActionPoint;
     latticeInterActionPoint.Initial(inputParameter);

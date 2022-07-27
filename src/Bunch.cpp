@@ -182,6 +182,7 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
     {
         // refers to SY. Lee Eq. 2.67
 
+        
         xtemp  = latticeInterActionPoint.xTransferMatrix[k][0] * ePositionX[i]
                + latticeInterActionPoint.xTransferMatrix[k][1] * eMomentumX[i];
 
@@ -194,13 +195,11 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
         yPtemp = latticeInterActionPoint.yTransferMatrix[k][2] * ePositionY[i]
                + latticeInterActionPoint.yTransferMatrix[k][3] * eMomentumY[i];
 
-
         ePositionX[i] = xtemp;
         ePositionY[i] = ytemp;
         eMomentumX[i] = xPtemp;
         eMomentumY[i] = yPtemp;
 
-        
         if(pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2)>1)
         {
             eSurive[i] = 0;  // particle is lost when  eSurive[i] = =0 0

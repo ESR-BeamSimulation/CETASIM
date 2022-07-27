@@ -42,10 +42,20 @@ ReadInputSettings::~ReadInputSettings()
     
 }
 
-int ReadInputSettings::ParamRead()
+int ReadInputSettings::ParamRead(int argc, char *argv[])
 {
-    ifstream fin("input.dat");
-  
+
+    string inputFile;
+    if(argc>=2)
+    {
+      inputFile=argv[1];
+    }
+    else
+    {
+      inputFile="input.dat";
+    }
+
+    ifstream fin(inputFile);
     vector<string> strVec;
     string         str;
     

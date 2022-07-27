@@ -224,25 +224,24 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
     ofstream fout(inputParameter.ringParRf->transResonParWriteTo+".sdds");
 	fout<<"SDDS1"<<endl;
-    fout<<"&parameter name=CavVolIdeal,      units=V,   type=float,  &end"<<endl;
+    fout<<"&parameter name=CavAmpIdeal,      units=V,   type=float,  &end"<<endl;
 	fout<<"&parameter name=CavPhaseIdeal,    units=rad, type=float,  &end"<<endl;
 	fout<<"&parameter name=CavFreq,          units=Hz,  type=float,  &end"<<endl;
-	fout<<"&parameter name=GenVol,           units=V,   type=float,  &end"<<endl;
+	fout<<"&parameter name=GenAmp,           units=V,   type=float,  &end"<<endl;
 	fout<<"&parameter name=GenPhase,         units=rad, type=float,  &end"<<endl;
-    fout<<"&parameter name=beamIndVol,       units=V,   type=float,  &end"<<endl;
+    fout<<"&parameter name=beamIndAmp,       units=V,   type=float,  &end"<<endl;
 	fout<<"&parameter name=beamIndPhase,     units=rad, type=float,  &end"<<endl;
     fout<<"&parameter name=CavDetunPsi,      units=rad, type=float,  &end"<<endl;
 
-	fout<<"&column name=Turns,               units=s       type=float,  &end"<<endl;
-	fout<<"&column name=CavVolAmpReq,       units=V,      type=float,  &end"<<endl;
-    fout<<"&column name=CavVolPhaseReq,     units=rad,    type=float,  &end"<<endl;
-    fout<<"&column name=CavVolAbs,          units=V,      type=float,  &end"<<endl;
+	fout<<"&column name=Turns,              units=s       type=float,  &end"<<endl;
+	fout<<"&column name=CavAmpReq,          units=V,      type=float,  &end"<<endl;
+    fout<<"&column name=CavPhaseReq,        units=rad,    type=float,  &end"<<endl;
+    fout<<"&column name=CavAmp,             units=V,      type=float,  &end"<<endl;
     fout<<"&column name=CavPhase,           units=rad,    type=float,  &end"<<endl;
-	fout<<"&column name=BeamIndVolAmp,      units=V,      type=float,  &end"<<endl;
-    fout<<"&column name=BeamIndVolPhase,    units=rad,    type=float,  &end"<<endl;
-    fout<<"&column name=GenVolAmp,          units=V,      type=float,  &end"<<endl;
-    fout<<"&column name=GenVolPhase,        units=rad,    type=float,  &end"<<endl;
-    fout<<"&column name=CavVolReal,         units=V,      type=float,  &end"<<endl;
+	fout<<"&column name=BeamIndAmp,         units=V,      type=float,  &end"<<endl;
+    fout<<"&column name=BeamIndPhase,       units=rad,    type=float,  &end"<<endl;
+    fout<<"&column name=GenAmp,             units=V,      type=float,  &end"<<endl;
+    fout<<"&column name=GenPhase,           units=rad,    type=float,  &end"<<endl;
 	fout<<"&data mode=ascii, &end"<<endl;
 
 
@@ -291,7 +290,6 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                     <<setw(15)<<left<<arg(vbAccum)
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resGenVol)
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resGenVol)
-                    <<setw(15)<<left<<   (vbAccum    + cavityResonator.resonatorVec[i].resGenVol).real()
                     <<endl;
 
                 vbAccum = vbAccum * exp(- deltaL ) * exp (li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.

@@ -348,16 +348,16 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         zTransferMatrix[i][2]  = -(1 + alphaZ1 * alphaZ2)/sqrt(betaZ1 * betaZ2) * sin(phaseAdvanceZ) 
                                  +(    alphaZ1 - alphaZ2)/sqrt(betaZ1 * betaZ2) * cos(phaseAdvanceZ);
         zTransferMatrix[i][3]  = sqrt(betaZ1 / betaZ2) * (cos(phaseAdvanceZ) - alphaZ2 * sin(phaseAdvanceZ));
-        /*
-        cout<<setw(15)<<left<<zTransferMatrix[i][0]<<setw(15)<<left<<zTransferMatrix[i][1]<<endl;
-        cout<<setw(15)<<left<<zTransferMatrix[i][2]<<setw(15)<<left<<zTransferMatrix[i][3]<<endl;
-        cout<<setw(15)<<left<<yTransferMatrix[i][0]<<setw(15)<<left<<yTransferMatrix[i][1]<<endl;
-        cout<<setw(15)<<left<<yTransferMatrix[i][2]<<setw(15)<<left<<yTransferMatrix[i][3]<<endl;
-        cout<<setw(15)<<left<<xTransferMatrix[i][0]<<setw(15)<<left<<xTransferMatrix[i][1]<<endl;
-        cout<<setw(15)<<left<<xTransferMatrix[i][2]<<setw(15)<<left<<xTransferMatrix[i][3]<<endl;        
-        getchar();
-        */
-        }
+        
+        //cout<<setw(15)<<left<<zTransferMatrix[i][0]<<setw(15)<<left<<zTransferMatrix[i][1]<<endl;
+        //cout<<setw(15)<<left<<zTransferMatrix[i][2]<<setw(15)<<left<<zTransferMatrix[i][3]<<endl;
+        //cout<<setw(15)<<left<<yTransferMatrix[i][0]<<setw(15)<<left<<yTransferMatrix[i][1]<<endl;
+        //cout<<setw(15)<<left<<yTransferMatrix[i][2]<<setw(15)<<left<<yTransferMatrix[i][3]<<endl;
+        //cout<<setw(15)<<left<<xTransferMatrix[i][0]<<setw(15)<<left<<xTransferMatrix[i][1]<<endl;
+        //cout<<setw(15)<<left<<xTransferMatrix[i][2]<<setw(15)<<left<<xTransferMatrix[i][3]<<endl;        
+        //getchar();
+        
+    }
 
   
     for(int k=0; k<numberOfInteraction;k++)
