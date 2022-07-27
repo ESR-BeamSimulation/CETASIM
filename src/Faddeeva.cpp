@@ -1,3 +1,5 @@
+
+#pragma once                                                             
 //  -*- mode:c++; tab-width:2; indent-tabs-mode:nil;  -*-
 
 /* Copyright (c) 2012 Massachusetts Institute of Technology

@@ -1,4 +1,12 @@
-#pragma once
+//*************************************************************************
+//Copyright (c) 2020 IHEP                                                  
+//Copyright (c) 2021 DESY                                                  
+//This program is free software; you can redistribute it and/or modify     
+//it under the terms of the GNU General Public License                     
+//Author: chao li, li.chao@desy.de                                         
+//*************************************************************************
+#pragma once                                                             
+
 
 #include "FittingGSL.h"
 #include "FIRFeedBack.h"

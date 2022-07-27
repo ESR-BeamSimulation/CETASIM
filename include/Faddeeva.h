@@ -1,3 +1,10 @@
+//*************************************************************************
+//Copyright (c) 2020 IHEP                                                  
+//Copyright (c) 2021 DESY                                                  
+//This program is free software; you can redistribute it and/or modify     
+//it under the terms of the GNU General Public License                     
+//Author: chao li, li.chao@desy.de                                         
+//*************************************************************************
 
 /* Copyright (c) 2012 Massachusetts Institute of Technology
  * 
