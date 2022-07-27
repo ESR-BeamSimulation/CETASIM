@@ -22,7 +22,7 @@ public:
     ReadInputSettings();
     ~ReadInputSettings();
 
-    int ParamRead();
+    int ParamRead(int argc, char *argv[]);
 
 // read from initial file;
    //1) ring basic parameter 

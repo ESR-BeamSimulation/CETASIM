@@ -49,6 +49,6 @@ int StringSplit(string str, vector<string> &strVec);
 int StringSplit2(string str, vector<string> &strVec);
 void RMOutPutFiles();
 double vectorDisNorm2(vector<double> a,vector<double> b);
-
+string convertToString(char* a, int size);
 
 #endif
