@@ -48,6 +48,7 @@ int StringVecSplit(string str, vector<string> &strVec);
 int StringSplit(string str, vector<string> &strVec);
 int StringSplit2(string str, vector<string> &strVec);
 void RMOutPutFiles();
+void sddsplot();
 double vectorDisNorm2(vector<double> a,vector<double> b);
 string convertToString(char* a, int size);
 

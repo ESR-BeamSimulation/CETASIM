@@ -53,16 +53,12 @@ int main(int argc,char *argv[])
  
     LatticeInterActionPoint latticeInterActionPoint;
     latticeInterActionPoint.Initial(inputParameter);
-
-    
-    
+  
     Train train;
     train.Initial(inputParameter);
 
     CavityResonator cavityResonator;
     cavityResonator.Initial(inputParameter);
-
-    
 
     if(inputParameter.ringRun->calSetting==1 && inputParameter.ringBunchPara->macroEleNumPerBunch==1)   // bunch is rigid represneted by only single particle...
     {        

@@ -131,7 +131,7 @@ void SPBunch::DistriGenerator(const LatticeInterActionPoint &latticeInterActionP
     //eMomentumX[0] = -sqrt(emittanceX / betaX) * (alphaX * cos(phase) + sin(phase) );
     //eMomentumY[0] = -sqrt(emittanceY / betaY) * (alphaY * cos(phase) + sin(phase) );
 
-
+    GetSPBunchRMS(latticeInterActionPoint, 0);
 
 }
 
@@ -305,13 +305,12 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
 
         haissinski->cavAmp[j]   = cavVolAmp;
         haissinski->cavPhase[j] = cavVolArg;
-
         //particle momentum due to cavity
         eMomentumZ[0] += cavVolAmp  * cos( -2. * PI * ringHarmH * f0 * resHarm * ePositionZ[0] / (rBeta * CLight)  +  cavVolArg )/electronBeamEnergy;
 
         //particle momentum due to self-field
         eMomentumZ[0] += vb0.real()/2.0/electronBeamEnergy;
-
+        
         // beam induced voltage accumulated  
         cavityResonator.resonatorVec[j].vbAccum += vb0;
 
@@ -319,7 +318,6 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         tB = bunchGap * t0 / ringHarmH;
         deltaL = tB / cavityResonator.resonatorVec[j].tF;
         cPsi   = deltaL * tan(cavityResonator.resonatorVec[j].resDeTunePsi);
-
 
         // beam induced voltage rotate and decay
         cavityResonator.resonatorVec[j].vbAccum *= exp(- deltaL ) * exp (li * cPsi);   
@@ -329,13 +327,12 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         cavFBCenInfo->cavAmpBunchCen[j]      = cavVolAmp;
         cavFBCenInfo->cavPhaseBunchCen[j]    = cavVolArg;
         cavFBCenInfo->cavVolBunchCen[j]      = cavVoltage;
-        cavFBCenInfo->selfLossVolBunchCen[j] = vb0/2.0;
-
-    
+        cavFBCenInfo->selfLossVolBunchCen[j] = vb0/2.0;    
     }
+
     eMomentumZ[0]  = eMomentumZ[0] - u0 / electronBeamEnergy;
-    eMomentumZ[0]  = eMomentumZ[0] * (1.0-2.0/synchRadDampTime[2]);                   // to maintain the symetric,
-    ePositionZ[0] -= eta * t0  * CLight * rBeta * eMomentumZ[0];                      // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight         
+    eMomentumZ[0]  = eMomentumZ[0] * (1.0-2.0/synchRadDampTime[2]);                 // to maintain the symetric,
+    ePositionZ[0] -= eta * t0  * CLight * rBeta * eMomentumZ[0];                      // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight 
 }
 
 void SPBunch::GetBunchHaissinski(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)
@@ -688,6 +685,7 @@ void SPBunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPa
     fout<<"&parameter name=action,      units=m,            type=float,  &end"<<endl;
     fout<<"&parameter name=nus,                             type=float,  &end"<<endl;
     
+    fout<<"&column name=turns,                              type=float,  &end"<<endl;
     fout<<"&column name=z,              units=m,            type=float,  &end"<<endl;
     fout<<"&column name=delta,          units=rad,          type=float,  &end"<<endl;
     fout<<"&data mode=ascii, &end"<<endl;
@@ -736,7 +734,8 @@ void SPBunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPa
 
         for(int k=0;k<longiTrajZeta[i].size();k++)
         {
-            fout<<setw(15)<<left<<longiTrajZeta[i][k][0]
+            fout<<setw(15)<<left<<k
+                <<setw(15)<<left<<longiTrajZeta[i][k][0]
                 <<setw(15)<<left<<longiTrajZeta[i][k][1]
                 <<endl;
         }

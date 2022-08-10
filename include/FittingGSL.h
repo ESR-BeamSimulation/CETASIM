@@ -27,10 +27,9 @@ public:
     FittingGSL();
     ~FittingGSL();
 
- 
-
     vector<double> FitASin(const vector<double> &xHistoryData, const double nux);
     
+
 private:
 
 };

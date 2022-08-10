@@ -44,11 +44,12 @@ void WakeFunction::InitialLRWake(const ReadInputSettings &inputParameter,const L
 {
     int nTurnswakeTrunction = inputParameter.ringLRWake->nTurnswakeTrunction;   
     int totBunchNum         = inputParameter.ringFillPatt->totBunchNumber;    
-     
+
+    // wake interatin is applied at the first point in twiss.dat file
     betaFunIntPoint[0]  = latticeInterActionPoint.twissBetaX[0];
     betaFunIntPoint[1]  = latticeInterActionPoint.twissBetaY[0];
 
-    betaFunAver[0]      = inputParameter.ringParBasic->betaFunAver[0];
+    betaFunAver[0]      = inputParameter.ringParBasic->betaFunAver[0];  // average beta funtion in x and y
     betaFunAver[1]      = inputParameter.ringParBasic->betaFunAver[1];
 
     posxData.resize(nTurnswakeTrunction);
@@ -349,7 +350,6 @@ vector<double> WakeFunction::GetRWSRWakeFun(double tau)
 vector<double> WakeFunction::GetRWLRWakeFun(double tau)
 {
     // wake sign follows Alex. Chao's Fig. 2.6 Notation. 
-
     //tau = - abs(tau);
     if(tau>0)
     {
@@ -363,15 +363,13 @@ vector<double> WakeFunction::GetRWLRWakeFun(double tau)
         return wakeFun;
     }
     
-
     // Alex Chao 2.53 and Eq.(2.76) are wake function impedance paris. The result as Nagao's Eq.(24) and Eq.(26) -- have to change to c*tau=z<0 .
 	
     //in Nagaka's paper
 	//wakeFun[0] =   1./(PI*pow(radius,3)) * sqrt(VaccumZ0/pipeMatSigma*CLight/PI)/pow(tau,0.5) * ringCirc;     // [V/C/m/m] positive, defocusing --per unit lengh
 	//wakeFun[1] =   wakeFun[0];		
-	//wakeFun[2] = - 1./(4*PI*radius)      * sqrt(VaccumZ0/pipeMatSigma/CLight/PI)/pow(tau,1.5) * ringCirc;     // [V/C/m ]  negative, decrease the energy
-    
-            
+	//wakeFun[2] = - 1./(4*PI*radius)      * sqrt(VaccumZ0/pipeMatSigma/CLight/PI)/pow(tau,1.5) * ringCirc;     // [V/C/m ]  negative, beam energy loss
+              
     //in Alex Chao 
     //wakeFun[0] = 2./PI/pow(radius,3) * sqrt(1/pipeMatSigma) / pow(tau,0.5)  * ringCirc * FactorGaussSI;
     //wakeFun[2] = 0;
@@ -485,8 +483,9 @@ vector<double> WakeFunction::GetBBRWakeFun1(double tau)
 vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
 {
     // longitudinal wake funciton, Refer to Alex 2.82 and 2.84 and 2.87 and 2.88    
-    // Here the wake are Eq. 12 and 20 to be used  Ref. NIMA 221-230 806 (2016) Nagaoka.
-    // wake sign follows Alex. Chao's Fig. 2.6 Notation. ---
+    // wake sign follows Alex. Chao's Fig. 2.6 Notation. 
+    // longitudnal wake -- head is positive -- loss energy
+    // transverse  wake -- head is negative -- defocusing 
     
     if(tau>0)
     {   

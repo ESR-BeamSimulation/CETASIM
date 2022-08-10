@@ -30,6 +30,15 @@ int         myRank;
 //int         Harmonics;     
 
 
+void sddsplot()
+{
+    //string command ="sddsplot -col=Turns,\'\(averAllBunchY,averAllBunchX\)\' result.sdds -graph=l,v -leg";
+    string command ="python3.6 GrowthRate.py";
+    char *cstr = new char[command.length()+1];
+    strcpy(cstr,command.c_str());
+    system(cstr);
+    delete [] cstr;
+}
 
 void RMOutPutFiles()
 {
@@ -39,6 +48,7 @@ void RMOutPutFiles()
     system(cstr);
     delete [] cstr;
 }
+
 
 double vectorDisNorm2(vector<double> a,vector<double> b)
 {

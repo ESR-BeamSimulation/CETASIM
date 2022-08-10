@@ -75,8 +75,18 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     {
         beamVec[i].InitialSPBunch(inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,inputParameter,i);
+        if (i==0)
+        {
+            beamVec[0].ePositionX[0] = 1.E-4;
+            beamVec[0].ePositionY[0] = 1.E-4;
+            beamVec[0].ePositionZ[0] = 0.E0;
+            beamVec[0].eMomentumX[0] = 0.E0;
+            beamVec[0].eMomentumY[0] = 0.E0;
+            beamVec[0].eMomentumZ[0] = 0.E0;
+        }
     }
- 
+
+    SPBeamRMSCal(latticeInterActionPoint, 0);
     
     for(int i=0;i<totBunchNum-1;i++)
     {
@@ -84,8 +94,7 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     }
     beamVec[totBunchNum-1].bunchGap = harmonics - beamVec[totBunchNum-1].bunchHarmNum;
 
-	RMOutPutFiles();
-	
+    RMOutPutFiles();
     /*
     for(int i=0;i<totBunchNum;i++)
     {
@@ -238,7 +247,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                 }
             }
             */
-            // do the averarage over the occuplied bucket 
+            // do the averarage over the occupied bucket 
 
             for(int k=0;k<beamVec.size(); k++)
             {
@@ -437,13 +446,34 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     if(lRWakeFlag)
     {            
         lRWakeFunction.InitialLRWake(inputParameter,latticeInterActionPoint);
+        
+        vector<double> posxDataTemp(beamVec.size());
+        vector<double> posyDataTemp(beamVec.size());
+        vector<double> poszDataTemp(beamVec.size());
+        
+        for(int i=0;i<beamVec.size();i++)
+        {
+            posxDataTemp[i] = beamVec[i].xAver;
+            posyDataTemp[i] = beamVec[i].yAver;
+            poszDataTemp[i] = beamVec[i].zAver;
+        }
+
+        // set positions of bunches at the first turn 
+        lRWakeFunction.posxData.push_back(posxDataTemp);
+        lRWakeFunction.posyData.push_back(posyDataTemp);
+        lRWakeFunction.poszData.push_back(poszDataTemp);
+
+        lRWakeFunction.posxData.erase(lRWakeFunction.posxData.begin());
+        lRWakeFunction.posyData.erase(lRWakeFunction.posyData.begin());
+        lRWakeFunction.poszData.erase(lRWakeFunction.poszData.begin());
+
     }
     if(sRWakeFlag)
     {            
         sRWakeFunction.InitialSRWake(inputParameter,latticeInterActionPoint);
     }
-     
- 
+    
+
     //-----------------------------------------------------------
               
     // turn by turn data-- average of bunches 
@@ -501,42 +531,52 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             for (int k=0;k<inputParameter.ringIonEffPara->numberofIonBeamInterPoint;k++)
             {
                 SPBeamRMSCal(latticeInterActionPoint, k);
-                SPGetBeamInfo();
                 WSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, n, k);
-                BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);             //transverse transfor per interaction point                
+                BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);             //transverse transfor per interaction point
             }
-                        
+
             if(ionInfoPrintInterval && (n%ionInfoPrintInterval==0))
-            {
+            {                
+                SPBeamRMSCal(latticeInterActionPoint, 0);
                 WSIonDataPrint(inputParameter,latticeInterActionPoint, n);
             }
         }
         else
         {
-            BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
+            SPBeamRMSCal(latticeInterActionPoint, 0);
+            BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);            
         }
+        
         BeamTransferPerTurnDueToLatticeL(inputParameter,cavityResonator); 
 
         if(lRWakeFlag)
         {
+            SPBeamRMSCal(latticeInterActionPoint, 0);
             LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint);
-            if(n> inputParameter.ringLRWake->nTurnswakeTrunction) 
-            {
-                BeamTransferPerTurnDueWake();
-            }        
+            BeamTransferPerTurnDueWake();   
         }
         
         if(synRadDampingFlag)
         {
+            SPBeamRMSCal(latticeInterActionPoint, 0);
             BeamSynRadDamping(inputParameter,latticeInterActionPoint);
         }
         
         if(fIRBunchByBunchFeedbackFlag)
-        {
+        {            
+            SPBeamRMSCal(latticeInterActionPoint, 0);
             FIRBunchByBunchFeedback(firFeedBack,n);
         }
-        
-        
+
+        SPBeamRMSCal(latticeInterActionPoint, 0);
+        SPGetBeamInfo(); 
+
+        if(  bunchInfoPrintInterval && (n%bunchInfoPrintInterval==0)  )
+        {             
+            SPBeamRMSCal(latticeInterActionPoint, 0);
+            SPBeamDataPrintPerTurn(n,latticeInterActionPoint,inputParameter);           
+        }
+
         fout<<n<<"  "
             <<setw(15)<<left<< latticeInterActionPoint.totIonCharge
             <<setw(15)<<left<< weakStrongBeamInfo->bunchAverXMax     //
@@ -567,18 +607,11 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
                 <<setw(15)<<left<<beamVec[index].zAver
                 <<setw(15)<<left<<beamVec[index].pzAver;
         }
-        fout<<endl;
-
-        if(  bunchInfoPrintInterval && (n%bunchInfoPrintInterval==0)  )
-        {             
-            SPBeamDataPrintPerTurn(n,latticeInterActionPoint,inputParameter);           
-        }
-                                           
+        fout<<endl;                                           
     }
     fout.close();
     cout<<"End of Tracking "<<nTurns<< "Turns"<<endl;
-
-    
+       
     // after single particle tracking- with the RF data to get the Haissinski solution -- not a self-consistent process, since
     // the bunch centor shift due to the potenwell distortation also affect the cavity voltage and phase.
     // It must be treated by numerical simulaiton...  
@@ -590,7 +623,9 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         {
             GetAnalyticalLongitudinalPhaseSpace(inputParameter,cavityResonator,sRWakeFunction);
         }
-    }    
+    }
+
+    //sddsplot();    
 }
 
 
@@ -700,27 +735,63 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 	wavetable = gsl_fft_complex_wavetable_alloc (beamVec.size());
 	workspace = gsl_fft_complex_workspace_alloc (beamVec.size());
 
+    double alphax = latticeInterActionPoint.twissAlphaX[0];
+    double betax  = latticeInterActionPoint.twissBetaX [0];
+    double alphay = latticeInterActionPoint.twissAlphaY[0];
+    double betay  = latticeInterActionPoint.twissBetaY[0] ;
+    double alphaz = 0;
+    double betaz  = 1;
+    double workQx = inputParameter.ringParBasic->workQx;
+    double workQy = inputParameter.ringParBasic->workQy;
+    double workQz = inputParameter.ringParBasic->workQz;
+
 
     double tempX[2*beamVec.size()];
     double tempY[2*beamVec.size()];
     double tempZ[2*beamVec.size()];
-    
+    double tempXFFT[2*beamVec.size()];
+    double tempYFFT[2*beamVec.size()];
+    double tempZFFT[2*beamVec.size()];
+ 
+    // IPAC 2022 WEPOMS010 -- Diamond-II
     for(int i=0;i<beamVec.size();i++)
 	{
-        tempX[2*i]  = beamVec[i].xAver;
-        tempY[2*i]  = beamVec[i].yAver;
-        tempZ[2*i]  = beamVec[i].zAver;
-        tempX[2*i+1]= beamVec[i].pxAver;
-        tempY[2*i+1]= beamVec[i].pyAver;
-        tempZ[2*i+1]= beamVec[i].pzAver;
-        //tempX[2*i+1]= 0;
-        //tempY[2*i+1]= 0;
-        //tempZ[2*i+1]= 0;
-	}
+        double x  =  beamVec[i].xAver;
+        double y  =  beamVec[i].yAver;
+        double z  =  beamVec[i].zAver;
+        
+        double px =  beamVec[i].pxAver;
+        double py =  beamVec[i].pyAver;
+        double pz =  beamVec[i].pzAver;
 
-    gsl_fft_complex_forward (tempX,1, beamVec.size(), wavetable, workspace);
-    gsl_fft_complex_forward (tempY,1, beamVec.size(), wavetable, workspace);
-    gsl_fft_complex_forward (tempZ,1, beamVec.size(), wavetable, workspace);
+
+        double phasex = - 2.0 * PI * workQx * i / beamVec.size();
+        double phasey = - 2.0 * PI * workQy * i / beamVec.size();
+        double phasez = - 2.0 * PI * workQz * i / beamVec.size();
+        complex<double> zx = x / sqrt(betax) - li * ( sqrt(betax) * px + alphax / sqrt(betax) * x ) * exp (li * phasex);
+        complex<double> zy = y / sqrt(betay) - li * ( sqrt(betay) * py + alphay / sqrt(betay) * y ) * exp (li * phasey); 
+        complex<double> zz = z / sqrt(betaz) - li * ( sqrt(betaz) * pz + alphaz / sqrt(betaz) * z ) * exp (li * phasez);  
+
+        tempX[2*i]  = zx.real();
+        tempY[2*i]  = zy.real();
+        tempZ[2*i]  = zz.real();
+        tempX[2*i+1]= zx.imag();
+        tempY[2*i+1]= zy.imag();
+        tempZ[2*i+1]= zz.imag();
+        
+        tempXFFT[2*i    ] = tempX[2*i    ];
+        tempXFFT[2*i + 1] = tempX[2*i + 1];
+        tempYFFT[2*i    ] = tempY[2*i    ];
+        tempYFFT[2*i + 1] = tempY[2*i + 1];
+        tempZFFT[2*i    ] = tempZ[2*i    ];
+        tempZFFT[2*i + 1] = tempZ[2*i + 1];
+
+	}
+ 
+
+    gsl_fft_complex_forward (tempXFFT,1, beamVec.size(), wavetable, workspace);
+    gsl_fft_complex_forward (tempYFFT,1, beamVec.size(), wavetable, workspace);
+    gsl_fft_complex_forward (tempZFFT,1, beamVec.size(), wavetable, workspace);
     gsl_fft_complex_workspace_free (workspace);
     gsl_fft_complex_wavetable_free (wavetable);
      
@@ -780,12 +851,12 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
     {
         fout<<setw(24)<<left<<setprecision(16)<<nTurns
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].bunchHarmNum
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].xAver
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].yAver
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].zAver
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].pxAver
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].pyAver
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].pzAver
+            <<setw(24)<<left<<setprecision(16)<<tempX[2*i]
+            <<setw(24)<<left<<setprecision(16)<<tempY[2*i]
+            <<setw(24)<<left<<setprecision(16)<<tempZ[2*i]
+            <<setw(24)<<left<<setprecision(16)<<tempX[2*i+1]
+            <<setw(24)<<left<<setprecision(16)<<tempY[2*i+1]
+            <<setw(24)<<left<<setprecision(16)<<tempZ[2*i+1]
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].actionJx
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].actionJy
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].totIonCharge
@@ -795,9 +866,9 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].lRWakeForceAver[1]
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].lRWakeForceAver[2]
             <<setw(24)<<left<<setprecision(16)<<i
-            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempX[2*i],2) + pow(tempX[2*i+1],2) )
-            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempY[2*i],2) + pow(tempY[2*i+1],2) )
-            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempZ[2*i],2) + pow(tempZ[2*i+1],2) );
+            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempXFFT[2*i],2) + pow(tempXFFT[2*i+1],2) )
+            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempYFFT[2*i],2) + pow(tempYFFT[2*i+1],2) )
+            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempZFFT[2*i],2) + pow(tempZFFT[2*i+1],2) );
 
             for(int j=0; j<inputParameter.ringParRf->resNum;j++)
             {
@@ -813,6 +884,20 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 
     fout.close();
 
+    ofstream foutX("coupledBunchedModeX.sdds",ios_base::app);
+    ofstream foutY("coupledBunchedModeY.sdds",ios_base::app);
+    
+    foutX<<setw(15)<<left<<nTurns;
+    foutY<<setw(15)<<left<<nTurns;
+    for(int i=0;i<beamVec.size();i++)
+    {    
+        foutX<<setw(15)<<left<< log( sqrt( pow(tempXFFT[2*i],2) + pow(tempXFFT[2*i+1],2) ) );
+        foutY<<setw(15)<<left<< log( sqrt( pow(tempYFFT[2*i],2) + pow(tempYFFT[2*i+1],2) ) );
+    }
+    foutX<<endl;
+    foutY<<endl;
+    foutX.close();
+    foutY.close();
 
 
     /*
@@ -843,14 +928,6 @@ void SPBeam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParamete
 
     }
 
-}
-
-void SPBeam::BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k)
-{
-    for(int j=0;j<beamVec.size();j++)
-    {
-        beamVec[j].BunchTransferDueToLatticeT(latticeInterActionPoint,k);
-    }
 }
 
 void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
@@ -1029,6 +1106,13 @@ void SPBeam::WSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
 } 
 
 
+void SPBeam::BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k)
+{
+    for(int j=0;j<beamVec.size();j++)
+    {
+        beamVec[j].BunchTransferDueToLatticeT(latticeInterActionPoint,k);
+    }
+}
 
 void SPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
@@ -1038,11 +1122,11 @@ void SPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInt
 
 void SPBeam::BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint)
 {
+    
     for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
     {
         BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);
     }
-
 }
 
 void SPBeam::GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)
@@ -1240,6 +1324,7 @@ void SPBeam::BeamSynRadDamping(const ReadInputSettings &inputParameter, const La
 
 void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction,const  LatticeInterActionPoint &latticeInterActionPoint)
 {
+
     int nTurnswakeTrunction     = inputParameter.ringLRWake->nTurnswakeTrunction;
     int harmonics               = inputParameter.ringParBasic->harmonics;
     double electronBeamEnergy   = inputParameter.ringParBasic->electronBeamEnergy;
@@ -1265,6 +1350,7 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
     wakefunction.posyData.push_back(posyDataTemp);
     wakefunction.poszData.push_back(poszDataTemp);
 
+
     vector<double> wakeForceTemp(3,0);
 
     double tauij=0.e0;
@@ -1274,49 +1360,50 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
     int tempIndex0,tempIndex1;
     
     //ofstream fout ("test.dat",ios_base::app);
-    for (int i=0;i<beamVec.size();i++)
+    for (int j=0;j<beamVec.size();j++)
     {
-	    beamVec[i].lRWakeForceAver[0] =0.E0;      // x
-	    beamVec[i].lRWakeForceAver[1] =0.E0;      // y
-	    beamVec[i].lRWakeForceAver[2] =0.E0;      // z
-
+	    beamVec[j].lRWakeForceAver[0] =0.E0;      // x rad
+	    beamVec[j].lRWakeForceAver[1] =0.E0;      // y rad
+	    beamVec[j].lRWakeForceAver[2] =0.E0;      // z rad
         
 	    for(int n=0;n<nTurnswakeTrunction;n++)
 	    {
+            // self-interation of bunch in current turn is excluded. 
             if(n==0)
             {
-                tempIndex0   = 0;
-                tempIndex1   = i;
+                tempIndex0   = j + 1;
+                tempIndex1   = beamVec.size() - 1;
             }
             else if (n==nTurnswakeTrunction-1)
             {
-                tempIndex0   = i + 1 ;
-                tempIndex1   = beamVec.size()-1;
-            }else
+                tempIndex0   = 0;
+                tempIndex1   = j;
+            }
+            else
             {
                 tempIndex0   = 0;
                 tempIndex1   = beamVec.size()-1;
             }
-                        
-            for(int j=tempIndex0;j<=tempIndex1;j++)
+
+            for(int i=tempIndex0;i<=tempIndex1;i++)
             {
+                
                 nTauij = beamVec[j].bunchHarmNum - beamVec[i].bunchHarmNum - n * harmonics;
                 tauij  = nTauij * tRF;
-
 	            if(!inputParameter.ringLRWake->pipeGeoInput.empty())
 	            {                                       
-                    wakeForceTemp = wakefunction.GetRWLRWakeFun(tauij); // V/C/m      		    	
-                    beamVec[i].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[j].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][j];    //[V/C/m] * [m] ->  [V/C]
-                    beamVec[i].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[j].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][j];    //[V/C/m] * [m] ->  [V/C]
-                    beamVec[i].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[j].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]
+                    wakeForceTemp = wakefunction.GetRWLRWakeFun(tauij); // V/C/m
+                    beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
+                    beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
+                    beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch ;                                                       //[V/C]         ->  [V/C]
                 }
 
                 if(!inputParameter.ringLRWake->bbrInput.empty())
 	            {
                     wakeForceTemp = wakefunction.GetBBRWakeFun(tauij);  // V/C/m
-	                beamVec[i].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[j].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][j];    //[V/C/m] * [m] ->  [V/C]
-	                beamVec[i].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[j].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][j];    //[V/C/m] * [m] ->  [V/C]
-	                beamVec[i].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[j].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]
+	                beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
+	                beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
+	                beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]
                 }
 
                 //fout<<setw(15)<<left<<n
@@ -1348,9 +1435,9 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
         //cout<<__LINE__<<endl;
         //getchar();
         
-        beamVec[i].lRWakeForceAver[0] *=  ElectronCharge / electronBeamEnergy ;  // [V/C] * [C] * [1e] / [eV] ->rad
-        beamVec[i].lRWakeForceAver[1] *=  ElectronCharge / electronBeamEnergy ;  // [V/C] * [C] * [1e] / [eV] ->rad
-        beamVec[i].lRWakeForceAver[2] *=  ElectronCharge / electronBeamEnergy ;  // [V/C] * [C] * [1e] / [eV] ->rad
+        beamVec[j].lRWakeForceAver[0] *=  ElectronCharge / electronBeamEnergy ;  // [V/C] * [C] * [1e] / [eV] ->rad
+        beamVec[j].lRWakeForceAver[1] *=  ElectronCharge / electronBeamEnergy ;  // [V/C] * [C] * [1e] / [eV] ->rad
+        beamVec[j].lRWakeForceAver[2] *=  ElectronCharge / electronBeamEnergy ;  // [V/C] * [C] * [1e] / [eV] ->rad
 
         //cout<<setw(15)<<left<<beamVec[i].xAver
         //    <<setw(15)<<left<<beamVec[i].lRWakeForceAver[0]
@@ -1358,6 +1445,8 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
         //    <<setw(15)<<left<<beamVec[i].lRWakeForceAver[2]
         //    <<setw(15)<<left<<__LINE__<<__FILE__<<endl;
     }
+    //getchar();
+    //fout.close();
 
     // Reference to "simulation of transverse multi-bunch instabilities of proton beam in LHC, PHD thesis, Alexander Koshik P. 32, Eq. (3.22)"
 } 
