@@ -1,8 +1,7 @@
 # FASTION
 New features are added in the code. 
 For beam-ion simulation, multi-gas and and multi-interaction subroutine are added. 
-Long range wake due to RW and HOM are under debuging.  
-All files printed out are changed to sdds format. 
+Long range wake due to RW and HOM in MP mode is under debuging.  
 
 
 This code is delveped with C++ by Chao Li.
