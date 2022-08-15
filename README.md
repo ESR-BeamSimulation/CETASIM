@@ -7,7 +7,7 @@ Chromaticity effect will be added in the future.
 
 
 This code is delveped with C++ by Chao Li.
-Any problems, please contract the author li.chao@desy.de supperli.imp@gmail.com.
+Any problems, please contact the author li.chao@desy.de supperli.imp@gmail.com.
 
 
 
