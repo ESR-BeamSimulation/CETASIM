@@ -627,25 +627,23 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         }
     
         if(strVec[0]=="runtbtbunchdisdatabunchindex")
-        {                       
-          
+        {                                 
           for(int i=0;i<ringRun->TBTBunchDisDataBunchIndex.size();i++)
           {
-            ringRun->TBTBunchDisDataBunchIndex[i] = stoi(strVec[i+1]);
+            ringRun->TBTBunchDisDataBunchIndex[i] = stoi(strVec[i+1]);           
           }          
         }
                                                                
     }
 
+    // debug -- print all bunch data
+    // ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;
+    // ringRun->TBTBunchDisDataBunchIndex.resize(ringRun->TBTBunchPrintNum );
+    // for(int i=0;i<ringRun->TBTBunchPrintNum;i++)
+    // {
+    //    ringRun->TBTBunchDisDataBunchIndex[i] = i; 
+    // }
     
-    ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;
-    ringRun->TBTBunchDisDataBunchIndex.resize(ringRun->TBTBunchPrintNum );
-    for(int i=0;i<ringRun->TBTBunchPrintNum;i++)
-    {
-      ringRun->TBTBunchDisDataBunchIndex[i] = i;    
-    }
-    
-
 
     if(ringRun->TBTBunchPrintNum > ringFillPatt->totBunchNumber )
     {
@@ -653,6 +651,20 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
       cerr<<ringFillPatt->totBunchNumber <<" bunches are to be printed out"<<endl;
       exit(0);
     }
+    else
+    {
+      for(int i=0;i<ringRun->TBTBunchPrintNum;i++)
+      {
+        if(ringRun->TBTBunchDisDataBunchIndex[i] >= ringFillPatt->totBunchNumber)
+        {
+          cerr<<"wrong settings: runTBTBunchDisDataBunchIndex, the printed bunch index is larger than total bunch number"<<endl;  
+          exit(0);
+        }
+      }
+    }
+    
+
+
 
     //1) data from ringPaBbasic
     double  circRing           = ringParBasic->circRing;

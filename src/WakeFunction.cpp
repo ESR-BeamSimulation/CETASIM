@@ -386,15 +386,18 @@ vector<double> WakeFunction::GetRWLRWakeFun(double tau)
                 
         wakeFun[0] += 1./ pow(radius,3) * sqrt(1.E0/pipeMatSigma) *  sectorLength[i] *  sectorNum[i] * yokoyaFactor[i][1] * sectorBetaX[i];  // [m^-3] * [s^{1/2}] * [m] --> [m^-2] * [s^{1/2}]
         wakeFun[1] += 1./ pow(radius,3) * sqrt(1.E0/pipeMatSigma) *  sectorLength[i] *  sectorNum[i] * yokoyaFactor[i][2] * sectorBetaY[i];   
-        wakeFun[2] += 1./     radius    * sqrt(1.E0/pipeMatSigma) *  sectorLength[i] *  sectorNum[i] * yokoyaFactor[i][0];   // [m^-1] * [s^{1/2}] * [m] -->          [s^{1/2}]    
+        wakeFun[2] += 1./     radius    * sqrt(1.E0/pipeMatSigma) *  sectorLength[i] *  sectorNum[i] * yokoyaFactor[i][0]; // [m^-1] * [s^{1/2}] * [m] -->          [s^{1/2}]    
     }
+    // cout<< wakeFun[0] *  ( -2.) / PI * FactorGaussSI <<endl;
+    // getchar();
 
     wakeFun[0] = wakeFun[0] *  ( -2.) / PI            /  pow( abs(tau),0.5) * FactorGaussSI / betaFunIntPoint[0] ;  // [m^-2] * [s^{1/2}] * [s^{-1/2}]  -> [m^-2] -> [s/m 1/m 1/s] ->[ohm]/m/s ->V/I/m/s->V/C/m  
     wakeFun[1] = wakeFun[1] *  ( -2.) / PI            /  pow( abs(tau),0.5) * FactorGaussSI / betaFunIntPoint[1]; 
     wakeFun[2] = wakeFun[2] /  (  2.) / PI / CLight   /  pow( abs(tau),1.5) * FactorGaussSI;                        //          [s^{1/2}] * [s^{-3/2}] [s]/[m]    -> 1/[m] -> [ohm/s] -> V/C
 
-	return wakeFun;
 
+
+	return wakeFun;
     // longitudnal wake -- head is positive -- loss energy
     // transverse  wake -- head is negative -- defocusing 
 

@@ -61,7 +61,10 @@ public:
     WeakStrongBeamInfo *weakStrongBeamInfo = new WeakStrongBeamInfo;    
     
     vector<SPBunch> beamVec;
-    vector<double> timeBetweenBunch; 
+    vector<double> timeBetweenBunch;
+    vector<vector<double> > coupledBunchModeAmpX;
+    vector<vector<double> > coupledBunchModeAmpY;
+    vector<vector<double> > coupledBunchModeAmpZ; 
     
 
     void Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator);

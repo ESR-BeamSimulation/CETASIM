@@ -16,10 +16,11 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_blas.h>
+#include <gsl/gsl_fit.h>
 #include <gsl/gsl_multifit_nlinear.h>
 #include "Global.h"
 
-
+using namespace std;
 
 FittingGSL::FittingGSL()
 {
@@ -224,4 +225,19 @@ vector<double> FittingGSL::FitASin(const vector<double> &xHistoryData,const doub
     
   return fitRes;
     
+}
+
+
+vector<double> FittingGSL:: FitALinear(double *x, double *w, double *y, int n)
+{
+  double c0, c1, cov00, cov01, cov11, chisq;
+  
+  gsl_fit_wlinear (x, 1, w, 1, y, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &chisq);
+  
+  vector<double> fitRes(2,0.E0);
+  fitRes[0] = c0;
+  fitRes[1] = c1;
+
+  return fitRes;
+
 }
