@@ -70,7 +70,7 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
                                             (
                                               resonatorVec[i].resFre / (resonatorVec[i].resHarm * ringHarmH * f0 ) 
                                             - resonatorVec[i].resHarm * ringHarmH * f0 / resonatorVec[i].resFre     
-                                            );          
+                                            );  // Eq. (7.23)           
                                                     
         resonatorVec[i].resDeTunePsi      = atan(tanPsi); 
         resonatorVec[i].tF                = 2 * resonatorVec[i].resQualityQL / (2 * PI * resonatorVec[i].resFre );  //Eq.(7.25) [s] same notation as P.B. Wilson [s]                         

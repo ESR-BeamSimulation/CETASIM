@@ -395,8 +395,6 @@ vector<double> WakeFunction::GetRWLRWakeFun(double tau)
     wakeFun[1] = wakeFun[1] *  ( -2.) / PI            /  pow( abs(tau),0.5) * FactorGaussSI / betaFunIntPoint[1]; 
     wakeFun[2] = wakeFun[2] /  (  2.) / PI / CLight   /  pow( abs(tau),1.5) * FactorGaussSI;                        //          [s^{1/2}] * [s^{-3/2}] [s]/[m]    -> 1/[m] -> [ohm/s] -> V/C
 
-
-
 	return wakeFun;
     // longitudnal wake -- head is positive -- loss energy
     // transverse  wake -- head is negative -- defocusing 
@@ -499,7 +497,8 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
     vector<double> wakeFun(3,0);
     double coeff,coeff1,coeff2;
     double temp;
-    double omegab,alpha;
+    double omegab;
+    double alpha;
 
     // transverse BBR wake function  Alex Chao's notation Eq. 2.88 head is negative -- defocusing
         
@@ -531,9 +530,17 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
         else
         {
             wakeFun[2] +=  coeff * (coeff1 + coeff2);                                       // [V/C]  
-        }        
+        }
+    //     cout<<setw(15)<<left<<i
+    //         <<setw(15)<<left<<tau
+    //         <<setw(15)<<left<<alpha
+    //         <<setw(15)<<left<<omegab
+    //         <<setw(15)<<left<<coeff
+    //         <<setw(15)<<left<<wakeFun[2]
+    //         <<endl;
     }
-          
+    // getchar();
+
     return wakeFun;
 }
 

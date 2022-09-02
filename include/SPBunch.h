@@ -62,8 +62,8 @@ public:
     void DistriGenerator(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter, int i);
     void GetSPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoint, int k);    
     void WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
-    
+    void BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns);
+    void BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns);
      // bunch haissinski solution//deal the data in Haissinski structure. 
     void GetBunchHaissinski(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetWakeHamiltonian(const ReadInputSettings &inputParameter,WakeFunction &sRWakeFunction);

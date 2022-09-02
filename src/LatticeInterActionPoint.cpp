@@ -232,13 +232,14 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         twissBetaZ[i]  = inputParameter.ringBunchPara->rmsBunchLength / inputParameter.ringBunchPara->rmsEnergySpread;        //ref. Zhang Yuan's paper, above Eq. (8).  
         twissAlphaZ[i] = 0.0;
         zPhaseAdv[i]   = interactionLength[i] * 2 * PI * workQz;   
-                
+            
         xAperture>pipeAperatureX[i] ? (pipeAperatureX[i]=pipeAperatureX[i]) : (pipeAperatureX[i]=xAperture);
         yAperture>pipeAperatureY[i] ? (pipeAperatureY[i]=pipeAperatureY[i]) : (pipeAperatureY[i]=yAperture);
-          
+
         i++;
         index++;
     }
+
 
     fin.close();
 
@@ -349,13 +350,15 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
                                  +(    alphaZ1 - alphaZ2)/sqrt(betaZ1 * betaZ2) * cos(phaseAdvanceZ);
         zTransferMatrix[i][3]  = sqrt(betaZ1 / betaZ2) * (cos(phaseAdvanceZ) - alphaZ2 * sin(phaseAdvanceZ));
         
-        //cout<<setw(15)<<left<<zTransferMatrix[i][0]<<setw(15)<<left<<zTransferMatrix[i][1]<<endl;
-        //cout<<setw(15)<<left<<zTransferMatrix[i][2]<<setw(15)<<left<<zTransferMatrix[i][3]<<endl;
-        //cout<<setw(15)<<left<<yTransferMatrix[i][0]<<setw(15)<<left<<yTransferMatrix[i][1]<<endl;
-        //cout<<setw(15)<<left<<yTransferMatrix[i][2]<<setw(15)<<left<<yTransferMatrix[i][3]<<endl;
-        //cout<<setw(15)<<left<<xTransferMatrix[i][0]<<setw(15)<<left<<xTransferMatrix[i][1]<<endl;
-        //cout<<setw(15)<<left<<xTransferMatrix[i][2]<<setw(15)<<left<<xTransferMatrix[i][3]<<endl;        
-        //getchar();
+        // cout<<setw(15)<<left<<zTransferMatrix[i][0]<<setw(15)<<left<<zTransferMatrix[i][1]<<endl;
+        // cout<<setw(15)<<left<<zTransferMatrix[i][2]<<setw(15)<<left<<zTransferMatrix[i][3]<<endl;
+        // cout<<setw(15)<<left<<yTransferMatrix[i][0]<<setw(15)<<left<<yTransferMatrix[i][1]<<endl;
+        // cout<<setw(15)<<left<<yTransferMatrix[i][2]<<setw(15)<<left<<yTransferMatrix[i][3]<<endl;
+        // cout<<setw(15)<<left<<xTransferMatrix[i][0]<<setw(15)<<left<<xTransferMatrix[i][1]<<endl;
+        // cout<<setw(15)<<left<<xTransferMatrix[i][2]<<setw(15)<<left<<xTransferMatrix[i][3]<<endl;        
+        // cout<< inputParameter.ringBunchPara->rmsBunchLength<<endl;
+        // cout<< inputParameter.ringBunchPara->rmsEnergySpread<<endl;      
+        // getchar();
         
     }
 
@@ -551,12 +554,10 @@ void LatticeInterActionPoint::IonTransferDueToBunch(int bunchGap,int k, double b
     
     pipeAperatureX[k]>ionLossBoundary*bunchEffectiveSizeXMax ? (ionLossXBoundary = ionLossBoundary*bunchEffectiveSizeXMax) : (ionLossXBoundary = pipeAperatureX[k]);
     pipeAperatureY[k]>ionLossBoundary*bunchEffectiveSizeYMax ? (ionLossYBoundary = ionLossBoundary*bunchEffectiveSizeYMax) : (ionLossYBoundary = pipeAperatureY[k]);     
-
-
+    
     totIonChargeAtInterPoint[k]=0;
     totMacroIonsAtInterPoint[k]=0;
-    
-    
+
     for(int p=0;p<gasSpec;p++)
     {    
         int i=0;
@@ -579,7 +580,9 @@ void LatticeInterActionPoint::IonTransferDueToBunch(int bunchGap,int k, double b
         totMacroIonsAtInterPoint[k] +=  ionAccumuNumber[k][p];
         totIonChargeAtInterPoint[k] +=  ionAccumuNumber[k][p] * macroIonCharge[k][p]; 
     }     
-    
+    //   cout<<ionLossXBoundary <<" "<<ionLossXBoundary<<" "<<totIonChargeAtInterPoint[k]<<"   "<<totMacroIonsAtInterPoint[k]
+    //     <<" "<<ionLossBoundary<< "  "<< bunchEffectiveSizeXMax<<"   "<<bunchEffectiveSizeYMax<<endl;
+
     GetTotIonCharge();
 
 }

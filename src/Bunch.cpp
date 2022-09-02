@@ -67,7 +67,7 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
     eFxDueToIon.resize(macroEleNumPerBunch,0E0);
     eFyDueToIon.resize(macroEleNumPerBunch,0E0);
     eFzDueToIon.resize(macroEleNumPerBunch,0E0);
-    eSurive.resize(macroEleNumPerBunch,1E0);
+    eSurive.resize(macroEleNumPerBunch,1);
     
     
     cavFBCenInfo->cavVolBunchCen.resize(inputParameter.ringParRf->resNum);
@@ -177,6 +177,8 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
     double ytemp=0.E0;
     double xPtemp=0.E0;
     double yPtemp=0.E0;
+    double ztemp=0.E0;
+    double zPtemp=0.E0;
    
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
@@ -199,10 +201,22 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
         eMomentumX[i] = xPtemp;
         eMomentumY[i] = yPtemp;
 
-        if(pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2)>1)
-        {
-            eSurive[i] = 0;  // particle is lost when  eSurive[i]==0
-        }             
+
+        // ztemp  = latticeInterActionPoint.zTransferMatrix[k][0] * ePositionZ[i]
+        //        + latticeInterActionPoint.zTransferMatrix[k][1] * eMomentumZ[i];
+
+        // zPtemp = latticeInterActionPoint.zTransferMatrix[k][2] * ePositionZ[i]
+        //        + latticeInterActionPoint.zTransferMatrix[k][3] * eMomentumZ[i];
+
+        // ePositionZ[i] = ztemp;
+        // eMomentumZ[i] = zPtemp;
+
+        double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2);
+
+        if( lossTemp > 1)
+        {            
+            eSurive[i] = 0;  // particle is lost in transverse when  eSurive[i]==0
+        }
     }
     
 }

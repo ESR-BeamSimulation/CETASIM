@@ -694,7 +694,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
  
    //1) set ringParBasic
     double vRF = ringParRf->resVol[0];
-    double synPhase = PI - asin(vRF/electronBeamEnergy);
+    double synPhase = PI - asin(u0/vRF);
         
     
     double workQz= sqrt(-1 * eta * harmonics * vRF * cos(synPhase) / (2 * PI * rBeta * electronBeamEnergy) );
@@ -703,6 +703,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         
     ringParBasic->rGamma = rGamma;
     ringParBasic->rBeta = rBeta;
+ 
     ringParBasic->t0 = t0;
     ringParBasic->f0 = f0;
     
@@ -711,6 +712,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     ringParBasic->harmonics = harmonics;
     ringParBasic->sigmaT0 = sigmaT0;
     ringParBasic->workQz = workQz;
+ 
 
     ringParBasic->eta = eta;
     ringParBasic->current = ringBunchPara->current * ringFillPatt->totBunchNumber;

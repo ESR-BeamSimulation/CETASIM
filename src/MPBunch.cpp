@@ -736,8 +736,8 @@ void MPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
             hamiltonPotenWellTemp[j][k]  = hamiltonPotenWellTemp[j][k-1] + (cavForceInfoVsLongBins[j][k-1] + cavForceInfoVsLongBins[j][k])/2.0; // dimensionless (22) PRAB 2018,21 012001
         }                                                                                                                                       // dz is dealed with later
 
-        //tB     = timeToFirstBinOfNextBunch;
-        tB     = bunchGap * t0 / ringHarmH;
+        tB     = timeToFirstBinOfNextBunch;
+        //tB     = bunchGap * t0 / ringHarmH;
 
         deltaL = tB / cavityResonator.resonatorVec[j].tF;
         cPsi   = deltaL * tan(cavityResonator.resonatorVec[j].resDeTunePsi);

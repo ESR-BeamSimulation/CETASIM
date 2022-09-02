@@ -1093,11 +1093,11 @@ void MPBeam::GetBinDistBetweenBunch(ReadInputSettings &inputParameter)
 
         if(i<beamVec.size()-1)
         {
-            timeBetweenBunch[i] =  beamVec[i].bunchGap * rfLen + (beamVec[i].zAver - beamVec[i+1].zAver) - (beamVec[i].rmsBunchLength/2.0 + beamVec[i+1].rmsBunchLength/2.0);
+            timeBetweenBunch[i] = beamVec[i].bunchGap * rfLen - (beamVec[i].zAver - beamVec[i].rmsBunchLength/2.0) + (beamVec[i+1].zAver + beamVec[i+1].rmsBunchLength/2.0);
         }
         else
         {
-            timeBetweenBunch[i] = beamVec[i].bunchGap * rfLen + (beamVec[i].zAver - beamVec[0].zAver)    - (beamVec[i].rmsBunchLength/2.0 + beamVec[0].rmsBunchLength/2.0);
+            timeBetweenBunch[i] = beamVec[i].bunchGap * rfLen + (beamVec[i].zAver - beamVec[i].rmsBunchLength/2.0) + (beamVec[i+1].zAver + beamVec[i+1].rmsBunchLength/2.0);
         }
 
         timeBetweenBunch[i] /= CLight;

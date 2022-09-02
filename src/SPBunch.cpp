@@ -137,7 +137,7 @@ void SPBunch::DistriGenerator(const LatticeInterActionPoint &latticeInterActionP
 
 void SPBunch::GetSPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
-    if (eSurive[0] = 0)
+    if (eSurive[0] == 0)
     {
         cerr<<"electron beam is lost at certain bunch in SP model"<<endl;
         exit(0);
@@ -253,12 +253,61 @@ void SPBunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionP
     totIonCharge = latticeInterActionPoint.totIonCharge;
 
 }
+void SPBunch:: BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int tunrs)
+{
+    double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
 
-void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+    int resNum        = inputParameter.ringParRf->resNum;
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double t0         = inputParameter.ringParBasic->t0;
+    double f0         = inputParameter.ringParBasic->f0;
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double eta        = inputParameter.ringParBasic->eta;
+    double u0         = inputParameter.ringParBasic->u0;
+    double alphac     = inputParameter.ringParBasic->alphac;
+    double workQz     = inputParameter.ringParBasic->workQz;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double circRing = inputParameter.ringParBasic->circRing;
+    double tempz  = ePositionZ[0];
+    double temppz = eMomentumZ[0];
+    double phaseAdvanceZ = 2 * PI * workQz;
+    double betaz  = inputParameter.ringBunchPara->rmsBunchLength / inputParameter.ringBunchPara->rmsEnergySpread; 
+
+    double a00 =              cos(phaseAdvanceZ);
+    double a01 =      betaz * sin(phaseAdvanceZ);
+    double a10 = -1 / betaz * sin(phaseAdvanceZ);
+    double a11 =              cos(phaseAdvanceZ);
+
+    ePositionZ[0]  =  a00 * tempz + a01 * temppz;
+    eMomentumZ[0]  =  a10 * tempz + a11 * temppz; 
+
+    // if(  abs(ePositionZ[0]) > t0 * CLight / ringHarmH || abs(eMomentumZ[0]) > 0.5 ) 
+    // {
+    //     eSurive[0] = 0; 
+    // }
+
+
+    // leapfrog integration process.
+    // (1) get the f(q) at the n step
+    // double fqn = pow(2 * PI *  workQz ,2) /  eta / circRing *  ePositionZ[0] ;
+    // // (2) get  p at n + 1/2 step     
+    // eMomentumZ[0] +=  fqn / 2; 
+    // // (3) get  q at n + 1 step
+    // ePositionZ[0] -= eta * circRing * eMomentumZ[0];
+    // // (4) get the f(q) at n + 1 step 
+    // fqn = pow(2 * PI *  workQz ,2) /  eta / circRing *  ePositionZ[0];
+    // // (5) get the p at n + 1 step
+    // eMomentumZ[0] +=  fqn / 2; 
+
+
+
+}
+
+void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns)
 {
     // Ref. bunch.h that ePositionZ = - ePositionT * c. head pariticles: deltaT<0, ePositionZ[i]>0.
     // During the tracking, from head to tail means ePositionZMin from [+,-];   
-    
+
     double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
 
     int resNum        = inputParameter.ringParRf->resNum;
@@ -298,7 +347,7 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
 
         // induced voltage vbAccum is at time just before the next bunch comes,  genVolBunchAver[j] includes average one turn feedback.
         cavVoltage = cavityResonator.resonatorVec[j].vbAccum + cavFBCenInfo->genVolBunchAver[j];
-  
+          
         //cavVoltage = cavityResonator.resonatorVec[j].resCavVolReq;
         cavVolAmp  = abs(cavVoltage);
         cavVolArg  = arg(cavVoltage);
@@ -306,16 +355,18 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         haissinski->cavAmp[j]   = cavVolAmp;
         haissinski->cavPhase[j] = cavVolArg;
         //particle momentum due to cavity
-        eMomentumZ[0] += cavVolAmp  * cos( -2. * PI * ringHarmH * f0 * resHarm * ePositionZ[0] / (rBeta * CLight)  +  cavVolArg )/electronBeamEnergy;
+        eMomentumZ[0] += cavVolAmp  * cos( -2. * PI * ringHarmH * f0 * resHarm * ePositionZ[0] / (rBeta * CLight)  +  cavVolArg )/electronBeamEnergy / pow(rBeta,2);
 
         //particle momentum due to self-field
-        eMomentumZ[0] += vb0.real()/2.0/electronBeamEnergy;
-        
-        // beam induced voltage accumulated  
-        cavityResonator.resonatorVec[j].vbAccum += vb0;
+        eMomentumZ[0] += vb0.real()/2.0/electronBeamEnergy / pow(rBeta,2);
 
-        //tB = timeToFirstBinOfNextBunch;
-        tB = bunchGap * t0 / ringHarmH;
+        // beam induced voltage accumulated  
+        cavityResonator.resonatorVec[j].vbAccum += vb0;        
+
+        // time to next bunch
+        tB = timeToFirstBinOfNextBunch;
+   
+        //tB = bunchGap * t0 / ringHarmH;
         deltaL = tB / cavityResonator.resonatorVec[j].tF;
         cPsi   = deltaL * tan(cavityResonator.resonatorVec[j].resDeTunePsi);
 
@@ -330,9 +381,14 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         cavFBCenInfo->selfLossVolBunchCen[j] = vb0/2.0;    
     }
 
-    eMomentumZ[0]  = eMomentumZ[0] - u0 / electronBeamEnergy;
-    eMomentumZ[0]  = eMomentumZ[0] * (1.0-2.0/synchRadDampTime[2]);                 // to maintain the symetric,
-    ePositionZ[0] -= eta * t0  * CLight * rBeta * eMomentumZ[0];                      // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight 
+    eMomentumZ[0]  = eMomentumZ[0] - u0 / electronBeamEnergy / pow(rBeta,2);
+    eMomentumZ[0]  = eMomentumZ[0] * (1.0-2.0/synchRadDampTime[2]);          // to maintain the symetric,
+    ePositionZ[0] -= eta * t0  * CLight * rBeta * eMomentumZ[0];             // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight 
+
+    if(  abs(ePositionZ[0]) > t0 * CLight * ringHarmH   || abs(eMomentumZ[0]) > 0.1 ) 
+    {
+        eSurive[0] = 0; 
+    }
 }
 
 void SPBunch::GetBunchHaissinski(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)

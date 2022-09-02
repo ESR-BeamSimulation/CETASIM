@@ -42,7 +42,7 @@ public:
     vector<double> eFxDueToIon;     // rad  
     vector<double> eFyDueToIon;
     vector<double> eFzDueToIon;
-    vector<double> eSurive;         // if not Surive--throw out loss infomation
+    vector<int> eSurive;         // if not Surive--throw out loss infomation
 
     double xAver=0.E0;
     double yAver=0.E0;
@@ -50,6 +50,15 @@ public:
     double pxAver=0.E0;
     double pyAver=0.E0;
     double pzAver=0.E0;
+    complex<double> xAverAnalytical;
+    complex<double> yAverAnalytical;
+    complex<double> zAverAnalytical;
+    // double xAverHilbertAnalytical=0.E0;
+    // double yAverHilbertAnalytical=0.E0;
+    // double zAverHilbertAnalytical=0.E0;
+    // double pxAverHilbertAnalytical=0.E0;
+    // double pyAverHilbertAnalytical=0.E0;
+    // double pzAverHilbertAnalytical=0.E0;
     
 
     int macroEleNumPerBunch=1;
