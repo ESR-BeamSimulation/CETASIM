@@ -1101,7 +1101,7 @@ void MPBeam::GetBinDistBetweenBunch(ReadInputSettings &inputParameter)
         }
 
         timeBetweenBunch[i] /= CLight;
-        beamVec[i].timeToFirstBinOfNextBunch = timeBetweenBunch[i];
+        beamVec[i].timeToLastBunch = timeBetweenBunch[i];
     }
 
 }

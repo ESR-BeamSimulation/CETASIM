@@ -68,7 +68,8 @@ public:
     double electronEnergy;               // [eV]
     double rGamma;
     double rBeta;
-    double timeToFirstBinOfNextBunch;    //[s]
+    double timeToNextBunch;    //[s]
+    double timeToLastBunch;
     
     double rmsBunchLength;
     double rmsEnergySpread;

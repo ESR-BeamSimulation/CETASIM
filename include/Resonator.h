@@ -44,7 +44,9 @@ public:
 
     complex<double> resCavVolReq=(0,0);     // it is the target value -- take into the self-beam loading voltage into account.   
     complex<double> resGenVol=(0,0);        // in the cos  convention used in the code, the real part represents the momentum change
-    complex<double> vbAccum=(0,0);          // used in the tracking, record transent cavity voltage   
+    complex<double> vbAccum=(0,0);          // used in the tracking, record transient  cavity voltage
+    complex<double> vbAccum0=(0,0);          // used in the tracking,record transient cavity voltage in omegarf frame 
+    complex<double> vbAccumRFFrame=(0,0);          // used in the tracking,record transient cavity voltage in omegarf frame    
     complex<double> resGenVolFB=(0.0,0);    // ref. PRAB 24, 104401 2021 Eq. (9). 
 
     //  resCavVol=(0,0) is the target vaule or designed value 

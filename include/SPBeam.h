@@ -61,7 +61,6 @@ public:
     WeakStrongBeamInfo *weakStrongBeamInfo = new WeakStrongBeamInfo;    
     
     vector<SPBunch> beamVec;
-    vector<double> timeBetweenBunch;
     vector<vector<double> > coupledBunchModeAmpX;
     vector<vector<double> > coupledBunchModeAmpY;
     vector<vector<double> > coupledBunchModeAmpZ; 
@@ -82,7 +81,7 @@ public:
     void GetBinDistBetweenBunch(ReadInputSettings &inputParameter);   
     void GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
-    
+    void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);
 
     // shared funcitons by MP and SP cases.         
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);

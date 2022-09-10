@@ -77,7 +77,6 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
     cavFBCenInfo->induceVolBunchCen.resize(inputParameter.ringParRf->resNum);
     cavFBCenInfo->selfLossVolBunchCen.resize(inputParameter.ringParRf->resNum);
 
-
     
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {        
