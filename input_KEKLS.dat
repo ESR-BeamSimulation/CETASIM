@@ -1,9 +1,9 @@
-//input file for KEK LS 
+//input file for KEK LS  // due to the reading subroutine, do not change the order of the paramters in this script. especially when the following parameters depends on the previous ones.
 
 &ring
 ringCircRing = 570.725E0
 ringWorkQ                  = 135.18E0  86.27E0  0.00511035
-ringSynchRadDampTime       = 9362      28800      3676       // in the unit of truns
+ringSynchRadDampTime       = 9362      28800      3800       // in the unit of truns
 ringPipeAperatureX         = 1.0E-2                         // [m]
 ringPipeAperatureY         = 1.0E-2                         // [m]
 ringPipeAperatureR         = 1.0E-2                         // [m]   not used in code
@@ -17,26 +17,30 @@ ringU0                     = 0.851E+6
 // Include the generator and RF setting--then the cavities paramters have to be set in this section.
 &rfset
 
-rfRingHarm        = 952                          // harmonics number of the ring
+rfRingHarm        = 952                           // harmonics number of the ring
 rfResNum          = 2                             // passive HC can also be treated as RLC impedance--long range wake in time domain treatment 
 rfResHarm         = 1  3                          // harm number of the cavity (normalized by ringHarm). 
-rfResType         = 1  1                          // active=1, passive=0. Main cavity is always active
+rfResType         = 1  0                          // active=1, passive=0. Main cavity have to be active. Set Rs=0, DetunFre=0 for ideal cavity simulation 
 rfResVol          = 2.5E+6  0.777e+6              // cavity voltage [V],   target value to be maintained.  
-rfResPhase        = 1.178  -1.708                // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
-                                                  // if only with 1 cavity, the ideal value will be set as default  
-!rfResPhase        = 1.22345  -1.708 
-                                                                                                   
-rfResShuntImpRs   = 17.5E+6  7.24E+6                // [ohm]
-rfResQualityQ0    = 40000   37513                 // unLoaded quality factor
-rfResCouplingBeta = 3.5     0.27                   // coupling factor   
-rfResDetuneFre    = -40.3e+3  185.e+3         // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+rfResPhase        = 1.178  -1.708                 // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
+                                                  // if only with 1 cavity, the ideal value will be set as default        
+!rfResPhase         = 1.22346  -1.708                                                                                                    
+rfResShuntImpRs    = 17.5E+6  7.24E+6            // [ohm]
+!rfResShuntImpRs   = 0.E+6  7.24E+6               // [ohm]
+rfResQualityQ0     = 40000   37513               // unLoaded quality factor
+rfResCouplingBeta  = 3.5     0.27                // coupling factor   
+rfResDetuneFre     = -40.3e+3  185.e+3           // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+!rfResDetuneFre    = -0.e+3  185.e+3             // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+
+rfResExciteIntability = 1 1                       // to exite coupled bunch instability or not.
 rfTransientCavParWriteTo = rfTransientPar         // Data file to store the initial cavity and genertor setiings.
-rfResCold          = 0 0                          // in tracking, if cavity is code or beam induces volage is already built up.
-rfResAmpFBRatioForTotSelfLoss  = 1 1              // The cavity FB is ideal one. THis parameter determin the penstage of the total vb0/2 to be compansated by each cavities.
+rfResCold          = 1 0                          // in tracking, if cavity is not cold, then beam induces volage is  built up already.
+rfResAmpFBRatioForTotSelfLoss  = 1 1              // The cavity FB is ideal one. This parameter determin the penstage of the total vb0/2 to be compansated by each cavities.
                                                   // Cavity FB only affect voltage amplitude right now.  With a strong triansent beam loading, can adjust these parameters
                                                   // to have an better potential well distortaion effect.
                                                   // single bunch hainssiki only works well when single bunch current is weak.
-rfBunchBinNum      =  100                         // used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]   
+rfBunchBinNum      =  100                         // used bin of a MP model, bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]   
+
 &end
 
 
@@ -61,9 +65,34 @@ SRWBunchBinNum   =  100                                 // specifiy the bins num
 &end
 
 
-//it is assume that in each train, bunch gaps is fixed harmonic =1240 = 100 * (3+1) + 10 + 200 * (3+1) + 30
+//it is assume that in each train, bunch gaps is fixed harmonic =1240 = 100 * (3+1) + 10 + 200 * (3+1) + 30; do not change order of the parameter in this section
 &filling_pattern
 
+
+
+fpTrainNumber = 2
+fpTotBunchNumber = 446
+fpBunchNumberPerTrain = 223 223  
+fpTrainGaps = 30 30 
+fpBunchGaps = 1 1
+
+fpTrainNumber = 2
+fpTotBunchNumber = 2
+fpBunchNumberPerTrain = 1 1  
+fpTrainGaps = 0 0 
+fpBunchGaps = 475 475
+
+fpTrainNumber = 1
+fpTotBunchNumber = 952
+fpBunchNumberPerTrain = 952  
+fpTrainGaps = 0 
+fpBunchGaps = 0
+
+fpTrainNumber = 2
+fpTotBunchNumber = 2
+fpBunchNumberPerTrain = 1 1  
+fpTrainGaps = 475 475 
+fpBunchGaps = 0 0
 
 
 fpTrainNumber = 1
@@ -73,45 +102,24 @@ fpTrainGaps = 0
 fpBunchGaps = 951
 
 fpTrainNumber = 2
-fpTotBunchNumber = 446
-fpBunchNumberPerTrain = 223 223  
-fpTrainGaps = 30 30 
-fpBunchGaps = 1 1
-
-
-
-
-fpTrainNumber = 2
-fpTotBunchNumber = 2
-fpBunchNumberPerTrain = 1 1  
-fpTrainGaps = 0 0 
-fpBunchGaps = 475 475
-
-
-fpTrainNumber = 1
-fpTotBunchNumber = 952
-fpBunchNumberPerTrain = 952  
-fpTrainGaps = 0 
-fpBunchGaps = 0
-
-
-fpTrainNumber = 2
 fpTotBunchNumber = 892
 fpBunchNumberPerTrain = 446 446  
 fpTrainGaps = 30 30 
 fpBunchGaps = 0 0
 
+
+
 &end
 
 &bunch
-bunchCurrent         = 0.26e-03
+bunchCurrent         = 0.112e-04
 !bunchCurrent        = 0.56e-03
 bunchEmittanceX      = 20.E-12
 bunchKappa           = 0.2
 bunchRmsBunchLength  = 2.85E-3
 bunchRmsEnergySpread = 7.3e-4                                                    // particles are generated according to this value. x y z, px py pz ->The same as ring energy spread
 bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
-bunchInitialDynamicOffSet   = 0.E-6 0.E-6 0.E-5 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
+bunchInitialDynamicOffSet   = 0.E-6 0.E-6 1.E-5 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
 bunchMacroEleNumPerBunch = 1
 &end
@@ -171,8 +179,8 @@ runTBTBunchDisDataBunchIndex = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
 runTBTBunchPrintNum = 21                                       // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
 runTBTBunchDisDataBunchIndex = 350 355 360 365 370 375 380 385 390 395 400 405 410 415 420 425 430 435 440 445 450                      // bunch index to be printed
 
-runTBTBunchPrintNum = 5                                        // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
-runTBTBunchDisDataBunchIndex = 0 111 222 334 444                      // bunch index to be printed
+runTBTBunchPrintNum = 1                                        // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
+runTBTBunchDisDataBunchIndex = 0 111 222 235  333  445          // bunch index to be printed
 
 runTBTBunchAverData = TBTBunchAverData
 runTBTBunchDisData  = TBTBunchDisData                         // only works in strong model that calsetting=2
@@ -180,7 +188,7 @@ runTBTBunchCavVolData = TBTBunchCavVolData                    // only works in s
 runTBTBunchHaissinski = TBTBunchHaissinski                    // only works in weak model calsetting=1 
 !runTBTBunchLongTraj   = longPariTraj                          // only works in weak mode  calsetting=1, file name of the longitudinal phase trajectory 
 
-runSynRadDampingFlag = 0                                      // only work for the transverse directoin, longitudinal is dealt in the RF cavity module                       
+runSynRadDampingFlag = 1  1                                    // only work for the transverse directoin, longitudinal is dealt in the RF cavity module                       
 runBeamIonFlag = 0
 runFIRBunchByBunchFeedbackFlag = 0
 runLongRangeWake = 0
