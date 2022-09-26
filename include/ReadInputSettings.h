@@ -76,6 +76,7 @@ public:
         double synPhaseOffset;
         vector<double> resAmpFBRatioForTotSelfLoss;
         vector<double> resPhase;
+        vector <int>   rfResExciteIntability;
         string transResonParWriteTo;
         
      };     
@@ -185,7 +186,7 @@ public:
     struct RingRun
     {
         int calSetting;
-        int synRadDampingFlag;
+        int synRadDampingFlag[2];
         int fIRBunchByBunchFeedbackFlag;
         int beamIonFlag;
         int nTurns;

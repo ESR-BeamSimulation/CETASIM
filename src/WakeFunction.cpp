@@ -350,15 +350,20 @@ vector<double> WakeFunction::GetRWSRWakeFun(double tau)
 vector<double> WakeFunction::GetRWLRWakeFun(double tau)
 {
     // wake sign follows Alex. Chao's Fig. 2.6 Notation. 
-    //tau = - abs(tau);
+    // return the energy loss and focusing strength. 
+
+    // notification: 
+    // longitudnal wake -- head is positive -- loss energy
+    // transverse  wake -- head is negative -- defocusing
+
     if(tau>0)
     {
         cerr<<"Resistive wall wake calculation, tau is larger than zero"<<endl;
         exit(0);
     }
 
-    vector<double> wakeFun(3,0.E0); // long range, bunch does not affect it self in current turn
-    if (tau==0)
+    vector<double> wakeFun(3,0.E0); // equation diverge due to approximation
+    if (tau==0)                     // set wakefunction to zero when tau==0
     {
         return wakeFun;
     }
@@ -485,8 +490,12 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
 {
     // longitudinal wake funciton, Refer to Alex 2.82 and 2.84 and 2.87 and 2.88    
     // wake sign follows Alex. Chao's Fig. 2.6 Notation. 
+    // return the energy loss and focusing strength. 
+    
+    // notification: 
     // longitudnal wake -- head is positive -- loss energy
-    // transverse  wake -- head is negative -- defocusing 
+    // transverse  wake -- head is negative -- defocusing
+     
     
     if(tau>0)
     {   
@@ -531,19 +540,10 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
         {
             wakeFun[2] +=  coeff * (coeff1 + coeff2);                                       // [V/C]  
         }
-    //     cout<<setw(15)<<left<<i
-    //         <<setw(15)<<left<<tau
-    //         <<setw(15)<<left<<alpha
-    //         <<setw(15)<<left<<omegab
-    //         <<setw(15)<<left<<coeff
-    //         <<setw(15)<<left<<wakeFun[2]
-    //         <<endl;
     }
-    // getchar();
 
     return wakeFun;
 }
-
 
 
 void WakeFunction:: GetyokoyaFactor(double a, double b, vector<double> &yokoyaFactor)

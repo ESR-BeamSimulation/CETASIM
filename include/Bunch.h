@@ -50,6 +50,9 @@ public:
     double pxAver=0.E0;
     double pyAver=0.E0;
     double pzAver=0.E0;
+    double zAverLastTurn=0.E0;
+    double pzAverLastTurn=0.E0;
+    
     complex<double> xAverAnalytical;
     complex<double> yAverAnalytical;
     complex<double> zAverAnalytical;
@@ -68,7 +71,9 @@ public:
     double electronEnergy;               // [eV]
     double rGamma;
     double rBeta;
-    double timeToNextBunch;    //[s]
+    double timeFromCurrnetBunchToNextBunch;    //[s]
+    double timeFromLastBunchToCurrentBunch;
+    double timeToNextBunch;
     double timeToLastBunch;
     
     double rmsBunchLength;

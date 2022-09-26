@@ -48,12 +48,13 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
     
     resonatorVec.resize(resNum);
     
-     //initialize the resonator paramters     
+     //initialize the resonator paramters -- can be modified to cover the passive and active cavities cases.     
     for(int i=0;i<resNum;i++)
     { 
         // read from input file
         resonatorVec[i].resHarm            = inputParameter.ringParRf-> resHarm[i];
         resonatorVec[i].resType            = inputParameter.ringParRf-> resType[i];
+        
         resonatorVec[i].resShuntImpRs      = inputParameter.ringParRf-> resShuntImpRs[i];
         resonatorVec[i].resQualityQ0       = inputParameter.ringParRf-> resQualityQ0[i];
         resonatorVec[i].resCouplingBeta    = inputParameter.ringParRf-> resCouplingBeta[i];
@@ -61,8 +62,8 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         resonatorVec[i].resVolAbsReq       = inputParameter.ringParRf-> resVol[i];
         resonatorVec[i].resPhaseReq        = inputParameter.ringParRf-> resPhase[i];                 
         resonatorVec[i].resCold            = inputParameter.ringParRf-> resCold[i];
+        resonatorVec[i].rfResExciteIntability = inputParameter.ringParRf-> rfResExciteIntability[i];     
              
-                                                
         // calcuated....
         resonatorVec[i].resQualityQL       = resonatorVec[i].resQualityQ0 / (1 + resonatorVec[i].resCouplingBeta );                
         resonatorVec[i].resFre             = resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre;                
@@ -72,10 +73,10 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
                                             - resonatorVec[i].resHarm * ringHarmH * f0 / resonatorVec[i].resFre     
                                             );  // Eq. (7.23)           
                                                     
-        resonatorVec[i].resDeTunePsi      = atan(tanPsi); 
+        resonatorVec[i].resDeTunePsi      = atan(tanPsi);   // in interval [-pi/2,pi/2] 
         resonatorVec[i].tF                = 2 * resonatorVec[i].resQualityQL / (2 * PI * resonatorVec[i].resFre );  //Eq.(7.25) [s] same notation as P.B. Wilson [s]                         
         resonatorVec[i].resGenVolFB       = complex<double>(0.e0,0.e0);
-
+        
     }
         
     double  u0 = inputParameter.ringParBasic->u0;

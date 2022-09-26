@@ -64,6 +64,9 @@ public:
     vector<vector<double> > coupledBunchModeAmpX;
     vector<vector<double> > coupledBunchModeAmpY;
     vector<vector<double> > coupledBunchModeAmpZ; 
+    vector<vector<double> > hilbertCoupledBunchModeAmpX;
+    vector<vector<double> > hilbertCoupledBunchModeAmpY;
+    vector<vector<double> > hilbertCoupledBunchModeAmpZ; 
     vector<vector<double> > hilbertAmpX;
     vector<vector<double> > hilbertAmpY;
     vector<vector<double> > hilbertAmpZ; 
@@ -78,7 +81,6 @@ public:
     void SPGetBeamInfo();
     void SPBeamDataPrintPerTurn(int turns, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
-    void GetBinDistBetweenBunch(ReadInputSettings &inputParameter);   
     void GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);
@@ -87,7 +89,7 @@ public:
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
     void BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns);
+    void BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator,int turns);
     void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns);
     void BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint);
     void WSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);   
@@ -99,6 +101,7 @@ public:
     void BeamSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns);
     void BeamTransferPerTurnDueWake();
+    
     // for long range RW wake function
 	void LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint,int turns);  
     

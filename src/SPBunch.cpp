@@ -100,37 +100,20 @@ void SPBunch::DistriGenerator(const LatticeInterActionPoint &latticeInterActionP
     }while(temp>3);
     
 
-    ePositionZ[0] +=  disDz;
-    eMomentumZ[0] +=  disMz;
+    ePositionZ[0] =  disDz;
+    eMomentumZ[0] =  disMz;
 
   	double dispersionX  =  latticeInterActionPoint.twissDispX[0];
   	double dispersionY  =  latticeInterActionPoint.twissDispY[0];
   	double dispersionPX =  latticeInterActionPoint.twissDispPX[0];
   	double dispersionPY =  latticeInterActionPoint.twissDispPY[0];
 
-	ePositionX[0] +=  disDx + dispersionX  * eMomentumZ[0];
-	ePositionY[0] +=  disDy + dispersionY  * eMomentumZ[0];
-	eMomentumX[0] +=  disMx + dispersionPX * eMomentumZ[0];
-	eMomentumY[0] +=  disMy + dispersionPY * eMomentumZ[0];
+	ePositionX[0] =  disDx + dispersionX  * eMomentumZ[0];
+	ePositionY[0] =  disDy + dispersionY  * eMomentumZ[0];
+	eMomentumX[0] =  disMx + dispersionPX * eMomentumZ[0];
+	eMomentumY[0] =  disMy + dispersionPY * eMomentumZ[0];
 
-    poszLastTurn = ePositionZ[0];
-
-    // set the initial coupled bunch mode according mode index /mu 
-    
-    //int N = inputParameter.ringFillPatt->totBunchNumber; 
-    
-    //double alphaX=latticeInterActionPoint.twissAlphaX[0];
-    //double alphaY=latticeInterActionPoint.twissAlphaY[0];
-    //double betaX =latticeInterActionPoint.twissBetaX[0];
-    //double betaY =latticeInterActionPoint.twissBetaY[0];
-    //int mu = 3;
-    //double phase = 2 * PI * mu * bunchIndex / N;
-
-    //
-    //ePositionX[0] =  sqrt(emittanceX * betaX) * cos(phase) ;
-    //ePositionY[0] =  sqrt(emittanceY * betaY) * cos(phase) ;
-    //eMomentumX[0] = -sqrt(emittanceX / betaX) * (alphaX * cos(phase) + sin(phase) );
-    //eMomentumY[0] = -sqrt(emittanceY / betaY) * (alphaY * cos(phase) + sin(phase) );
+    zAverLastTurn = ePositionZ[0];
 
     GetSPBunchRMS(latticeInterActionPoint, 0);
 
@@ -154,17 +137,13 @@ void SPBunch::GetSPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
     pyAver = eMomentumY[0];
     pzAver = eMomentumZ[0];
 
-
-
     actionJx = 0.E0;
     actionJy = 0.E0;
-
 
     double twissAlphaXTemp = latticeInterActionPoint.twissAlphaX[k];
     double twissAlphaYTemp = latticeInterActionPoint.twissAlphaY[k];
     double twissBetaXTemp  = latticeInterActionPoint.twissBetaX[k];
     double twissBetaYTemp  = latticeInterActionPoint.twissBetaY[k];
-
 
     actionJx = (1+pow(twissAlphaXTemp,2))/twissBetaXTemp * pow(xAver,2)
              +  2*twissAlphaXTemp* xAver * pxAver
@@ -269,23 +248,10 @@ void SPBunch:: BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputP
     double workQz     = inputParameter.ringParBasic->workQz;
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     double circRing = inputParameter.ringParBasic->circRing;
+    double rfbucketLen = CLight * t0 / ringHarmH;
+    double fRF         = f0 * ringHarmH;
 
-    
-    double phaseAdvanceZ = 2 * PI * workQz;
-    double betaz  = inputParameter.ringBunchPara->rmsBunchLength / inputParameter.ringBunchPara->rmsEnergySpread; 
-
-    double a00 =              cos(phaseAdvanceZ);
-    double a01 =      betaz * sin(phaseAdvanceZ);
-    double a10 = -1 / betaz * sin(phaseAdvanceZ);
-    double a11 =              cos(phaseAdvanceZ);
-
-
-    // if(  abs(ePositionZ[0]) > t0 * CLight / ringHarmH || abs(eMomentumZ[0]) > 0.5 ) 
-    // {
-    //     eSurive[0] = 0; 
-    // }
-
-    // leapfrog integration process.
+    // leapfrog integration process.  Alex Chao 4.2 and 4.1 -- same as SYL 3.42 
     // (1) get the f(q) at the n step
     // double fqn = pow(2 * PI *  workQz ,2) /  eta / circRing *  ePositionZ[0] ;
     // // (2) get  p at n + 1/2 step     
@@ -296,43 +262,83 @@ void SPBunch:: BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputP
     // fqn = pow(2 * PI *  workQz ,2) /  eta / circRing *  ePositionZ[0];
     // // (5) get the p at n + 1 step
     // eMomentumZ[0] +=  fqn / 2; 
+ 
+    // double phaseAdvanceZ = -2 * PI * workQz;    //in longitudinal particle rotate anti-clockwise  in phase space
+    // double betaz  = inputParameter.ringBunchPara->rmsBunchLength / inputParameter.ringBunchPara->rmsEnergySpread; 
+
+    // double a00 =              cos(phaseAdvanceZ);
+    // double a01 =      betaz * sin(phaseAdvanceZ);
+    // double a10 = -1 / betaz * sin(phaseAdvanceZ);
+    // double a11 =              cos(phaseAdvanceZ);
+    // double tempz  = ePositionZ[0];
+    // double temppz = eMomentumZ[0];
+    // ePositionZ[0]  =  a00 * tempz + a01 * temppz;
+    // eMomentumZ[0]  =  a10 * tempz + a11 * temppz; 
 
 
     // here for coupled bunc benchmark with phasor notation.
+    // in below to benchmark with analytical growth rate prediction
+    double tF = 0.E0;
+    double tB = 0.E0;
+    double tB0 = 0.E0;
+    double deltaL = 0.E0;
+    double cPsi   = 0.E0;
+    double resGenVolAmp = 0.E0;
+    double resGenVolArg = 0.E0;
+    double resFre       = 0.E0;
+    double resPhaseReq;
+    double resVoltageReq;
+    int resHarm = 0;
+    
+    double cavVolAmp;
+    double cavVolArg;
+    complex<double> cavVoltage =(0.E0,0.E0);
+    complex<double> deltaE =(0.E0,0.E0);
+    complex<double> vb0=(0,0);
+    double temp = 0;
 
     for(int j=0;j<resNum;j++)
-    {
-        int resHarm = cavityResonator.resonatorVec[j].resHarm;
-        double resFre  = cavityResonator.resonatorVec[j].resFre;
+    {                       
+        resHarm = cavityResonator.resonatorVec[j].resHarm;
+        resFre  = cavityResonator.resonatorVec[j].resFre; 
 
-        complex<double> vb0  = complex<double>( -1 * cavityResonator.resonatorVec[j].resFre * 2 * PI * cavityResonator.resonatorVec[j].resShuntImpRs /
-                                     cavityResonator.resonatorVec[j].resQualityQ0, 0.E0) * electronNumPerBunch * ElectronCharge;            //[Volt]
-
-        eMomentumZ[0] += cavityResonator.resonatorVec[j].vbAccum.real()   /electronBeamEnergy / pow(rBeta,2);
-        eMomentumZ[0] -= cavityResonator.resonatorVec[j].vbAccum0.real()  /electronBeamEnergy / pow(rBeta,2);
-        // eMomentumZ[0] += vb0.real() / 2.0 / electronBeamEnergy / pow(rBeta,2);
-             
-        cavityResonator.resonatorVec[j].vbAccum  += vb0;        
-        double tB  =  timeToLastBunch;
-        double deltaL = tB / cavityResonator.resonatorVec[j].tF;
-        double cPsi = 2 * PI * cavityResonator.resonatorVec[j].resFre * tB;
-        cavityResonator.resonatorVec[j].vbAccum  *= exp(- deltaL )  * exp (li * cPsi); 
+        vb0  = complex<double>( -1 * cavityResonator.resonatorVec[j].resFre * 2 * PI * cavityResonator.resonatorVec[j].resShuntImpRs /
+                                     cavityResonator.resonatorVec[j].resQualityQ0, 0.E0) * electronNumPerBunch * ElectronCharge;       //[Volt]
+        
+        cavVoltage = cavityResonator.resonatorVec[j].vbAccum + cavFBCenInfo->genVolBunchAver[j];                  
+        eMomentumZ[0] += (cavVoltage * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF )/ electronBeamEnergy).real(); 
 
 
-        cavityResonator.resonatorVec[j].vbAccum0 += vb0; 
-        double tB0     =  bunchGap * 1.0 / f0 / ringHarmH ;           
-        double deltaL0 =  tB0 / cavityResonator.resonatorVec[j].tF;
-        double cPsi0   =  2 * PI * cavityResonator.resonatorVec[j].resFre * tB0;
-        cavityResonator.resonatorVec[j].vbAccum0 *= exp(- deltaL0 ) * exp (li * cPsi0);   
+   
+        tB    = timeFromCurrnetBunchToNextBunch;  // instablity is exited during beam loading simulation                
+        deltaL = tB / cavityResonator.resonatorVec[j].tF;        
+        cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB; // - 2 * PI * resHarm * bunchGap;
+        cavityResonator.resonatorVec[j].vbAccum += vb0;  
+        cavityResonator.resonatorVec[j].vbAccum *= exp(- deltaL ) * exp( li * cPsi);
+
+        cavVoltage = cavityResonator.resonatorVec[j].vbAccum0 + cavFBCenInfo->genVolBunchAver[j];  
+        eMomentumZ[0] -= (cavVoltage * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF )/ electronBeamEnergy).real(); 
+        tB  = bunchGap * 1.0 / f0 / ringHarmH; 
+        deltaL = tB / cavityResonator.resonatorVec[j].tF; 
+        cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB;
+        cavityResonator.resonatorVec[j].vbAccum0 += vb0;  
+        cavityResonator.resonatorVec[j].vbAccum0 *= exp(- deltaL ) * exp( li * cPsi);
+
 
     }
-    double tempz  = ePositionZ[0];
-    double temppz = eMomentumZ[0];
 
 
-    ePositionZ[0]  =  a00 * tempz + a01 * temppz;
-    eMomentumZ[0]  =  a10 * tempz + a11 * temppz; 
-
+    // leapfrog integration process.  Alex Chao 4.2 and 4.1 -- same as SYL 3.42 
+    // (1) get the f(q) at the n step
+    double fqn = pow(2 * PI *  workQz ,2) /  eta / circRing *  ePositionZ[0] ;
+    // (2) get  p at n + 1/2 step     
+    eMomentumZ[0] +=  fqn / 2; 
+    // (3) get  q at n + 1 step
+    ePositionZ[0] -= eta * circRing * eMomentumZ[0];
+    // (4) get the f(q) at n + 1 step 
+    fqn = pow(2 * PI *  workQz ,2) /  eta / circRing *  ePositionZ[0];
+    // (5) get the p at n + 1 step
+    eMomentumZ[0] +=  fqn / 2; 
 
 
 }
@@ -351,9 +357,11 @@ void SPBunch::BunchTransferDueToLatticeLTest(const ReadInputSettings &inputParam
     double alphac    = inputParameter.ringParBasic->alphac;
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     double rfbucketLen = CLight * t0 / ringHarmH;
+    double fRF         = f0 * ringHarmH;
 
     double tF = 0.E0;
     double tB = 0.E0;
+    double tB0 = 0.E0;
     double deltaL = 0.E0;
     double cPsi   = 0.E0;
     double resGenVolAmp = 0.E0;
@@ -366,46 +374,67 @@ void SPBunch::BunchTransferDueToLatticeLTest(const ReadInputSettings &inputParam
     double cavVolAmp;
     double cavVolArg;
     complex<double> cavVoltage =(0.E0,0.E0);
+    complex<double> deltaE =(0.E0,0.E0);
     complex<double> vb0=(0,0);
-
+    double temp = 0;
 
     for(int j=0;j<resNum;j++)
     {                       
         resHarm = cavityResonator.resonatorVec[j].resHarm;
         resFre  = cavityResonator.resonatorVec[j].resFre; 
-               
+
         vb0  = complex<double>( -1 * cavityResonator.resonatorVec[j].resFre * 2 * PI * cavityResonator.resonatorVec[j].resShuntImpRs /
                                      cavityResonator.resonatorVec[j].resQualityQ0, 0.E0) * electronNumPerBunch * ElectronCharge;       //[Volt]
-
-        cavVoltage = cavityResonator.resonatorVec[j].vbAccum + cavFBCenInfo->genVolBunchAver[j];          
-        cavVolAmp  = abs(cavVoltage);
-        cavVolArg  = arg(cavVoltage);
-
-        eMomentumZ[0] += cavVolAmp  * cos( - 2. * PI * ePositionZ[0] / rfbucketLen * resHarm + cavVolArg ) / electronBeamEnergy ;  
-
-        //particle momentum due to self-field
-        eMomentumZ[0] += vb0.real()/2.0/electronBeamEnergy ;
         
-        // beam induced voltage accumulated 
-        cavityResonator.resonatorVec[j].vbAccum += vb0;   
-    
-        // time to next bunch       
-        tB     = timeToNextBunch;   
-        deltaL = tB / cavityResonator.resonatorVec[j].tF;
-        cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB;
-        cavityResonator.resonatorVec[j].vbAccum = cavityResonator.resonatorVec[j].vbAccum * exp(- deltaL ) * exp( li * cPsi);
+        // set active and passive cavity        
+        if(cavityResonator.resonatorVec[j].resType==1) // active cavity.  
+        {
+            cavVoltage = cavityResonator.resonatorVec[j].vbAccum + cavFBCenInfo->genVolBunchAver[j];          
+        }
+        else // passive cavity -- generator voltage is not included.  
+        {
+            cavVoltage = cavityResonator.resonatorVec[j].vbAccum; 
+        }
+        
+        eMomentumZ[0] += (cavVoltage * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF )/ electronBeamEnergy).real(); 
+   
+        //particle momentum due to self-field -- SP mode this value is too large--ingored in SP model.
+        // eMomentumZ[0] += vb0.real()/2.0/electronBeamEnergy;
 
+        // time to next bunch
+        if(cavityResonator.resonatorVec[j].rfResExciteIntability==0)
+        {
+            tB = bunchGap * 1.0 / f0 / ringHarmH;    // instablity is not exited
+        }
+        else
+        {
+            tB    = timeFromCurrnetBunchToNextBunch;  // instablity is exited during beam loading simulation
+        }
+                
+        deltaL = tB / cavityResonator.resonatorVec[j].tF;        
+        cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB; // - 2 * PI * resHarm * bunchGap;
+
+        // set the data used for feedback 
         cavFBCenInfo->induceVolBunchCen[j]   = cavityResonator.resonatorVec[j].vbAccum;                  
-        cavFBCenInfo->cavAmpBunchCen[j]      = cavVolAmp;
-        cavFBCenInfo->cavPhaseBunchCen[j]    = cavVolArg;
+        cavFBCenInfo->cavAmpBunchCen[j]      = abs(cavVoltage);
+        cavFBCenInfo->cavPhaseBunchCen[j]    = arg(cavVoltage);
         cavFBCenInfo->cavVolBunchCen[j]      = cavVoltage;
         cavFBCenInfo->selfLossVolBunchCen[j] = vb0/2.0;   
+        ///////////////////////////////////////////////////////////////////////
+               
+        // beam induced voltage accumulated 
+        cavityResonator.resonatorVec[j].vbAccum += vb0;  
+        cavityResonator.resonatorVec[j].vbAccum *= exp(- deltaL ) * exp( li * cPsi);
     }
 
-    eMomentumZ[0]  -= u0 / electronBeamEnergy;
-    eMomentumZ[0]  *= (1.0-2.0/synchRadDampTime[2]);                 
+    eMomentumZ[0] -= u0 / electronBeamEnergy;
+    
+    if(inputParameter.ringRun->synRadDampingFlag[1]==1)
+    {
+        eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
+    }
+    
     ePositionZ[0]  -= eta * t0  * CLight  * eMomentumZ[0];             // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight 
-
    
     if(  abs(ePositionZ[0]) > t0 * CLight / ringHarmH   || abs(eMomentumZ[0]) > 0.1 ) 
     {
@@ -492,7 +521,7 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
 
         // time to next bunch
         // tB = bunchGap * 1.0 / f0 / ringHarmH;         
-        tB     = timeToLastBunch;
+        tB     = timeFromCurrnetBunchToNextBunch;
         
         deltaL = tB / cavityResonator.resonatorVec[j].tF;
         cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB;

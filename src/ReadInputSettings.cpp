@@ -128,7 +128,6 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
       
         // 2) set the vlaue for struct rf set 	          
         
-
         if(strVec[0]=="rfringharm")
         {
             ringParRf->ringHarm = stoi(strVec[1]);         
@@ -147,10 +146,19 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringParRf->resQualityQ0   .resize(ringParRf->resNum);
             ringParRf->resCouplingBeta.resize(ringParRf->resNum);
             ringParRf->resDetuneFre   .resize(ringParRf->resNum); 
-            ringParRf->resCold        .resize(ringParRf->resNum);  
+            ringParRf->resCold        .resize(ringParRf->resNum);
+            ringParRf->rfResExciteIntability.resize(ringParRf->resNum);  
             ringParRf->resAmpFBRatioForTotSelfLoss.resize(ringParRf->resNum);                                 
         }
-        
+
+        if (strVec[0]=="rfresexciteintability") 
+        {
+            for(int i=0;i<ringParRf->resNum;i++)
+            {
+                ringParRf->rfResExciteIntability[i] = stod(strVec[i+1]);               
+            }                    
+        }
+
         if (strVec[0]=="rfresampfbratiofortotselfloss") 
         {
             for(int i=0;i<ringParRf->resNum;i++)
@@ -164,6 +172,10 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             for(int i=0;i<ringParRf->resNum;i++)
             {
                 ringParRf->resType[i] = stoi(strVec[i+1]);
+                if (ringParRf->resType[0]==0)
+                {
+                  cerr<<"set main cavity as active, rfrestype=1 "<<endl;
+                }
             }
         }
         if (strVec[0]=="rfresharm") 
@@ -570,7 +582,8 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         }
         if(strVec[0]=="runsynraddampingflag")
         {
-           ringRun->synRadDampingFlag = stoi(strVec[1]);
+           ringRun->synRadDampingFlag[0] = stoi(strVec[1]);
+           ringRun->synRadDampingFlag[1] = stoi(strVec[2]);
         }
 
         if(strVec[0]=="runfirbunchbybunchfeedbackflag")
@@ -675,7 +688,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     double  rGamma             = electronBeamEnergy/ElectronMassEV;
     double  eta                = alphac - 1./pow(rGamma,2);
     double  rBeta              = sqrt(1.E0 -pow(rGamma,-2) );
-    double  t0                 = circRing /  rBeta /  CLight;
+    double  t0                 = circRing / CLight;
     double  f0                 = 1 / t0;
     double  omega0             = 2 * PI * f0;
 

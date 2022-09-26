@@ -57,7 +57,7 @@ public:
      };
     Haissinski *haissinski = new Haissinski;
     
-    double poszLastTurn=0;
+    
 
     void InitialSPBunch(const ReadInputSettings &inputParameter);        
     void DistriGenerator(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter, int i);

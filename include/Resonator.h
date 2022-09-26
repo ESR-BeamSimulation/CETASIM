@@ -30,17 +30,18 @@ public:
 
     int    resHarm;                       // normalized by the ringHarmoics * f0
     int    resType;
-    double resShuntImpRs;
-    double resQualityQ0;
-    double resQualityQL;
-    double resCouplingBeta;       
-    double resDetuneFre;                  // Hz
-    double resFre;                        // Hz, 
-    double resDeTunePsi;                  // de-tune angle psi, Bill (7.23) // got from Atan2(x,y) in the range of (-PI,PI)                    
-    double tF;
+    double resShuntImpRs = 0.E0;
+    double resQualityQ0  = 0.E0;
+    double resQualityQL  = 0.E0;
+    double resCouplingBeta = 0.E0;       
+    double resDetuneFre    = 0.E0;                  // Hz
+    double resFre          = 0.E0;                        // Hz, 
+    double resDeTunePsi    = 0.E0;                  // de-tune angle psi, Bill (7.23) // got from Atan2(x,y) in the range of (-PI,PI)                    
+    double tF =0.E0;
     int    resCold;
     double resVolAbsReq;
     double resPhaseReq;
+    int rfResExciteIntability=1;
 
     complex<double> resCavVolReq=(0,0);     // it is the target value -- take into the self-beam loading voltage into account.   
     complex<double> resGenVol=(0,0);        // in the cos  convention used in the code, the real part represents the momentum change
