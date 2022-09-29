@@ -83,9 +83,56 @@ void MPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     }
     beamVec[totBunchNum-1].bunchGap = harmonics - beamVec[totBunchNum-1].bunchHarmNum;
 
-	RMOutPutFiles();
-	     
+    MPGetBeamInfo();
+	GetTimeDisToNextBunchIntial(inputParameter); 
+    RMOutPutFiles();
 }
+
+void MPBeam::GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter)
+{
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double circRing   = inputParameter.ringParBasic->circRing;
+    double rfLen      = circRing  / ringHarmH;
+    double temp=0;
+    // get the bunch distance
+    if(beamVec.size()>1)
+    {
+        for(int i=0;i<beamVec.size();i++)
+        {
+            // get the time from current bunch to next bunch
+            if(i<beamVec.size()-1)
+            {
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * rfLen - (beamVec[i].zAver - beamVec[i+1].zAver); 
+            }
+            else
+            {
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * rfLen - (beamVec[i].zAver - beamVec[0  ].zAver ) ;
+            }
+            beamVec[i].timeFromCurrnetBunchToNextBunch /= CLight;     
+
+            // get the time from last bunch to current bunch
+            if(i==0)
+            {
+                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[beamVec.size()-1].bunchGap * rfLen - (beamVec[beamVec.size()-1].zAver - beamVec[0].zAver ); 
+            }
+            else
+            {
+                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[i-1             ].bunchGap * rfLen - (beamVec[i             -1].zAver - beamVec[i].zAver ) ;
+            }
+
+            beamVec[i].timeFromLastBunchToCurrentBunch /= CLight;  
+        }
+        
+    }
+    else
+    {
+        // if one bunch the inital bunch distance is set as ring circumference.
+        beamVec[0].timeFromCurrnetBunchToNextBunch   = beamVec[0].bunchGap * rfLen ; 
+        beamVec[0].timeFromCurrnetBunchToNextBunch  /= CLight;          
+        beamVec[0].timeFromLastBunchToCurrentBunch   = beamVec[0].bunchGap * rfLen ; 
+        beamVec[0].timeFromLastBunchToCurrentBunch  /= CLight;    
+    }
+} 
 
 void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
@@ -209,8 +256,8 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
         for(int j=0;j<beamVec.size();j++)
         {
             beamVec[j].cavFBCenInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // set vol as the requried voltage.
-            beamVec[j].cavFBCenInfo->cavAmpBunchCen[i]    = abs(cavityResonator.resonatorVec[i].resCavVolReq);
-            beamVec[j].cavFBCenInfo->cavPhaseBunchCen[i]  = arg(cavityResonator.resonatorVec[i].resCavVolReq);
+            // beamVec[j].cavFBCenInfo->cavAmpBunchCen[i]    = abs(cavityResonator.resonatorVec[i].resCavVolReq);
+            // beamVec[j].cavFBCenInfo->cavPhaseBunchCen[i]  = arg(cavityResonator.resonatorVec[i].resCavVolReq);
             beamVec[j].cavFBCenInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
             beamVec[j].cavFBCenInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
             beamVec[j].cavFBCenInfo->selfLossVolBunchCen[i] = vbKickAver;
@@ -279,8 +326,6 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                 time +=  tB;
                 deltaL = tB / tF ;
                 cPsi   = deltaL * tan(cavityResonator.resonatorVec[i].resDeTunePsi);
-
-
                 fout<<setw(15)<<left<<time*f0 
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolAmp
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolPhase
@@ -410,6 +455,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
             if(ionInfoPrintInterval && (n%ionInfoPrintInterval==0))
             {
+                MPBeamRMSCal(latticeInterActionPoint, 0);
                 SSIonDataPrint(inputParameter,latticeInterActionPoint, n);
             }
         }
@@ -419,7 +465,8 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
         }
 
-        BeamTransferPerTurnDueToLatticeL(inputParameter,cavityResonator); 
+        MPBeamRMSCal(latticeInterActionPoint, 0);
+        BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator); 
 
         if(lRWakeFlag)
         {
@@ -441,7 +488,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             FIRBunchByBunchFeedback(firFeedBack,n);
         }
         
-        if(synRadDampingFlag)  // only in transverse direction
+        if(synRadDampingFlag[0]==1)  // only in transverse direction
         {
             MPBeamRMSCal(latticeInterActionPoint,0);
             BeamSynRadDamping(inputParameter,latticeInterActionPoint);
@@ -482,19 +529,123 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         }
         fout<<endl;        
         
-       
         if(  bunchInfoPrintInterval && (n%bunchInfoPrintInterval==0)  )
         {             
             MPBeamDataPrintPerTurn(n,latticeInterActionPoint,inputParameter);           
         }
+        
                                            
     }
     fout.close();
-    
+
     cout<<"End of Tracking "<<nTurns<< "Turns"<<endl;
-        
+
+
+    // if( !inputParameter.ringRun->TBTBunchHaissinski.empty() &&  !cavityResonator.resonatorVec.empty())
+    // {
+    //     GetHaissinski(inputParameter,cavityResonator,sRWakeFunction); 
+    //     if(!inputParameter.ringRun->TBTBunchLongTraj.empty())
+    //     {
+    //         GetAnalyticalLongitudinalPhaseSpace(inputParameter,cavityResonator,sRWakeFunction);
+    //     }
+    //     cout<<"Haissinski and longitudinal phase space trajectory"<<endl;
+    // } 
+
 }
 
+void MPBeam::GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)
+{
+    vector<int> TBTBunchDisDataBunchIndex = inputParameter.ringRun->TBTBunchDisDataBunchIndex;
+    int TBTBunchPrintNum  = inputParameter.ringRun->TBTBunchPrintNum;        
+    int bunchIndex; 
+
+    for(int i=0;i<TBTBunchPrintNum;i++)
+    {        
+        bunchIndex  = TBTBunchDisDataBunchIndex[i];
+        beamVec[bunchIndex].GetBunchHaissinski(inputParameter,cavityResonator,sRWakeFunction);                     
+    }
+    string filePrefix = inputParameter.ringRun->TBTBunchHaissinski;
+    string fname = filePrefix + ".sdds";
+    ofstream fout(fname,ios_base::app);        
+    
+    fout<<"SDDS1"<<endl;
+    for(int j=0; j<inputParameter.ringParRf->resNum;j++)
+    {
+        string parname = string("&parameter name=") + string("cavAmp_") + to_string(j) + string(", units=V,   type=float,  &end");
+        fout<<parname<<endl;
+        parname = string("&parameter name=") + string("cavPhase_") + to_string(j) + string(", units=rad,   type=float,  &end");
+        fout<<parname<<endl;
+    }   
+    
+    fout<<"&parameter name=bunchHarm,                       type=long,  &end"<<endl;
+    fout<<"&parameter name=averZ,       units=m,            type=float,  &end"<<endl;
+    fout<<"&parameter name=rmsZ,        units=m,            type=float,  &end"<<endl;
+   
+    fout<<"&column name=z,              units=m,            type=float,  &end"<<endl;
+    fout<<"&column name=rfHamilton,                         type=float,  &end"<<endl;
+    fout<<"&column name=wakeHamilton,                       type=float,  &end"<<endl;
+    fout<<"&column name=totHamilton,                        type=float,  &end"<<endl;
+    fout<<"&column name=rwWakePoten,                        type=float,  &end"<<endl;
+    fout<<"&column name=bbrWakePoten,                        type=float,  &end"<<endl;
+    fout<<"&column name=totWakePoten,                        type=float,  &end"<<endl;   
+    fout<<"&column name=profile,       units=arb.units      type=float,  &end"<<endl;
+    fout<<"&data mode=ascii, &end"<<endl;
+    
+    if(!inputParameter.ringRun->TBTBunchHaissinski.empty()  &&  (TBTBunchPrintNum !=0) )
+    {        
+        for(int i=0;i<TBTBunchPrintNum;i++)
+        {
+            bunchIndex  = TBTBunchDisDataBunchIndex[i];
+            fout<<"! page number "<<i + 1<<endl;
+        
+            for(int j=0; j<inputParameter.ringParRf->resNum;j++)
+            {
+                fout<<beamVec[bunchIndex].haissinski->cavAmp[j]<<endl;
+                fout<<beamVec[bunchIndex].haissinski->cavPhase[j]<<endl;              
+            }             
+            fout<<beamVec[bunchIndex].bunchHarmNum<<endl; 
+            fout<<beamVec[bunchIndex].haissinski->averZ<<endl;                         
+            fout<<beamVec[bunchIndex].haissinski->rmsZ<<endl;
+            fout<<beamVec[bunchIndex].haissinski->nz<<endl;
+
+            double norm=0;
+            for(int k=0; k<beamVec[bunchIndex].haissinski->nz;k++)
+            {
+                norm += beamVec[bunchIndex].haissinski->bunchProfile[k];
+            }       
+            
+            for(int k=0;k<beamVec[bunchIndex].haissinski->nz;k++)
+            {
+                fout<<setw(15)<<left<<beamVec[bunchIndex].haissinski->bunchPosZ[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->rfHamiltonian[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->wakeHamiltonian[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->totHamiltonian[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->rwWakePoten[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->bbrWakePoten[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->totWakePoten[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->bunchProfile[k]/norm             
+                    <<endl;    
+            }                                
+        }
+    }
+
+    fout.close();    
+}
+
+
+void MPBeam::GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)
+{
+    
+    vector<int> TBTBunchDisDataBunchIndex = inputParameter.ringRun->TBTBunchDisDataBunchIndex;
+    int TBTBunchPrintNum  = inputParameter.ringRun->TBTBunchPrintNum;        
+    int bunchIndex; 
+    
+    for(int i=0;i<TBTBunchPrintNum;i++)
+    {        
+        bunchIndex  = TBTBunchDisDataBunchIndex[i];
+        beamVec[bunchIndex].GetParticleLongitudinalPhaseSpace(inputParameter,cavityResonator,i);                           
+    }
+}
 
 //void MPBeam::SetBeamPosHistoryDataWithinWindow()
 //{
@@ -827,9 +978,9 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 
             for(int j=0; j<inputParameter.ringParRf->resNum;j++)
             {
-                fout<<setw(24)<<left<<setprecision(16)<<    beamVec[i].cavFBCenInfo->cavAmpBunchCen[j]
-                    <<setw(24)<<left<<setprecision(16)<<    beamVec[i].cavFBCenInfo->cavPhaseBunchCen[j]
-                    <<setw(24)<<left<<setprecision(16)<<    beamVec[i].cavFBCenInfo->cavAmpBunchCen[j] * cos(beamVec[i].cavFBCenInfo->cavPhaseBunchCen[j])
+                fout<<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].cavFBCenInfo->cavVolBunchCen[j])
+                    <<setw(24)<<left<<setprecision(16)<<arg(beamVec[i].cavFBCenInfo->cavVolBunchCen[j])
+                    <<setw(24)<<left<<setprecision(16)<<    beamVec[i].cavFBCenInfo->cavVolBunchCen[j].real()
                     <<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].cavFBCenInfo->genVolBunchAver[j])
                     <<setw(24)<<left<<setprecision(16)<<arg(beamVec[i].cavFBCenInfo->genVolBunchAver[j])
                     <<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].cavFBCenInfo->induceVolBunchCen[j])
@@ -1020,9 +1171,9 @@ void MPBeam::BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoin
     }
 }
 
-void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator)
 {
-    GetBinDistBetweenBunch(inputParameter);
+    // GetBinDistBetweenBunch(inputParameter);
     
     vector<double> resAmpFBRatioForTotSelfLoss = inputParameter.ringParRf->resAmpFBRatioForTotSelfLoss;
 
@@ -1033,7 +1184,10 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
     vbKickAver.resize(inputParameter.ringParRf->resNum);
     vbAccumAver.resize(inputParameter.ringParRf->resNum);
     selfLossToCompensate.resize(inputParameter.ringParRf->resNum);
-
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double circRing   = inputParameter.ringParBasic->circRing;
+    double rfLen      = circRing  / ringHarmH;
+    double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
     
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {
@@ -1050,16 +1204,16 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
     }
 
     
-    
-    for(int i=0;i<inputParameter.ringParRf->resNum;i++)
-    {
-        totSelfLoss += vbKickAver[i];
-    }
+    // for(int i=0;i<inputParameter.ringParRf->resNum;i++)
+    // {
+    //     totSelfLoss += vbKickAver[i];
+    // }
 
 
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {
-        selfLossToCompensate[i] = resAmpFBRatioForTotSelfLoss[i] * totSelfLoss;
+        // selfLossToCompensate[i] = resAmpFBRatioForTotSelfLoss[i] * totSelfLoss;
+        selfLossToCompensate[i]  =   vbKickAver[i];  
     }
     
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
@@ -1068,21 +1222,92 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         //double genAddvbArg = arg(cavityResonator.resonatorVec[i].resCavVolReq);
         //double genAddvbAbs = (cavityResonator.resonatorVec[i].resCavVolReq.real() - selfLossToCompensate[i].real()) / cos( genAddvbArg );
         //cavityResonator.resonatorVec[i].resGenVol = genAddvbAbs * exp( li * genAddvbArg ) - vbAccumAver[i];
-
-        cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - vbAccumAver[i];
-
+        
+        // active cavity, and cavity feedback is set as 1 in input file, HeFei's method.
+        if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==1)
+        {    
+            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - vbAccumAver[i];
+        }
+        else if(cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==1)
+        {
+            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resGenVol;
+        }
+        else if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==0)
+        {
+            cerr<<"Wrong setting: passive cavity can set cavitiy FB"<<endl;
+            exit(0);
+        }
+        else if (cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==0)
+        {
+            cavityResonator.resonatorVec[i].resGenVol = complex<double>(0.E0,0.E0);
+        }
+        
         for(int j=0;j<beamVec.size();j++)
         {
             beamVec[j].cavFBCenInfo->genVolBunchAver[i] =  cavityResonator.resonatorVec[i].resGenVol;
         }
-
-    }
         
-    for(int j=0;j<beamVec.size();j++)
-    {
-        beamVec[j].BunchTransferDueToLatticeL(inputParameter,cavityResonator);
+        // set voltage and phase for hainssinki solver
+        for(int j=0;j<beamVec.size();j++)
+        {              
+            beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + cavityResonator.resonatorVec[i].resGenVol);
+            beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + cavityResonator.resonatorVec[i].resGenVol);            
+        }  
     }
 
+
+
+    // longitudinal tracking for MP model 
+    if(beamVec.size()==1)
+    {
+        // beamVec[0].timeFromCurrnetBunchToNextBunch  =  beamVec[0].bunchGap * tRF - (beamVec[0].zMaxCurrentTurn -  beamVec[0].zMinLastTurn ) /CLight;                                                       
+        // beamVec[0].zMinLastTurn                     =  beamVec[0].zMinCurrentTurn; 
+        // beamVec[0].zMaxLastTurn                     =  beamVec[0].zMaxCurrentTurn; 
+        // beamVec[0].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator);
+        
+        beamVec[0].timeFromCurrnetBunchToNextBunch  =  beamVec[0].bunchGap * tRF - (beamVec[0].zAver - beamVec[0].zAverLastTurn) /CLight;                                               
+        beamVec[0].zAverLastTurn                    =  beamVec[0].zAver;    
+        beamVec[0].BunchTransferDueToLatticeLTest1(inputParameter,cavityResonator);
+        
+        beamVec[0].GetMPBunchRMS(latticeInterActionPoint, 0);
+    }
+    else 
+    {
+        // save the last turn position center info    
+        for(int i=0;i<beamVec.size();i++)
+        {
+            beamVec[i].zAverLastTurn            = beamVec[i].zAver;
+            beamVec[i].rmsBunchLengthLastTurn   = beamVec[i].rmsBunchLengthLastTurn;
+            beamVec[i].zMaxLastTurn = beamVec[i].zMaxCurrentTurn;
+            beamVec[i].zMinLastTurn = beamVec[i].zMinCurrentTurn;
+        }
+
+        for(int i=0;i<beamVec.size();i++)
+        {
+            // prepare the condition for BunchTransferDueToLatticeLTest() -- bunch-by-bunch, inside bunch bin-by-bin
+            // if(i<beamVec.size()-1)
+            // {
+            //     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zMaxLastTurn - beamVec[i+1].zMinLastTurn) / CLight;
+            // }
+            // else
+            // {
+            //     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zMaxLastTurn - beamVec[0 ].zMinCurrentTurn) / CLight;
+            // }
+
+            // prepare the condition for BunchTransferDueToLatticeLTest1() -- bunch oscillate around its reference partcile
+            if(i<beamVec.size()-1)
+            {
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zAverLastTurn - beamVec[i+1].zAverLastTurn) / CLight;
+            }
+            else
+            {
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zAverLastTurn - beamVec[0 ].zAver) / CLight;
+            }
+
+            beamVec[i].BunchTransferDueToLatticeLTest1(inputParameter,cavityResonator);
+            beamVec[i].GetMPBunchRMS(latticeInterActionPoint, 0); 
+        }        
+    }    
 }
 
 void MPBeam::GetBinDistBetweenBunch(ReadInputSettings &inputParameter)
@@ -1174,7 +1399,7 @@ void MPBeam::SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
 void MPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
-    BeamTransferPerTurnDueToLatticeL(inputParameter,cavityResonator); 
+    BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator); 
 }
 
 void MPBeam::BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint)
@@ -1332,7 +1557,7 @@ void MPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
             if(n==0)
             {
                 tempIndex0   = 0;
-                tempIndex1   = j ;
+                tempIndex1   = j - 1 ;
             }
             else if (n==nTurnswakeTrunction-1)
             {
@@ -1344,12 +1569,20 @@ void MPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
                 tempIndex0   = 0;
                 tempIndex1   = beamVec.size()-1;
             }
-                        
+
             for(int i=tempIndex0;i<=tempIndex1;i++)
             {
-                deltaZij = wakefunction.poszData[nTurnswakeTrunction-1-n][i] - beamVec[j].zAver ;
+
+                deltaZij = wakefunction.poszData[nTurnswakeTrunction-1-n][i] - beamVec[j].zAver;
                 nTauij   = beamVec[i].bunchHarmNum - beamVec[j].bunchHarmNum - n * harmonics;
-                tauij    = nTauij * tRF + deltaZij / CLight;
+                if(beamVec.size()==1)
+                {
+                    tauij        = nTauij * tRF  - deltaZij / CLight;   
+                }
+                else
+                {
+                    tauij        = nTauij * tRF  + deltaZij / CLight;   
+                }
 
 	            if(!inputParameter.ringLRWake->pipeGeoInput.empty())
 	            {                                       

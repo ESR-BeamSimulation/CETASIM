@@ -24,22 +24,23 @@ rfResType         = 1  0                          // active=1, passive=0. Main c
 rfResVol          = 2.5E+6  0.777e+6              // cavity voltage [V],   target value to be maintained.  
 rfResPhase        = 1.178  -1.708                 // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
                                                   // if only with 1 cavity, the ideal value will be set as default        
-!rfResPhase         = 1.22346  -1.708                                                                                                    
-rfResShuntImpRs    = 17.5E+6  7.24E+6            // [ohm]
-!rfResShuntImpRs   = 0.E+6  7.24E+6               // [ohm]
+!rfResPhase        =  1.22346  -1.708                                                                                                    
+!rfResShuntImpRs   = 17.5E+6  7.24E+6            // [ohm]
+rfResShuntImpRs   =  0.E+6  7.24E+6               // [ohm]
 rfResQualityQ0     = 40000   37513               // unLoaded quality factor
 rfResCouplingBeta  = 3.5     0.27                // coupling factor   
-rfResDetuneFre     = -40.3e+3  185.e+3           // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
-!rfResDetuneFre    = -0.e+3  185.e+3             // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+!rfResDetuneFre    = -40.3e+3  185.e+3           // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+rfResDetuneFre    =  0.e+3  185.e+3             // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
 
-rfResExciteIntability = 1 1                       // to exite coupled bunch instability or not.
+rfResExciteIntability = 0 1                       // to exite coupled bunch instability or not
+rfResCavVolFB         = 0 0                       // to apply a simple feedback to cavity voltage phasor.  
 rfTransientCavParWriteTo = rfTransientPar         // Data file to store the initial cavity and genertor setiings.
-rfResCold          = 1 0                          // in tracking, if cavity is not cold, then beam induces volage is  built up already.
+rfResCold          = 0 0                          // in tracking, if cavity is not cold, then beam induces volage is  built up already.
 rfResAmpFBRatioForTotSelfLoss  = 1 1              // The cavity FB is ideal one. This parameter determin the penstage of the total vb0/2 to be compansated by each cavities.
                                                   // Cavity FB only affect voltage amplitude right now.  With a strong triansent beam loading, can adjust these parameters
                                                   // to have an better potential well distortaion effect.
                                                   // single bunch hainssiki only works well when single bunch current is weak.
-rfBunchBinNum      =  100                         // used bin of a MP model, bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]   
+rfBunchBinNum      =  20                         // used bin of a MP model, bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]   
 
 &end
 
@@ -68,31 +69,11 @@ SRWBunchBinNum   =  100                                 // specifiy the bins num
 //it is assume that in each train, bunch gaps is fixed harmonic =1240 = 100 * (3+1) + 10 + 200 * (3+1) + 30; do not change order of the parameter in this section
 &filling_pattern
 
-
-
-fpTrainNumber = 2
-fpTotBunchNumber = 446
-fpBunchNumberPerTrain = 223 223  
-fpTrainGaps = 30 30 
-fpBunchGaps = 1 1
-
-fpTrainNumber = 2
-fpTotBunchNumber = 2
-fpBunchNumberPerTrain = 1 1  
-fpTrainGaps = 0 0 
-fpBunchGaps = 475 475
-
 fpTrainNumber = 1
 fpTotBunchNumber = 952
 fpBunchNumberPerTrain = 952  
 fpTrainGaps = 0 
 fpBunchGaps = 0
-
-fpTrainNumber = 2
-fpTotBunchNumber = 2
-fpBunchNumberPerTrain = 1 1  
-fpTrainGaps = 475 475 
-fpBunchGaps = 0 0
 
 
 fpTrainNumber = 1
@@ -101,6 +82,13 @@ fpBunchNumberPerTrain = 1
 fpTrainGaps = 0 
 fpBunchGaps = 951
 
+
+fpTrainNumber = 2
+fpTotBunchNumber = 200
+fpBunchNumberPerTrain = 100 100   
+fpTrainGaps =  376 376  
+fpBunchGaps = 0 0
+
 fpTrainNumber = 2
 fpTotBunchNumber = 892
 fpBunchNumberPerTrain = 446 446  
@@ -108,20 +96,20 @@ fpTrainGaps = 30 30
 fpBunchGaps = 0 0
 
 
-
 &end
 
+
+
 &bunch
-bunchCurrent         = 0.112e-04
-!bunchCurrent        = 0.56e-03
+bunchCurrent         = 0.112E-3
 bunchEmittanceX      = 20.E-12
 bunchKappa           = 0.2
-bunchRmsBunchLength  = 2.85E-3
+bunchRmsBunchLength  = 3.0E-3
 bunchRmsEnergySpread = 7.3e-4                                                    // particles are generated according to this value. x y z, px py pz ->The same as ring energy spread
 bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
-bunchInitialDynamicOffSet   = 0.E-6 0.E-6 1.E-5 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
+bunchInitialDynamicOffSet   = 1.E-5 1.E-5 0.E-5 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 1
+bunchMacroEleNumPerBunch = 2000
 &end
 
 
@@ -162,9 +150,9 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 
 &run
-runcalSetting = 1                                              // 1: SP 2:MP 
-runNTurns = 20000
-runBunchInfoPrintInterval = 500
+runcalSetting = 2                                             // 1: SP 2:MP 
+runNTurns = 5000
+runBunchInfoPrintInterval = 50
 
 
 
@@ -180,20 +168,20 @@ runTBTBunchPrintNum = 21                                       // data print in 
 runTBTBunchDisDataBunchIndex = 350 355 360 365 370 375 380 385 390 395 400 405 410 415 420 425 430 435 440 445 450                      // bunch index to be printed
 
 runTBTBunchPrintNum = 1                                        // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
-runTBTBunchDisDataBunchIndex = 0 111 222 235  333  445          // bunch index to be printed
+runTBTBunchDisDataBunchIndex = 0 1 222 235  333  445          // bunch index to be printed
 
 runTBTBunchAverData = TBTBunchAverData
-runTBTBunchDisData  = TBTBunchDisData                         // only works in strong model that calsetting=2
-runTBTBunchCavVolData = TBTBunchCavVolData                    // only works in strong model that calsetting=2
-runTBTBunchHaissinski = TBTBunchHaissinski                    // only works in weak model calsetting=1 
-!runTBTBunchLongTraj   = longPariTraj                          // only works in weak mode  calsetting=1, file name of the longitudinal phase trajectory 
+runTBTBunchHaissinski = TBTBunchHaissinski                     
+runTBTBunchLongTraj   = longPariTraj  
+!runTBTBunchDisData    = TBTBunchDisData                       // only works in strong model that calsetting=2
+!runTBTBunchCavVolData = TBTBunchCavVolData                    // only works in strong model that calsetting=2                        
 
-runSynRadDampingFlag = 1  1                                    // only work for the transverse directoin, longitudinal is dealt in the RF cavity module                       
+runSynRadDampingFlag = 0  1                                    // only work for the transverse directoin, longitudinal is dealt in the RF cavity module                       
 runBeamIonFlag = 0
 runFIRBunchByBunchFeedbackFlag = 0
 runLongRangeWake = 0
-runShortRangeWake = 0                                           
-runBBIFlag = 0                                                 // borad band impedance data read from files--frequency domain approaches. solver is not applied to code yet.  
+runShortRangeWake = 0                                          // works for MP model                                  
+runBBIFlag = 0                                                 // works for MP model, borad band impedance data read from files--frequency domain approaches. solver is not applied to code yet.  
 &end
 
 
@@ -212,6 +200,9 @@ another way is, to find out the growth rate at the fouier mode abs value. --- ho
 2022--04-16 When the electron bunch curent is big.  The cavity feedback scheme used not can not ensure ideal bunch lengthing.   
 2022--04-16 short range wake subroutine need to be benchmaked with other codes, in time domain, RW aggree with Haisskin solutions
 2022--05-10 particle longitudinal, 
+MBTrack:
+    bin-by-bin and bunch-by-bunch to pass throught the cavity to set the initial generator voltage vector. 
+    
 
 
 

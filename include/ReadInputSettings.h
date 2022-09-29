@@ -77,6 +77,7 @@ public:
         vector<double> resAmpFBRatioForTotSelfLoss;
         vector<double> resPhase;
         vector <int>   rfResExciteIntability;
+        vector <int>   rfResCavVolFB;
         string transResonParWriteTo;
         
      };     

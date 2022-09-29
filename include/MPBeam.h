@@ -75,17 +75,19 @@ public:
     void SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
     void GetBinDistBetweenBunch(ReadInputSettings &inputParameter);
     void SRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint,int turns);    
-    
+    void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);    
 
 
     //// shared funcitons by MP and SP--just copy of each other.         
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
     void BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator);
     void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     void BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint);
     void SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);  
+    void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
+    void GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     //void SetBeamPosHistoryDataWithinWindow();
                   
                                	                       

@@ -75,15 +75,7 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     {
         beamVec[i].InitialSPBunch(inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,inputParameter,i);
-        // if (i==0)
-        // {
-        //     beamVec[i].ePositionX[0] = 0.E-5;
-        //     beamVec[i].ePositionY[0] = 0.E-5;
-        //     beamVec[i].ePositionZ[0] = 1.E-5;
-        //     beamVec[i].eMomentumX[0] = 0.E0;
-        //     beamVec[i].eMomentumY[0] = 0.E0;
-        //     beamVec[i].eMomentumZ[0] = 0.E0;
-        // }
+
     }
 
     for(int i=0;i<totBunchNum-1;i++)
@@ -223,9 +215,9 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                 tB = beamVec[k].bunchGap * t0 / ringHarmH ;           //[s]
                 deltaL = tB / tF ;                
                 
-                cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
+                // cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB;
                 // cPsi   = deltaL * tan(cavityResonator.resonatorVec[i].resDeTunePsi ); 
-                // cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
+                cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
                 
                 if( n==nTurns-1)
                 {
@@ -291,8 +283,8 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
         for(int j=0;j<beamVec.size();j++)
         {
             beamVec[j].cavFBCenInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // set vol as the requried voltage.
-            beamVec[j].cavFBCenInfo->cavAmpBunchCen[i]    = abs(cavityResonator.resonatorVec[i].resCavVolReq);
-            beamVec[j].cavFBCenInfo->cavPhaseBunchCen[i]  = arg(cavityResonator.resonatorVec[i].resCavVolReq);
+            // beamVec[j].cavFBCenInfo->cavAmpBunchCen[i]    = abs(cavityResonator.resonatorVec[i].resCavVolReq);
+            // beamVec[j].cavFBCenInfo->cavPhaseBunchCen[i]  = arg(cavityResonator.resonatorVec[i].resCavVolReq);
             beamVec[j].cavFBCenInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
             beamVec[j].cavFBCenInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
             beamVec[j].cavFBCenInfo->selfLossVolBunchCen[i] = vbKickAver;
@@ -361,8 +353,8 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                 time +=  tB;
                 deltaL = tB / tF ;
 
-                cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
-                // cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
+                // cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
+                cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
 
                 fout<<setw(15)<<left<<time*f0 
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolAmp
@@ -375,7 +367,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resGenVol)
                     <<endl;
 
-                vbAccum = vbAccum * exp(- deltaL ) * exp (li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
+                vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
             }
         }
     }
@@ -569,13 +561,11 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     if( !inputParameter.ringRun->TBTBunchHaissinski.empty() &&  !cavityResonator.resonatorVec.empty())
     {
         GetHaissinski(inputParameter,cavityResonator,sRWakeFunction); 
-        // if(!inputParameter.ringRun->TBTBunchLongTraj.empty())
-        // {
-        //     GetAnalyticalLongitudinalPhaseSpace(inputParameter,cavityResonator,sRWakeFunction);
-        // }
-    }
-    
-
+        if(!inputParameter.ringRun->TBTBunchLongTraj.empty())
+        {
+            GetAnalyticalLongitudinalPhaseSpace(inputParameter,cavityResonator,sRWakeFunction);
+        }
+    }    
     //sddsplot();    
 }
 
@@ -981,8 +971,8 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 
             for(int j=0; j<inputParameter.ringParRf->resNum;j++)
             {
-                fout<<setw(24)<<left<<setprecision(16)<<    beamVec[i].cavFBCenInfo->cavAmpBunchCen[j]
-                    <<setw(24)<<left<<setprecision(16)<<    beamVec[i].cavFBCenInfo->cavPhaseBunchCen[j]
+                fout<<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].cavFBCenInfo->cavVolBunchCen[j])
+                    <<setw(24)<<left<<setprecision(16)<<arg(beamVec[i].cavFBCenInfo->cavVolBunchCen[j])
                     <<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].cavFBCenInfo->genVolBunchAver[j])
                     <<setw(24)<<left<<setprecision(16)<<arg(beamVec[i].cavFBCenInfo->genVolBunchAver[j])
                     <<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].cavFBCenInfo->induceVolBunchCen[j])
@@ -992,7 +982,7 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
     }
 
     fout.close();
-
+    
     
     // ofstream foutX("coupledBunchedModeX.sdds",ios_base::app);
     // ofstream foutY("coupledBunchedModeY.sdds",ios_base::app);
@@ -1231,63 +1221,83 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
     double circRing   = inputParameter.ringParBasic->circRing;
     double rfLen      = circRing  / ringHarmH;
+    double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
     
-    // for(int i=0;i<inputParameter.ringParRf->resNum;i++)
-    // {
-    //     complex<double> vbKickAverSum=(0.e0,0.e0);
-    //     complex<double> vbAccumAverSum=(0.e0,0.e0);
+    for(int i=0;i<inputParameter.ringParRf->resNum;i++)
+    {
+        complex<double> vbKickAverSum=(0.e0,0.e0);
+        complex<double> vbAccumAverSum=(0.e0,0.e0);
 
-    //     for(int j=0;j<beamVec.size();j++)
-    //     {
-    //         vbKickAverSum      += beamVec[j].cavFBCenInfo->selfLossVolBunchCen[i];
-    //         vbAccumAverSum     += beamVec[j].cavFBCenInfo->induceVolBunchCen[i];
-    //     }
-    //     vbKickAver[i]      = vbKickAverSum   / double(beamVec.size());
-    //     vbAccumAver[i]     = vbAccumAverSum  / double(beamVec.size());
-    // }
-    
+        for(int j=0;j<beamVec.size();j++)
+        {
+            vbKickAverSum      += beamVec[j].cavFBCenInfo->selfLossVolBunchCen[i];
+            vbAccumAverSum     += beamVec[j].cavFBCenInfo->induceVolBunchCen[i];
+        }
+        vbKickAver[i]      = vbKickAverSum   / double(beamVec.size());
+        vbAccumAver[i]     = vbAccumAverSum  / double(beamVec.size());
+    }
+        
     // for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     // {
     //     totSelfLoss += vbKickAver[i];
     // }
 
 
-    // for(int i=0;i<inputParameter.ringParRf->resNum;i++)
-    // {
-    //     selfLossToCompensate[i] = resAmpFBRatioForTotSelfLoss[i] * totSelfLoss;
-    // }
+    for(int i=0;i<inputParameter.ringParRf->resNum;i++)
+    {
+        // selfLossToCompensate[i] = resAmpFBRatioForTotSelfLoss[i] * totSelfLoss;
+        selfLossToCompensate[i] = vbKickAver[i];
+    }
     
-
 
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {
-        // extra feedback condition to compensate the self-loss term vb0/2 
-        // double genAddvbArg = arg(cavityResonator.resonatorVec[i].resCavVolReq);
-        // double genAddvbAbs = (cavityResonator.resonatorVec[i].resCavVolReq.real() - vbKickAver[i].real()) / cos( genAddvbArg );
-        // cavityResonator.resonatorVec[i].resGenVol = genAddvbAbs * exp( li * genAddvbArg ) - vbAccumAver[i];
+        //each cavity generator compensated the related self-loss by it self
+        //double genAddvbArg = arg(cavityResonator.resonatorVec[i].resCavVolReq);
+        //double genAddvbAbs = (cavityResonator.resonatorVec[i].resCavVolReq.real() - selfLossToCompensate[i].real()) / cos( genAddvbArg );
+        //cavityResonator.resonatorVec[i].resGenVol = genAddvbAbs * exp( li * genAddvbArg ) - vbAccumAver[i];
         
-        // no cavity feedback if it is commented, wiht this feedback to get the phase and amp for haissinski solution    
-        // cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - vbAccumAver[i];
-        // cout<<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resCavVolReq) 
-        //     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resCavVolReq)
-        //     <<setw(15)<<left<<abs(vbAccumAver[i])
-        //     <<setw(15)<<left<<arg(vbAccumAver[i])
-        //     <<endl;
-        // cout<<cavityResonator.resonatorVec[i].resGenVol<<endl;
+        // active cavity, and cavity feedback is set as 1 in input file, HeFei's method.
+        if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==1)
+        {    
+            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - vbAccumAver[i];
+        }
+        else if(cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==1)
+        {
+            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resGenVol;
+        }
+        else if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==0)
+        {
+            cerr<<"Wrong setting: passive cavity can set cavitiy FB"<<endl;
+            exit(0);
+        }
+        else if (cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==0)
+        {
+            cavityResonator.resonatorVec[i].resGenVol = complex<double>(0.E0,0.E0);
+        }
+        
         for(int j=0;j<beamVec.size();j++)
         {
             beamVec[j].cavFBCenInfo->genVolBunchAver[i] =  cavityResonator.resonatorVec[i].resGenVol;
-        }        
+        }
+        
+        // set voltage and phase for hainssinki solver
+        for(int j=0;j<beamVec.size();j++)
+        {              
+            beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + cavityResonator.resonatorVec[i].resGenVol);
+            beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + cavityResonator.resonatorVec[i].resGenVol);            
+        }
+
     }
+
 
     //longitudinal tracking ---
     if(beamVec.size()==1)
     {
-        beamVec[0].timeFromCurrnetBunchToNextBunch  = beamVec[0].bunchGap * rfLen - (beamVec[0].zAver - beamVec[0].zAverLastTurn);
-        beamVec[0].timeFromCurrnetBunchToNextBunch /= CLight;
+        beamVec[0].timeFromCurrnetBunchToNextBunch  = beamVec[0].bunchGap * tRF - (beamVec[0].zAver - beamVec[0].zAverLastTurn) / CLight;
         beamVec[0].zAverLastTurn                    = beamVec[0].zAver;        
-        // beamVec[0].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator,turns);
-        beamVec[0].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator,turns);
+        // beamVec[0].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);
+        beamVec[0].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator);
         beamVec[0].GetSPBunchRMS(latticeInterActionPoint, 0);   
     }
     else
@@ -1303,48 +1313,33 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
             // get the time from current bunch to next bunch 
             if(i<beamVec.size()-1)
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * rfLen - (beamVec[i].zAverLastTurn - beamVec[i+1].zAverLastTurn); 
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - (beamVec[i].zAverLastTurn - beamVec[i+1].zAverLastTurn)/ CLight; 
             }
             else
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * rfLen - (beamVec[i].zAverLastTurn - beamVec[0].zAver ) ;
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - (beamVec[i].zAverLastTurn - beamVec[0].zAver ) / CLight;
             }
-            beamVec[i].timeFromCurrnetBunchToNextBunch /= CLight;
-
 
             // get the time from last bunch to current bunch not used in simulation 
             if(i==0)
             {
-                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[beamVec.size()-1].bunchGap * rfLen - (beamVec[beamVec.size()-1].zAverLastTurn - beamVec[i].zAverLastTurn); 
+                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[beamVec.size()-1].bunchGap * tRF 
+                                                            -(beamVec[beamVec.size()-1].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight; 
             }
             else
             {
-                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[i-1             ].bunchGap * rfLen - (beamVec[i -1            ].zAverLastTurn - beamVec[i].zAverLastTurn);
+                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[i-1             ].bunchGap * tRF 
+                                                            -(beamVec[i -1            ].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight;
             }
-            beamVec[i].timeFromLastBunchToCurrentBunch /= CLight;  
 
             // beamVec[i].BunchTransferDueToLatticeL(inputParameter,cavityResonator,turns);          
-            // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator,turns);
-            beamVec[i].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator,turns);             
+            // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);
+            beamVec[i].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator);             
             beamVec[i].GetSPBunchRMS(latticeInterActionPoint, 0);   
         }
     }
     
-       
-    // set the phase and vol used in haissinski solver  
-    for(int i=0;i<inputParameter.ringParRf->resNum;i++)
-    {    
-        complex<double> gen = cavityResonator.resonatorVec[i].resCavVolReq - vbAccumAver[i];                    
-        for(int j=0;j<beamVec.size();j++)
-        {              
-            // beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + gen);
-            // beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + gen);            
-            //with this cavity amp and pahse, self-loss are included 
-            beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].cavFBCenInfo->cavVolBunchCen[i]);
-            beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].cavFBCenInfo->cavVolBunchCen[i]);
-        }    
-    }
-    
+        
 }
 
 void SPBeam::GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter)
@@ -1576,9 +1571,8 @@ void SPBeam::GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParamet
         bunchIndex  = TBTBunchDisDataBunchIndex[i];
         beamVec[bunchIndex].GetParticleLongitudinalPhaseSpace(inputParameter,cavityResonator,i);                           
     }
-
-
 }
+
 
 void SPBeam::FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns)
 {
@@ -1734,7 +1728,7 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
             if(n==0)
             {
                 tempIndex0   = 0;
-                tempIndex1   = j;
+                tempIndex1   = j - 1;
             }
             else if (n==nTurnswakeTrunction-1)
             {
@@ -1752,9 +1746,10 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
             //      =  -nkT_rf - (dz_i - dz_j ) / c
             for(int i=tempIndex0;i<=tempIndex1;i++)
             {                 
-                // Alex Chao Eq.(4.3) -- W'(k C - n C + z_n -z_k) i: leading bunch; j: wittness bunch
+                // Alex Chao Eq.(4.3) -- W'(k C - n C + z_n -z_k) i(k): leading bunch; j(n): wittness bunch
                 deltaZij = wakefunction.poszData[nTurnswakeTrunction-1-n][i] - beamVec[j].zAver;
                 nTauij   = beamVec[i].bunchHarmNum - beamVec[j].bunchHarmNum - n * harmonics;
+                tauijStastic = nTauij * tRF;
                 if(beamVec.size()==1)
                 {
                     tauij        = nTauij * tRF  - deltaZij / CLight;   
@@ -1764,9 +1759,6 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
                     tauij        = nTauij * tRF  + deltaZij / CLight;   
                 }
                 
-                             
-                tauijStastic = nTauij * tRF;
-
                 // notification: 
                 // ensure the wakefucntion return the focusing strength in transverse and energy loss in longitudinal. 
                 // then: beamVec[j].lRWakeForceAver[?] -=  mins here.   
@@ -1784,10 +1776,10 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
                     wakeForceTemp = wakefunction.GetBBRWakeFun(tauij);                                       
                     beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
                     beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]                   
-                    // beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch ; 
+                    beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch ; 
                     // to subsctract the "stastic term"
-                    wakeStasticForceTemp = wakefunction.GetBBRWakeFun(tauijStastic);
-                    beamVec[j].lRWakeForceAver[2] -= (wakeForceTemp[2] - wakeStasticForceTemp[2]) * beamVec[i].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]                
+                    // wakeStasticForceTemp = wakefunction.GetBBRWakeFun(tauijStastic);
+                    // beamVec[j].lRWakeForceAver[2] -= (wakeForceTemp[2] - wakeStasticForceTemp[2]) * beamVec[i].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]                
                 }             
             }   
               

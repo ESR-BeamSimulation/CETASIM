@@ -5,8 +5,8 @@
 //it under the terms of the GNU General Public License                     
 //Author: chao li, li.chao@desy.de                                         
 //*************************************************************************
-#ifndef MBBUNCH_H
-#define MBBUNCH_H
+#ifndef MPBUNCH_H
+#define MPBUNCH_H
 
 #include <vector>
 #include <complex>
@@ -53,13 +53,13 @@ public:
     void GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoint, int k);    
     void SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void BunchTransferDueToLatticeLTest(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void BunchTransferDueToLatticeLTest1(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     void BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const LatticeInterActionPoint &latticeInterActionPoint, int turns);
     vector<double> GetZMinMax();
 private:
 
 };
-
-
 
 
 #endif

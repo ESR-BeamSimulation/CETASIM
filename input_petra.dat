@@ -24,7 +24,7 @@ rfResNum          = 1                             // passive HC can also be trea
 rfResHarm         = 1  3                          // harm number of the cavity (normalized by ringHarm). 
 rfResType         = 1  1                          // active=1, passive=0. Main cavity is always active
 rfResVol          = 8.0E+6  2.22275e+6            // cavity voltage [V],   target value to be maintained.  
-rfResPhase        = 0.944702  -1.80733            // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
+!rfResPhase        = 0.944702  -1.80733            // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
                                                   // if only with 1 cavity, the ideal value will be set as default  
 rfResPhase        = 1.02292  -1.5707                                                  
                                                   
@@ -37,6 +37,7 @@ rfResDetuneFre    = -27.91e+3  233.44e+3         // Hz   resonatorVec[i].resHarm
 rfTransientCavParWriteTo = rfTransientPar         // Data file to store the initial cavity and genertor setiings.
 rfResCold          = 0 0                          // in tracking, cavity is cold (1) or beam induced volage is built up already (0).
 rfResExciteIntability = 1 0                       // to exite coupled bunch instability or not
+rfResCavVolFB         = 0 0                       // to apply a simple feedback to cavity voltage phasor--only works for active cavity.
 rfResAmpFBRatioForTotSelfLoss  = 1 1              // The cavity FB is ideal one. This parameter determins the perstage of the total vb0/2 to be compansated by each cavities.
                                                   // Cavity FB only affect voltage amplitude right now.  With a strong triansent beam loading, can adjust these parameters
                                                   // to have an better potential well distortaion effect.                                                  
@@ -45,9 +46,9 @@ rfBunchBinNum      =  100                         // used bin of a soft bunch in
 
 // long range RW wake function  Ref. NIMA 221-230 806 (2016) Nagaoka  Eq.(26), rigid bunch approximation for long range wake simulation. 
 &LongRangeWake
-LRWPipeGeoInput=input_SectorGeo.dat
-LRWBBRInput=input_BBR.dat
-LRWNTurnsWakeTrunction =  5
+!LRWPipeGeoInput=input_SectorGeo.dat
+!LRWBBRInput=input_BBR.dat
+!LRWNTurnsWakeTrunction =  5
 &end
 
 &ShortRangeWake                                         //in SP model, the hainsinski is solved by 1ps wake potential (RW and BBR model)  
@@ -171,25 +172,22 @@ fpBunchGaps = 767
 
 
 fpTrainNumber = 1
-fptotBunchNumber = 1
-fpBunchNumberPerTrain = 1 
-fpTrainGaps = 0
-fpBunchGaps = 3839
-
-
-fpTrainNumber = 1
 fptotBunchNumber = 80
 fpBunchNumberPerTrain = 80 
 fpTrainGaps = 0
 fpBunchGaps = 47
 
-
+fpTrainNumber = 1
+fptotBunchNumber = 1
+fpBunchNumberPerTrain = 1 
+fpTrainGaps = 0
+fpBunchGaps = 3839
 
 &end
 
 
 &bunch
-bunchCurrent         = 1.E-3
+bunchCurrent         = 80.E-3
 bunchEmittanceX      = 20.E-12
 bunchKappa           = 0.2
 bunchRmsBunchLength  = 2.3E-3
@@ -197,7 +195,7 @@ bunchRmsEnergySpread = 9.277e-4                                                 
 bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
 bunchInitialDynamicOffSet   = 1.E-5 1.E-5 1.E-6 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 1
+bunchMacroEleNumPerBunch = 500
 &end
 
 
@@ -252,9 +250,9 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 
 &run
-runcalSetting = 1                                              // 1: SP 2:MP 
-runNTurns = 2000
-runBunchInfoPrintInterval = 10
+runcalSetting = 2                                              // 1: SP 2:MP 
+runNTurns = 20000
+runBunchInfoPrintInterval = 500
 
 //set the bunch to be printed out
 runTBTBunchPrintNum = 21                                       // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
@@ -266,10 +264,10 @@ runTBTBunchDisDataBunchIndex = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
 runTBTBunchAverData = TBTBunchAverData
 runTBTBunchDisData  = TBTBunchDisData                         // only works in strong model that calsetting=2
 runTBTBunchCavVolData = TBTBunchCavVolData                    // only works in strong model that calsetting=2
-runTBTBunchHaissinski = TBTBunchHaissinski                    // only works in weak model calsetting=1 
-runTBTBunchLongTraj   = longPariTraj                          // only works in weak mode  calsetting=1, file name of the longitudinal phase trajectory 
+runTBTBunchHaissinski = TBTBunchHaissinski                     
+runTBTBunchLongTraj   = longPariTraj                          
 
-runSynRadDampingFlag = 0  0                                    // only work for the transverse directoin, longitudinal is dealt in the RF cavity subroutine                       
+runSynRadDampingFlag = 0  0                                    //tranverse SR, longitudianl SR and quandum excitation                      
 runBeamIonFlag = 0
 runFIRBunchByBunchFeedbackFlag = 0 
 runLongRangeWake = 0

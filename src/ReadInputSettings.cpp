@@ -147,7 +147,8 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringParRf->resCouplingBeta.resize(ringParRf->resNum);
             ringParRf->resDetuneFre   .resize(ringParRf->resNum); 
             ringParRf->resCold        .resize(ringParRf->resNum);
-            ringParRf->rfResExciteIntability.resize(ringParRf->resNum);  
+            ringParRf->rfResExciteIntability.resize(ringParRf->resNum);
+            ringParRf->rfResCavVolFB.resize(ringParRf->resNum);               
             ringParRf->resAmpFBRatioForTotSelfLoss.resize(ringParRf->resNum);                                 
         }
 
@@ -156,6 +157,14 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             for(int i=0;i<ringParRf->resNum;i++)
             {
                 ringParRf->rfResExciteIntability[i] = stod(strVec[i+1]);               
+            }                    
+        }
+
+        if (strVec[0]=="rfrescavvolfb") 
+        {
+            for(int i=0;i<ringParRf->resNum;i++)
+            {
+                ringParRf->rfResCavVolFB[i] = stod(strVec[i+1]);               
             }                    
         }
 
@@ -417,7 +426,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         //----------------------------------------------------------------------  
 
             
-        //6 initial FB efect para 
+        //6 initial bunch-by-bunch FB  para 
 
         if(strVec[0]=="fbkickstrengthkx")
         {

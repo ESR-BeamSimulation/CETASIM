@@ -42,6 +42,7 @@ public:
     double resVolAbsReq;
     double resPhaseReq;
     int rfResExciteIntability=1;
+    int rfResCavVolFB=1;
 
     complex<double> resCavVolReq=(0,0);     // it is the target value -- take into the self-beam loading voltage into account.   
     complex<double> resGenVol=(0,0);        // in the cos  convention used in the code, the real part represents the momentum change

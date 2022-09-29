@@ -17,7 +17,7 @@
 #include "ReadInputSettings.h"
 #include "CavityResonator.h"
 #include "WakeFunction.h"
-
+#include "Spline.h"
 using namespace std;
 using std::vector;
 using std::complex;
@@ -52,6 +52,11 @@ public:
     double pzAver=0.E0;
     double zAverLastTurn=0.E0;
     double pzAverLastTurn=0.E0;
+    // for beam loading to get the time distance between bunches
+    double zMinCurrentTurn =0.E0;
+    double zMaxCurrentTurn =0.E0;
+    double zMinLastTurn =0.E0;
+    double zMaxLastTurn =0.E0;
     
     complex<double> xAverAnalytical;
     complex<double> yAverAnalytical;
@@ -77,6 +82,7 @@ public:
     double timeToLastBunch;
     
     double rmsBunchLength;
+    double rmsBunchLengthLastTurn = 0.E0;
     double rmsEnergySpread;
     double rmsRx;
     double rmsRy;
@@ -90,12 +96,35 @@ public:
         vector<complex<double> > induceVolBunchCen;
         vector<complex<double> > genVolBunchAver;
         vector<complex<double> > selfLossVolBunchCen;         
-        vector<complex<double> > cavVolBunchCen;
-        vector<double> cavAmpBunchCen;
-        vector<double> cavPhaseBunchCen;
-           
+        vector<complex<double> > cavVolBunchCen;           
     };
     CAVFBCenInfo *cavFBCenInfo = new CAVFBCenInfo;
+    
+    
+    struct Haissinski{
+
+    double dt = 1.e-12 ;      // set as a default value.. 1 ps 
+    double dz = dt * CLight;      
+    int    nz  ;   
+    double zMax;
+    double zMin;
+    double averZ;
+    double rmsZ;
+    vector<double> bunchProfile;                // head to tail -> [+,-]--ensure to have a positive hamiltonian--SYL Eq. 3.36
+    vector<double> bunchPosZ;
+    vector<double> totWakePoten;
+    vector<double> rwWakePoten;
+    vector<double> bbrWakePoten;            
+    vector<double> wakeHamiltonian;          
+    vector<double> rfHamiltonian;           
+    vector<double> totHamiltonian;           
+    
+    vector<double> cavAmp;
+    vector<double> cavPhase;                                  
+    };
+    Haissinski *haissinski = new Haissinski;
+    
+
     
     vector<double> lRWakeForceAver;        // used in the long range wakefunction simulation
     
@@ -112,6 +141,20 @@ public:
     void BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchTransferDueToWake();
     
+
+    // bunch haissinski solution//deal the data in Haissinski structure. 
+    void GetBunchHaissinski(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
+    void GetWakeHamiltonian(const ReadInputSettings &inputParameter,WakeFunction &sRWakeFunction);
+    void GetWakeHamiltonianFromRW(const ReadInputSettings &inputParameter,WakeFunction &sRWakeFunction);
+    void GetWakeHamiltonianFromBBR(const ReadInputSettings &inputParameter,WakeFunction &sRWakeFunction);   
+    void GetRFHamiltonian(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator);
+    void GetTotHamiltonian();
+    vector<double> GetProfile(const ReadInputSettings &inputParameter);
+    void GetBunchAverAndBunchLengthFromHaissinskiSolution();  
+
+    // once got the hassinski--then get the particle longitudinal phase space 
+    void GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,int bunchIndex);
+    vector<double> LeapFrog(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,vector<double> z,const tk::spline &wakePotenFit);
 
 
 private:

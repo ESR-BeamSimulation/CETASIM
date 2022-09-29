@@ -62,11 +62,14 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         resonatorVec[i].resVolAbsReq       = inputParameter.ringParRf-> resVol[i];
         resonatorVec[i].resPhaseReq        = inputParameter.ringParRf-> resPhase[i];                 
         resonatorVec[i].resCold            = inputParameter.ringParRf-> resCold[i];
-        resonatorVec[i].rfResExciteIntability = inputParameter.ringParRf-> rfResExciteIntability[i];     
+        resonatorVec[i].rfResCavVolFB      = inputParameter.ringParRf-> rfResCavVolFB[i]; 
+        resonatorVec[i].rfResExciteIntability = inputParameter.ringParRf-> rfResExciteIntability[i]; 
+ 
              
         // calcuated....
         resonatorVec[i].resQualityQL       = resonatorVec[i].resQualityQ0 / (1 + resonatorVec[i].resCouplingBeta );                
-        resonatorVec[i].resFre             = resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre;                
+        resonatorVec[i].resFre             = resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; 
+                    
         double tanPsi                      = resonatorVec[i].resQualityQL * 
                                             (
                                               resonatorVec[i].resFre / (resonatorVec[i].resHarm * ringHarmH * f0 ) 
