@@ -1285,26 +1285,26 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         for(int i=0;i<beamVec.size();i++)
         {
             // prepare the condition for BunchTransferDueToLatticeLTest() -- bunch-by-bunch, inside bunch bin-by-bin
-            // if(i<beamVec.size()-1)
-            // {
-            //     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zMaxLastTurn - beamVec[i+1].zMinLastTurn) / CLight;
-            // }
-            // else
-            // {
-            //     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zMaxLastTurn - beamVec[0 ].zMinCurrentTurn) / CLight;
-            // }
-
-            // prepare the condition for BunchTransferDueToLatticeLTest1() -- bunch oscillate around its reference partcile
             if(i<beamVec.size()-1)
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zAverLastTurn - beamVec[i+1].zAverLastTurn) / CLight;
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zMaxLastTurn - beamVec[i+1].zMinLastTurn) / CLight;
             }
             else
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zAverLastTurn - beamVec[0 ].zAver) / CLight;
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zMaxLastTurn - beamVec[0 ].zMinCurrentTurn) / CLight;
             }
 
-            beamVec[i].BunchTransferDueToLatticeLTest1(inputParameter,cavityResonator);
+            // prepare the condition for BunchTransferDueToLatticeLTest1() -- bunch oscillate around its reference partcile
+            // if(i<beamVec.size()-1)
+            // {
+            //     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zAverLastTurn - beamVec[i+1].zAverLastTurn) / CLight;
+            // }
+            // else
+            // {
+            //     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - ( beamVec[i].zAverLastTurn - beamVec[0 ].zAver) / CLight;
+            // }
+
+            beamVec[i].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator);
             beamVec[i].GetMPBunchRMS(latticeInterActionPoint, 0); 
         }        
     }    

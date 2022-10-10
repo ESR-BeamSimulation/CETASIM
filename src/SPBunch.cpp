@@ -386,25 +386,20 @@ void SPBunch::BunchTransferDueToLatticeLTest(const ReadInputSettings &inputParam
     
         cavVoltage = cavityResonator.resonatorVec[j].vbAccum + cavFBCenInfo->genVolBunchAver[j];          
    
-        if(j==0) 
-        {
-           eMomentumZ[0] += (cavVoltage * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF       )/ electronBeamEnergy).real(); 
-        }
-        else if (j==1) 
-        {
-            eMomentumZ[0] += (cavVoltage * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF      )/ electronBeamEnergy).real(); 
-        }
-        //particle momentum due to self-field -- SP mode this value is too large--ingored in SP model.
-        // eMomentumZ[0] += vb0.real()/2.0/electronBeamEnergy;
+        eMomentumZ[0] += (cavVoltage * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF       )/ electronBeamEnergy).real(); 
 
-    
-        // set the data used for feedback 
+        //particle momentum due to self-field -- SP mode this value is too large--ingored in SP model.
+        eMomentumZ[0] += vb0.real()/2.0/electronBeamEnergy;
+
+        cavityResonator.resonatorVec[j].vbAccum += vb0;  
+
+         // set the data used for feedback 
         cavFBCenInfo->induceVolBunchCen[j]   = cavityResonator.resonatorVec[j].vbAccum;                  
         cavFBCenInfo->cavVolBunchCen[j]      = cavVoltage;
         cavFBCenInfo->selfLossVolBunchCen[j] = vb0/2.0;   
         ///////////////////////////////////////////////////////////////////////
 
-
+    
         // time to next bunch
         if(cavityResonator.resonatorVec[j].rfResExciteIntability==0)
         {
@@ -419,10 +414,12 @@ void SPBunch::BunchTransferDueToLatticeLTest(const ReadInputSettings &inputParam
         cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB; // - 2 * PI * resHarm * bunchGap;
                
         // beam induced voltage accumulated 
-        cavityResonator.resonatorVec[j].vbAccum += vb0;  
+        
         cavityResonator.resonatorVec[j].vbAccum *= exp(- deltaL ) * exp(li * cPsi);
-    }
 
+ 
+    }
+    
     eMomentumZ[0] -= u0 / electronBeamEnergy;
     if(inputParameter.ringRun->synRadDampingFlag[1]==1)
     {
