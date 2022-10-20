@@ -182,8 +182,22 @@ public:
         string impedInput;
     };    
     RingImpedance * ringImpedance =  new RingImpedance;    
+    
+    // 9 DRIVEDAMP 
+    struct DriveMode
+    {
+        int driveModeOn = 0;
+        int driveCBMIndex = 0;
+        int driveEnd = 0;       // in unit of turns
+        int driveStart = 0;     // in unit of turns
+        double driveAmp = 0; 
+        double driveFre = 0.E0; // Hz 
+        int drivePlane = 0;
+        int driveHW = 0;       
+    };    
+    DriveMode * driveMode =  new DriveMode;  
         
-    // 9 run
+    // 10 run setting
     struct RingRun
     {
         int calSetting;
@@ -191,6 +205,8 @@ public:
         int fIRBunchByBunchFeedbackFlag;
         int beamIonFlag;
         int nTurns;
+        int growthRateFittingStart;
+        int growthRateFittingEnd;
         int impedanceFlag;
         int lRWakeFlag;
         int sRWakeFlag;
@@ -201,10 +217,13 @@ public:
         string TBTBunchCavVolData;
         string TBTBunchHaissinski;
         string TBTBunchLongTraj;
+        string runCBMGR;
         
         int bunchInfoPrintInterval;
     };       
     RingRun * ringRun =  new RingRun; 
+
+
     
 };
 

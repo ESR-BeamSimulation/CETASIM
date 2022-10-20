@@ -6,14 +6,15 @@
 //Author: chao li, li.chao@desy.de                                         
 //*************************************************************************
 #pragma once                                                             
-#include "stdio.h"
-#include "string.h"
+#include <stdio.h>
+#include <string.h>
 //#include "mpi.h"
 #include <iomanip>
 #include <fstream>
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <complex>
 #include <omp.h>
 #include "Global.h"
 //#include "SDDS.h"    // refer to Makefile, only ensure compliable
@@ -53,7 +54,7 @@ int main(int argc,char *argv[])
  
     LatticeInterActionPoint latticeInterActionPoint;
     latticeInterActionPoint.Initial(inputParameter);
-  
+
     Train train;
     train.Initial(inputParameter);
 

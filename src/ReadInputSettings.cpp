@@ -577,8 +577,41 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
           ringImpedance->bunchBinNumberZ = stoi(strVec[1]);
         } 
         
-
-        // 9) run       
+        // 9) driveMode
+        if(strVec[0]=="drivemodeon")
+        {
+          driveMode->driveModeOn = stoi(strVec[1]);
+        } 
+        if(strVec[0]=="drivecbmindex")
+        {
+          driveMode->driveCBMIndex = stoi(strVec[1]);
+        }
+        if(strVec[0]=="driveend")
+        {
+          driveMode->driveEnd = stoi(strVec[1]);
+        }
+        if(strVec[0]=="drivestart")
+        {
+          driveMode->driveStart = stoi(strVec[1]);
+        }
+        if(strVec[0]=="driveamp")
+        {
+          driveMode->driveAmp = stod(strVec[1]);
+        }
+        if(strVec[0]=="drivefre")
+        {
+          driveMode->driveFre = stod(strVec[1]);
+        }
+        if(strVec[0]=="driveplane")
+        {
+          driveMode->drivePlane = stoi(strVec[1]);
+        }
+        if(strVec[0]=="drivehw")
+        {
+          driveMode->driveHW = stoi(strVec[1]);
+        }
+        
+        // 10) run       
         
         if(strVec[0]=="runnturns")
         {
@@ -641,13 +674,27 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         {
           ringRun->bunchInfoPrintInterval = stoi(strVec[1]);
         }
-
+        if(strVec[0]=="rungrowthratefittingstart")
+        {
+          ringRun->growthRateFittingStart = stoi(strVec[1]);
+        }
+        if(strVec[0]=="rungrowthratefittingend")
+        {
+          ringRun->growthRateFittingEnd = stoi(strVec[1]);
+        }
+        
+        
         if(strVec[0]=="runtbtbunchprintnum")
         {                       
           ringRun->TBTBunchPrintNum = stoi(strVec[1]) ;
           ringRun->TBTBunchDisDataBunchIndex.resize(ringRun->TBTBunchPrintNum);
         }
-    
+
+        if(strVec[0]=="runcbmgr")
+        {                       
+          ringRun->runCBMGR = strVec[1];
+        }
+            
         if(strVec[0]=="runtbtbunchdisdatabunchindex")
         {                                 
           for(int i=0;i<ringRun->TBTBunchDisDataBunchIndex.size();i++)
@@ -657,6 +704,26 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         }
                                                                
     }
+
+  if (driveMode->driveStart > driveMode->driveStart)
+  {
+    cerr<<"wrong setting in DRIVEMode, driveMode->driveStart have to be less than driveMode->driveEnd"<<endl;
+  }
+
+
+  if(ringRun->growthRateFittingStart >= ringRun->growthRateFittingEnd  )
+  {
+    cerr<<"wrong settings: growthRateFittingEnd is smaller growthRateFittingStart"<<endl;
+    exit(0);
+  }
+
+  if(ringRun->growthRateFittingEnd >  ringRun->nTurns )
+  {
+    cerr<<"wrong settings: nTurns small than growthRateFittingEnd"<<endl;
+    exit(0);
+  } 
+
+
 
     // debug -- print all bunch data
     // ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;

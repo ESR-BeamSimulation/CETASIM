@@ -57,6 +57,9 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     int totBunchNum = inputParameter.ringFillPatt->totBunchNumber; 
     int harmonics = inputParameter.ringParBasic->harmonics;              
     beamVec.resize(totBunchNum);
+    freXIQDecompScan.resize(totBunchNum);
+    freYIQDecompScan.resize(totBunchNum);
+    freZIQDecompScan.resize(totBunchNum);
 
     // set bunch harmonic number    
     int counter=0;
@@ -69,13 +72,12 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
         }
     }
     
-    // set the bunch initial distribution 
     // in one bunch train, leading and tail bunch covention [head, tail] = [0,1,2,...i,]
     for(int i=0;i<totBunchNum;i++)
     {
         beamVec[i].InitialSPBunch(inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,inputParameter,i);
-
+        // beamVec[i].ePositionX[0] = 0.001 * cos(4* 2 * PI * i / totBunchNum);
     }
 
     for(int i=0;i<totBunchNum-1;i++)
@@ -88,7 +90,25 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     SPGetBeamInfo();
     GetTimeDisToNextBunchIntial(inputParameter);
 
-    RMOutPutFiles();
+    // set the IQDecompose scan frequency
+    double workQx = inputParameter.ringParBasic->workQx;
+    double workQy = inputParameter.ringParBasic->workQy;
+    double workQz = inputParameter.ringParBasic->workQz;
+    double f0       = inputParameter.ringParBasic->f0;
+
+    // workQx = workQx - floor(workQx);
+    // workQy = workQy - floor(workQy);
+    // workQz = workQz - floor(workQz);
+
+    // only works for unifrom filling patterns setings.
+    for(int i=0;i<totBunchNum;i++)
+    {
+        freXIQDecompScan[i] = (i + workQx) * f0;
+        freYIQDecompScan[i] = (i + workQy) * f0;
+        freZIQDecompScan[i] = (i + workQz) * f0;
+    }
+    
+    RMOutPutFiles();   
     /*
     for(int i=0;i<totBunchNum;i++)
     {
@@ -223,7 +243,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                     vbAccumAver1 +=  vbAccum;
                 }
 
-                vbAccum = vbAccum * exp(- deltaL ) * exp (li * cPsi);    // decay and rotate [V] P.B. Eq.(3.12) get the beam induced voltage at the cavity
+                vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);    // decay and rotate [V] P.B. Eq.(3.12) get the beam induced voltage at the cavity
 
                 if( n==nTurns-1)
                 {
@@ -231,7 +251,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                 }
             }
         }
-
+     
         
         vbAccumAver =  (vbAccumAver1 + vbAccumAver2) /2.0/ double(beamVec.size());   // (1)
         vbAccumAver =  vbAccumAver1/double(beamVec.size());                          // before decay and rotate, just  after bunch left.
@@ -289,7 +309,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
             beamVec[j].cavFBCenInfo->selfLossVolBunchCen[i] = vbKickAver;
         }
     }
- 
+    
 
     // print out the data to show the cavity voltage buildup process. Generated voltage compansate the Vb0/2 already by amplitude feedback. 
     vb0=(0,0);
@@ -319,7 +339,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
 
     double time=0;
-    for(int i=0; i<resNum;i++)
+    for(int i=0;i<resNum;i++)
     {
         time =0;
         tF      = cavityResonator.resonatorVec[i].tF  ;      // [s]
@@ -338,7 +358,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
         fout<<"! page number "<<i+1<<endl;
         fout<<nTurns*beamVec.size()<<endl;
 
-
+        
         for(int n=0;n<nTurns;n++)
         {
             for(int j=0;j<beamVec.size();j++)
@@ -354,6 +374,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
                 // cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
                 cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
+                vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
 
                 fout<<setw(15)<<left<<time*f0 
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolAmp
@@ -365,10 +386,9 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resGenVol)
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resGenVol)
                     <<endl;
-
-                vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
             }
         }
+        
     }
 
     fout.close(); 
@@ -396,7 +416,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         firFeedBack.Initial(inputParameter);
     }
     
-    
+     
     // -----------------longRange wake function ---------------    
     WakeFunction lRWakeFunction;
     WakeFunction sRWakeFunction;
@@ -487,12 +507,11 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         
         SPBeamRMSCal(latticeInterActionPoint, 0);
         BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator,n); 
-   
+        
         if(lRWakeFlag)
         {
             SPBeamRMSCal(latticeInterActionPoint, 0);
-            LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint,n);
-            BeamTransferPerTurnDueWake();   
+            LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint,n);  
         }
         
         if(fIRBunchByBunchFeedbackFlag)  
@@ -510,10 +529,26 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         SPBeamRMSCal(latticeInterActionPoint, 0);
         SPGetBeamInfo();
        
-        if(bunchInfoPrintInterval && (n%bunchInfoPrintInterval==0)  )
+        if((inputParameter.driveMode->driveModeOn!=0) && (inputParameter.driveMode->driveStart <n )  &&  (inputParameter.driveMode->driveEnd >n) )
+        {
+            BeamTransferDuetoDriveMode(inputParameter,n);
+        }
+        
+        if(bunchInfoPrintInterval && (n%bunchInfoPrintInterval==0) )
         {      
             SPBeamDataPrintPerTurn(n,latticeInterActionPoint,inputParameter);           
+            
+            if(inputParameter.driveMode->driveModeOn!=0)
+            {
+                GetDriveModeGrowthRate(n,inputParameter);
+            }
+            if(!inputParameter.ringRun->runCBMGR.empty())
+            {
+                GetCBMGR(n,latticeInterActionPoint,inputParameter);
+            }
         }
+
+        MarkParticleLostInBunch(inputParameter,latticeInterActionPoint);
 
         fout<<n<<"  "
             <<setw(15)<<left<< latticeInterActionPoint.totIonCharge
@@ -568,6 +603,24 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     //sddsplot();    
 }
 
+
+
+void SPBeam::MarkParticleLostInBunch(const ReadInputSettings &inputParameter, const LatticeInterActionPoint &latticeInterActionPoint)
+{
+    for(int i=0;i<beamVec.size();i++)
+    {
+        beamVec[i].MarkLostParticle(inputParameter,latticeInterActionPoint);
+    }
+}
+
+
+void SPBeam::BeamTransferDuetoDriveMode(const ReadInputSettings &inputParameter, const int n)
+{     
+    for(int j=0;j<beamVec.size();j++)
+    {
+        beamVec[j].BunchTransferDueToDriveMode(inputParameter,n);     
+    }
+}
 
 void SPBeam::SetBeamPosHistoryDataWithinWindow()
 {
@@ -670,22 +723,33 @@ void SPBeam::SPGetBeamInfo()
     weakStrongBeamInfo->bunchAverPZ = bunchAverPZ / totBunchNum;
 }
 
-void SPBeam::GetHilbertAnalyticalInOneTurn()
+void SPBeam::GetHilbertAnalyticalInOneTurn(const ReadInputSettings &inputParameter)
 {    
+    double workQx = inputParameter.ringParBasic->workQx;
+    double workQy = inputParameter.ringParBasic->workQy;
+    double workQz = inputParameter.ringParBasic->workQz;
+    int harmonics = inputParameter.ringParBasic->harmonics;
+    
     vector<double> xSignal(beamVec.size());
     vector<double> ySignal(beamVec.size());
     vector<double> zSignal(beamVec.size());
 
+    double phasex, phasey, phasez;
+
     for(int i=0;i<beamVec.size();i++)
 	{
-        xSignal[i] = beamVec[i].xAver;
-        ySignal[i] = beamVec[i].yAver;
-        zSignal[i] = beamVec[i].zAver;
+        phasex = - 2.0 * PI * workQx * beamVec[i].bunchHarmNum / harmonics;
+        phasey = - 2.0 * PI * workQy * beamVec[i].bunchHarmNum / harmonics;
+        phasez = - 2.0 * PI * workQz * beamVec[i].bunchHarmNum / harmonics;
+
+        xSignal[i] = beamVec[i].xAver; //* exp (li * phasex).real();
+        ySignal[i] = beamVec[i].yAver; //* exp (li * phasey).real();
+        zSignal[i] = beamVec[i].zAver; //* exp (li * phasez).real();
 
     }
-    vector<complex<double> > xAnalytical = GetHilbertAnalytical(xSignal);
-    vector<complex<double> > yAnalytical = GetHilbertAnalytical(ySignal);
-    vector<complex<double> > zAnalytical = GetHilbertAnalytical(zSignal);    
+    vector<complex<double> > xAnalytical = GetHilbertAnalytical(xSignal,"x",0.01,inputParameter);
+    vector<complex<double> > yAnalytical = GetHilbertAnalytical(ySignal,"y",0.01,inputParameter);
+    vector<complex<double> > zAnalytical = GetHilbertAnalytical(zSignal,"z",0.01,inputParameter);    
 
     for(int i=0;i<beamVec.size();i++)
 	{
@@ -725,10 +789,38 @@ void SPBeam::GetHilbertAnalyticalInOneTurn()
     // getchar();
 } 
 
-vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal)
+vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal, const string plane, const double filterBandWithdNu, const ReadInputSettings &inputParameter)
 {   
     // with hilbert transform to get analytical signal Bessy in VSR
     // Ref. Calculation of coupled bunch effects in the synchrotorn loight source bessy VSR
+    
+    double workQ;
+    if(plane=="x")
+    {
+        workQ = inputParameter.ringParBasic->workQx;
+    }
+    else if(plane=="y")
+    {
+        workQ = inputParameter.ringParBasic->workQy;
+    }
+    else if (plane=="z")
+    {
+        workQ = inputParameter.ringParBasic->workQz;
+    }
+    workQ -= floor(workQ);
+    if(workQ>0.5) workQ = 1 - workQ;  
+
+    int nuCenter = workQ * signal.size();
+    double sigmaNu  = filterBandWithdNu  * signal.size();
+
+    // generate a gaussian filter according to the working point
+
+    vector<double> gaussFilter(signal.size(),0.E0);   
+    for(int i=0;i<signal.size();i++)
+    {
+        gaussFilter[i] =  exp(- 1.0 / 2.0 * pow( (i - nuCenter) / sigmaNu ,2) );
+    }
+ 
     gsl_fft_complex_wavetable * wavetable;
 	gsl_fft_complex_workspace * workspace;
 	wavetable = gsl_fft_complex_wavetable_alloc (signal.size());
@@ -759,8 +851,8 @@ vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal)
     if(signal.size() % 2 ==0 )
     {
         int index = signal.size() / 2;
-        xFFT[2 * index    ] =   xFFT[2 * index   ];
-        xFFT[2 * index + 1] =   xFFT[2 * index + 1];
+        xFFT[2 * index    ] =   xFFT[2 * index   ]  / 2.0;
+        xFFT[2 * index + 1] =   xFFT[2 * index + 1] / 2.0;
     }
 
     for (int i=signal.size()/2 +1;i<signal.size();i++)
@@ -768,6 +860,26 @@ vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal)
         xFFT[2*i    ] = 0.E0;
         xFFT[2*i + 1] = 0.E0;
     }
+
+    for(int i=0;i<signal.size();i++)
+    {
+        xFFT[2*i    ] *= gaussFilter[i];       
+        xFFT[2*i + 1] *= gaussFilter[i];
+    }
+
+    // ofstream fout("test.sdds");   
+    // for(int i=0;i<signal.size();i++)
+    // {
+    //     fout<<setw(15)<<left<<i
+    //         <<setw(15)<<left<<xFFT[2*i]
+    //         <<setw(15)<<left<<xFFT[2*i+1]
+    //         <<setw(15)<<left<<sqrt(pow(xFFT[2*i],2) + pow(xFFT[2*i+1],2) )
+    //         <<setw(15)<<left<<gaussFilter[i]
+    //         <<endl;
+    // }    
+    // fout.close();
+    // cout<<__LINE__<<endl;
+    // getchar();
 
     gsl_fft_complex_inverse (xFFT,1, signal.size(), wavetable, workspace);
 
@@ -786,17 +898,135 @@ vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal)
 }
 
 
-void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter)
+void SPBeam::GetDriveModeGrowthRate(const int turns, const ReadInputSettings &inputParameter)
 {
-    // get the spectrum of the center motion...
-    
-    GetHilbertAnalyticalInOneTurn(); 
- 
-    gsl_fft_complex_wavetable * wavetable;
-	gsl_fft_complex_workspace * workspace;
-	wavetable = gsl_fft_complex_wavetable_alloc (beamVec.size());
-	workspace = gsl_fft_complex_workspace_alloc (beamVec.size());
+   
+    double time = 0.E0;
+    int ringHarm        = inputParameter.ringParRf->ringHarm;
+    double f0           = inputParameter.ringParBasic->f0;
+    double t0           = inputParameter.ringParBasic->t0;
+    double rBeta        = inputParameter.ringParBasic->rBeta;
+    double tRF          = t0 / ringHarm;
+    double driveAmp     = inputParameter.driveMode->driveAmp;
+    double driveFre     = inputParameter.driveMode->driveFre;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double workQ;
+    vector<complex<double> > signalIQ(beamVec.size());
 
+    if(inputParameter.driveMode->drivePlane == 0)   // IQ signale decomposition...
+    {
+        workQ = inputParameter.ringParBasic->workQz;
+        for(int i=0;i<beamVec.size();i++)
+        {
+            time =  beamVec[i].bunchHarmNum * tRF ;
+            signalIQ[i] = beamVec[i].zAver  * exp( - li * 2.0 * PI * driveFre * time) ;
+        }
+    }
+    else if (inputParameter.driveMode->drivePlane == 1)
+    {
+        workQ = inputParameter.ringParBasic->workQx;
+        for(int i=0;i<beamVec.size();i++)
+        {
+            time =  beamVec[i].bunchHarmNum * tRF ;
+            signalIQ[i] = beamVec[i].xAver  * exp( - li * 2.0 * PI * driveFre * time) ;
+        }
+    }
+    else if (inputParameter.driveMode->drivePlane == 2)
+    {
+        workQ = inputParameter.ringParBasic->workQy;
+        for(int i=0;i<beamVec.size();i++)
+        {
+            time =  beamVec[i].bunchHarmNum * tRF ;
+            signalIQ[i] = beamVec[i].yAver  * exp( - li * 2.0 * PI * driveFre * time);
+        }
+    }
+
+    complex<double> signalIQAver =  complex<double>(0.0,0.0);
+
+    if (inputParameter.driveMode->driveHW !=0)
+    {
+        signalIQAver = accumulate(signalIQ.begin(), signalIQ.end(), complex<double>(0.0,0.0) ) / double(beamVec.size());
+    }
+    else
+    {            
+        double weigh=0.E0;
+        double weighSum=0.E0;
+
+        for(int i=0;i<beamVec.size();i++)
+        {
+            weigh =  pow( sin( i * PI / beamVec.size() ), 2);
+            signalIQAver += weigh * signalIQ[i];
+            weighSum     += weigh;
+        }        
+        signalIQAver /= weighSum;
+    }
+    
+    ampIQ.push_back(abs(signalIQAver)); 
+    phaseIQ.push_back(arg(signalIQAver));  
+
+
+    if( (turns + inputParameter.ringRun->bunchInfoPrintInterval)  == inputParameter.ringRun->nTurns   )
+    {        
+        int indexStart =  int(inputParameter.ringRun->growthRateFittingStart / inputParameter.ringRun->bunchInfoPrintInterval) ;
+        int indexEnd   =  int(inputParameter.ringRun->growthRateFittingEnd   / inputParameter.ringRun->bunchInfoPrintInterval);  
+        int dim        =  indexEnd - indexStart ;
+
+
+        double fitWeight[dim];
+        double fitX[dim];
+        double fitY[dim];
+        vector<double> resFit(2,0.E0);
+        double modePhase = 0.E0;
+        
+
+        for(int n=0;n<dim;n++)
+        {                
+            fitWeight[n]        = 1.E0;
+            fitX[n]             = n * inputParameter.ringRun->bunchInfoPrintInterval;
+            fitY[n]             = log(ampIQ[n+indexStart]);
+            modePhase          += phaseIQ[n+indexStart];
+        }
+        modePhase /= dim ; 
+    
+        FittingGSL fittingGSL;  
+        resFit = fittingGSL.FitALinear(fitX,fitWeight,fitY,dim);
+                    
+        double decimal = driveFre / f0 / beamVec.size() - floor( driveFre / f0 / beamVec.size() ) ;
+
+        ofstream fout("driveModeGrowthRate.sdds");
+        fout<<"SDDS1"                                                                    <<endl;
+        fout<<"&parameter name=ModeIndex                              type=float    &end"<<endl;
+        fout<<"&parameter name=ModeDriveFre,            units=Hz,     type=float    &end"<<endl;
+        fout<<"&parameter name=ModeGrowthRate,          units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=ModePhase,               units=rad,    type=float    &end"<<endl;
+        fout<<"&parameter name=ModeFre,                 units=1/s,    type=float    &end"<<endl;
+
+        fout<<"&column name=Turns,                                    type=long     &end"<<endl;
+        fout<<"&column name=ampIQ,                                    type=float     &end"<<endl;
+        fout<<"&column name=phaseIQ,                                  type=float     &end"<<endl;
+        fout<<"&data mode=ascii &end"<<endl;          
+        fout<<"! page number 1"<<endl;
+        
+        fout<<setw(15)<<left<<floor(decimal * beamVec.size())<<endl;
+        fout<<setw(15)<<left<<driveFre<<endl; 
+        fout<<setw(15)<<left<<resFit[1] / inputParameter.ringParBasic->t0<<endl; 
+        fout<<setw(15)<<left<<modePhase<<endl;  
+        fout<<setw(15)<<left<<modePhase / (2 * PI * tRF * ringHarm / beamVec.size()  ) <<endl;         
+        fout<<ampIQ.size()<<endl;
+
+        for(int i=0;i<ampIQ.size();i++)
+        {
+            fout<<setw(15)<<left<<i * inputParameter.ringRun->bunchInfoPrintInterval
+                <<setw(15)<<left<<log(ampIQ[i])
+                <<setw(15)<<left<<phaseIQ[i]<<endl;
+        }    
+        fout.close();
+    }
+   
+}
+
+void SPBeam::GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter)
+{
     double alphax = latticeInterActionPoint.twissAlphaX[0];
     double betax  = latticeInterActionPoint.twissBetaX [0];
     double alphay = latticeInterActionPoint.twissAlphaY[0];
@@ -806,15 +1036,19 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
     double workQx = inputParameter.ringParBasic->workQx;
     double workQy = inputParameter.ringParBasic->workQy;
     double workQz = inputParameter.ringParBasic->workQz;
+    int harmonics = inputParameter.ringParBasic->harmonics;
+    double tRF    = inputParameter.ringParBasic->t0 / harmonics; 
 
-    double tempX[2*beamVec.size()];
-    double tempY[2*beamVec.size()];
-    double tempZ[2*beamVec.size()];
+    gsl_fft_complex_wavetable * wavetable;
+	gsl_fft_complex_workspace * workspace;
+	wavetable = gsl_fft_complex_wavetable_alloc (beamVec.size());
+	workspace = gsl_fft_complex_workspace_alloc (beamVec.size());
+
     double tempXFFT[2*beamVec.size()];
     double tempYFFT[2*beamVec.size()];
     double tempZFFT[2*beamVec.size()];
 
-    // IPAC 2022 WEPOMS010 -- Diamond-II -- WangsiWei's IPAC paper. 
+    // (1) IPAC 2022 WEPOMS010 -- Diamond-II -- WangSiWei's IPAC paper. 
     for(int i=0;i<beamVec.size();i++)
 	{
         double x  =  beamVec[i].xAver;
@@ -827,39 +1061,431 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 
         // transverse is clockwise rotation from ith bunch to  bpm position
         // re-distribution bunch position to 
-        double phasex = - 2.0 * PI * workQx * beamVec[i].bunchHarmNum / inputParameter.ringParBasic->harmonics;
-        double phasey = - 2.0 * PI * workQy * beamVec[i].bunchHarmNum / inputParameter.ringParBasic->harmonics;
-        double phasez =   2.0 * PI * workQz * beamVec[i].bunchHarmNum / inputParameter.ringParBasic->harmonics;
+        double phasex = - 2.0 * PI * workQx * beamVec[i].bunchHarmNum / harmonics;
+        double phasey = - 2.0 * PI * workQy * beamVec[i].bunchHarmNum / harmonics;
+        double phasez = - 2.0 * PI * workQz * beamVec[i].bunchHarmNum / harmonics;
 
         complex<double> zx = ( x / sqrt(betax) - li * ( sqrt(betax) * px + alphax / sqrt(betax) * x ) ) * exp (li * phasex);
         complex<double> zy = ( y / sqrt(betay) - li * ( sqrt(betay) * py + alphay / sqrt(betay) * y ) ) * exp (li * phasey); 
-        complex<double> zz = ( z / sqrt(betaz) - li * ( sqrt(betaz) * pz + alphaz / sqrt(betaz) * z ) ) * exp (li * phasez);  
+        complex<double> zz = ( z / sqrt(betaz) + li * ( sqrt(betaz) * pz + alphaz / sqrt(betaz) * z ) ) * exp (li * phasez);  
 
-        tempX[2*i]  = zx.real();
-        tempY[2*i]  = zy.real();
-        tempZ[2*i]  = zz.real();
-        tempX[2*i+1]= zx.imag();
-        tempY[2*i+1]= zy.imag();
-        tempZ[2*i+1]= zz.imag();
-
-        tempXFFT[2*i    ] = tempX[2*i    ];
-        tempXFFT[2*i + 1] = tempX[2*i + 1];
-        tempYFFT[2*i    ] = tempY[2*i    ];
-        tempYFFT[2*i + 1] = tempY[2*i + 1];
-        tempZFFT[2*i    ] = tempZ[2*i    ];
-        tempZFFT[2*i + 1] = tempZ[2*i + 1];        
+        tempXFFT[2*i]  = zx.real();
+        tempYFFT[2*i]  = zy.real();
+        tempZFFT[2*i]  = zz.real();
+        tempXFFT[2*i+1]= zx.imag();
+        tempYFFT[2*i+1]= zy.imag();
+        tempZFFT[2*i+1]= zz.imag();
     }
-        
+
     gsl_fft_complex_forward (tempXFFT,1, beamVec.size(), wavetable, workspace);
     gsl_fft_complex_forward (tempYFFT,1, beamVec.size(), wavetable, workspace);
     gsl_fft_complex_forward (tempZFFT,1, beamVec.size(), wavetable, workspace);
-  
+    
+
+    // store the data after fft turn by turn for fitting
+    vector<double> tempXFFTAmp(beamVec.size());
+    vector<double> tempYFFTAmp(beamVec.size());
+    vector<double> tempZFFTAmp(beamVec.size());
+    vector<double> tempXFFTArg(beamVec.size());
+    vector<double> tempYFFTArg(beamVec.size());
+    vector<double> tempZFFTArg(beamVec.size());
+        
+    for (int i=0;i<beamVec.size();i++)
+    {
+        tempXFFTAmp[i] = sqrt( pow(tempXFFT[2*i],2) + pow(tempXFFT[2*i+1],2) );
+        tempYFFTAmp[i] = sqrt( pow(tempYFFT[2*i],2) + pow(tempYFFT[2*i+1],2) );
+        tempZFFTAmp[i] = sqrt( pow(tempZFFT[2*i],2) + pow(tempZFFT[2*i+1],2) );
+        tempXFFTArg[i] = atan2(tempXFFT[2*i], tempXFFT[2*i +1]);
+        tempYFFTArg[i] = atan2(tempYFFT[2*i], tempYFFT[2*i +1]);
+        tempZFFTArg[i] = atan2(tempZFFT[2*i], tempZFFT[2*i +1]);
+    }
+
+    coupledBunchModeAmpX.push_back(tempXFFTAmp);
+    coupledBunchModeAmpY.push_back(tempYFFTAmp);
+    coupledBunchModeAmpZ.push_back(tempZFFTAmp);
+    coupledBunchModeArgX.push_back(tempXFFTArg);
+    coupledBunchModeArgY.push_back(tempYFFTArg);
+    coupledBunchModeArgZ.push_back(tempZFFTArg);
+
+    //(2) Store IQ decomposition without excitation-- only show the unstable mode   
+    vector<double> xIQAmpOneTurn(beamVec.size());
+    vector<double> yIQAmpOneTurn(beamVec.size());
+    vector<double> zIQAmpOneTurn(beamVec.size());
+    vector<double> xIQArgOneTurn(beamVec.size());
+    vector<double> yIQArgOneTurn(beamVec.size());
+    vector<double> zIQArgOneTurn(beamVec.size());
+                
+    for(int j=0;j<freXIQDecompScan.size();j++)
+    {
+        vector<complex<double> > xIQ(beamVec.size());
+        vector<complex<double> > yIQ(beamVec.size());
+        vector<complex<double> > zIQ(beamVec.size());
+        complex<double> xIQAver,yIQAver,zIQAver;
+        
+        double time = 0.0;
+        double phaseX,phaseY,phaseZ;
+                
+        for(int i=0;i<beamVec.size();i++)
+        {
+            time =  beamVec[i].bunchHarmNum * tRF ;
+
+            phaseX = - 2.0 * PI * workQx * beamVec[i].bunchHarmNum / harmonics;
+            phaseY = - 2.0 * PI * workQy * beamVec[i].bunchHarmNum / harmonics;
+            phaseZ = - 2.0 * PI * workQz * beamVec[i].bunchHarmNum / harmonics;
+
+            xIQ[i] = beamVec[i].xAver  * exp( - li * 2.0 * PI * freXIQDecompScan[j] * time) ;
+            yIQ[i] = beamVec[i].yAver  * exp( - li * 2.0 * PI * freYIQDecompScan[j] * time) ;
+            zIQ[i] = beamVec[i].zAver  * exp( - li * 2.0 * PI * freZIQDecompScan[j] * time) ;            
+        }
+
+        xIQAver =   accumulate(xIQ.begin(), xIQ.end(), complex<double>(0.0,0.0) ) / double(beamVec.size());
+        yIQAver =   accumulate(yIQ.begin(), yIQ.end(), complex<double>(0.0,0.0) ) / double(beamVec.size());
+        zIQAver =   accumulate(zIQ.begin(), zIQ.end(), complex<double>(0.0,0.0) ) / double(beamVec.size());       
+
+        xIQAmpOneTurn[j] = abs(xIQAver);
+        yIQAmpOneTurn[j] = abs(yIQAver);
+        zIQAmpOneTurn[j] = abs(zIQAver);
+
+        xIQArgOneTurn[j] = arg(xIQAver);
+        yIQArgOneTurn[j] = arg(yIQAver);
+        zIQArgOneTurn[j] = arg(zIQAver);
+    }
+
+    ampXIQ.push_back(xIQAmpOneTurn);
+    ampYIQ.push_back(yIQAmpOneTurn);
+    ampZIQ.push_back(zIQAmpOneTurn);
+    argXIQ.push_back(xIQArgOneTurn);
+    argYIQ.push_back(yIQArgOneTurn); 
+    argZIQ.push_back(zIQArgOneTurn);      
+    //IQ decomposition --------------------------------
+
+
+    //(3)  store beam pos data for bunch-by-bunch Growth rate calculation
+    vector<double > xOneTurn(beamVec.size());
+    vector<double > yOneTurn(beamVec.size());
+    vector<double > zOneTurn(beamVec.size());
+    for(int i=0;i<beamVec.size();i++)
+    {
+        xOneTurn[i] =  beamVec[i].xAver;
+        yOneTurn[i] =  beamVec[i].yAver;
+        zOneTurn[i] =  beamVec[i].zAver;
+    }
+    historyAverX.push_back(xOneTurn);
+    historyAverY.push_back(yOneTurn);
+    historyAverZ.push_back(zOneTurn);
+
+    // Ideal method agrees with Analytical method. 
+    // To get stable and unstbale coupled bunch mode grwoth-- have to rebuild the (x-px) along the ring.
+    // the px info can be re-build from analyticla single from Hilbert transform--togethe with a gaussian filter. 
+    // The IO approach with exictiation only give the unstbale growthrate. 
+    // if no px info is generated.--- cannnot get the grwoth rate if there is no excitation. 
+    // 
+    if( (turns + inputParameter.ringRun->bunchInfoPrintInterval)  == inputParameter.ringRun->nTurns   )
+    {        
+        
+        GetAnalyticalWithFilter(inputParameter);
+    
+        int indexStart =  int(inputParameter.ringRun->growthRateFittingStart / inputParameter.ringRun->bunchInfoPrintInterval);
+        int indexEnd   =  int(inputParameter.ringRun->growthRateFittingEnd / inputParameter.ringRun->bunchInfoPrintInterval);  
+        int dim        =  indexEnd - indexStart ;
+
+        double fitWeight[dim];
+        double fitX[dim];
+        double fitFFTX[dim],    fitFFTY[dim],  fitFFTZ[dim];
+        double fitAmpIQX[dim], fitAmpIQY[dim], fitAmpIQZ[dim];
+        double fitAbsAverXAna[dim],fitAbsAverYAna[dim],fitAbsAverZAna[dim];
+        double fitHilbertCBMX[dim],fitHilbertCBMY[dim],fitHilbertCBMZ[dim];
+        vector<double> resFitFFTX(2,0.E0), resFitFFTY(2,0.E0), resFitFFTZ(2,0.E0);
+        vector<double> resFitIQX(2,0.E0),  resFitIQY(2,0.E0),  resFitIQZ(2,0.E0);
+        vector<double> resFitAbsAverXAna(2,0.E0),  resFitAbsAverYAna(2,0.E0),  resFitAbsAverZAna(2,0.E0);
+        vector<double> resfitHilbertCBMX(2,0.E0),  resfitHilbertCBMY(2,0.E0),  resfitHilbertCBMZ(2,0.E0);
+        
+        // get the CBMAmp from hilbert transform....
+        for(int n=0;n<ampXIQ.size();n++)
+        {
+            double time = 0.0;
+            double phasex,phasey,phasez;
+            double x,y,z,px,py,pz;
+            
+            for(int i=0; i<beamVec.size(); i++)
+            {
+                // tempXFFT[2*i  ] = anaSignalAverX[n][i].real();
+                // tempXFFT[2*i+1] = anaSignalAverX[n][i].imag();
+                // tempYFFT[2*i  ] = anaSignalAverY[n][i].real();
+                // tempYFFT[2*i+1] = anaSignalAverY[n][i].imag();
+                // tempZFFT[2*i  ] = anaSignalAverY[n][i].real();
+                // tempZFFT[2*i+1] = anaSignalAverZ[n][i].imag();
+
+                x  = anaSignalAverX[n][i].real();
+                y  = anaSignalAverY[n][i].real();
+                z  = anaSignalAverZ[n][i].real();
+                px = -anaSignalAverX[n][i].imag();
+                py = -anaSignalAverY[n][i].imag();
+                pz = -anaSignalAverZ[n][i].imag();
+
+                phasex = - 2.0 * PI * workQx * beamVec[i].bunchHarmNum / harmonics;
+                phasey = - 2.0 * PI * workQy * beamVec[i].bunchHarmNum / harmonics;
+                phasez = - 2.0 * PI * workQz * beamVec[i].bunchHarmNum / harmonics;
+                
+                complex<double> zx = ( x / sqrt(betax) - li * ( sqrt(betax) * px + alphax / sqrt(betax) * x ) ) * exp (li * phasex);
+                complex<double> zy = ( y / sqrt(betay) - li * ( sqrt(betay) * py + alphay / sqrt(betay) * y ) ) * exp (li * phasey); 
+                complex<double> zz = ( z / sqrt(betaz) + li * ( sqrt(betaz) * pz + alphaz / sqrt(betaz) * z ) ) * exp (li * phasez);
+
+                tempXFFT[2*i]  = zx.real();
+                tempYFFT[2*i]  = zy.real();
+                tempZFFT[2*i]  = zz.real();
+                tempXFFT[2*i+1]= zx.imag();
+                tempYFFT[2*i+1]= zy.imag();
+                tempZFFT[2*i+1]= zz.imag();
+            }
+            gsl_fft_complex_forward (tempXFFT,1, beamVec.size(), wavetable, workspace);
+            gsl_fft_complex_forward (tempYFFT,1, beamVec.size(), wavetable, workspace);
+            gsl_fft_complex_forward (tempZFFT,1, beamVec.size(), wavetable, workspace);
+
+            for (int i=0;i<beamVec.size();i++)
+            {
+                tempXFFTAmp[i] = sqrt( pow(tempXFFT[2*i],2) + pow(tempXFFT[2*i+1],2) );
+                tempYFFTAmp[i] = sqrt( pow(tempYFFT[2*i],2) + pow(tempYFFT[2*i+1],2) );
+                tempZFFTAmp[i] = sqrt( pow(tempZFFT[2*i],2) + pow(tempZFFT[2*i+1],2) );
+                tempXFFTArg[i] = atan2(tempXFFT[2*i], tempXFFT[2*i +1]);
+                tempYFFTArg[i] = atan2(tempYFFT[2*i], tempYFFT[2*i +1]);
+                tempZFFTArg[i] = atan2(tempZFFT[2*i], tempZFFT[2*i +1]);
+            }
+
+            hilbertCoupledBunchModeAmpX.push_back(tempXFFTAmp);
+            hilbertCoupledBunchModeAmpY.push_back(tempYFFTAmp);
+            hilbertCoupledBunchModeAmpZ.push_back(tempZFFTAmp);
+            hilbertCoupledBunchModeArgX.push_back(tempXFFTArg);
+            hilbertCoupledBunchModeArgY.push_back(tempYFFTArg);
+            hilbertCoupledBunchModeArgZ.push_back(tempZFFTArg);
+
+        }
+        
+        //////////////////////////////////////////////////////////////////////////
+        
+        FittingGSL fittingGSL; 
+        ofstream fout(inputParameter.ringRun->runCBMGR+".sdds");
+        fout<<"SDDS1"                                                                    <<endl;
+        fout<<"&parameter name=dataPointsForFit                       type=long     &end"<<endl;
+        fout<<"&parameter name=ModeIndex                              type=long     &end"<<endl;
+        fout<<"&parameter name=CBMIdealGRX,                  units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMIdealGRY,                  units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMIdealGRZ,                  units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMIQGRX,                units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMIQGRY,                units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMIQGRZ,                units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMHTGRX,                units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMHTGRY,                units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=CBMHTGRZ,                units=1/s,    type=float    &end"<<endl;
+
+        fout<<"&parameter name=BunchHarmIndex                         type=long     &end"<<endl;
+        fout<<"&parameter name=BGRX,                    units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=BGRY,                    units=1/s,    type=float    &end"<<endl;
+        fout<<"&parameter name=BGRZ,                    units=1/s,    type=float    &end"<<endl;
+
+
+        fout<<"&column name=Turns,                                    type=long      &end"<<endl;
+        fout<<"&column name=AbsCBMIdealX,                              type=float     &end"<<endl;
+        fout<<"&column name=AbsCBMIdealY,                              type=float     &end"<<endl;
+        fout<<"&column name=AbsCBMIdealZ,                              type=float     &end"<<endl;
+        fout<<"&column name=ArgCBMIdealX,                units=rad,    type=float     &end"<<endl;
+        fout<<"&column name=ArgCBMIdealY,                units=rad,    type=float     &end"<<endl;
+        fout<<"&column name=ArgCBMIdealZ,                units=rad,    type=float     &end"<<endl;
+        
+        fout<<"&column name=AbsIQX,                                   type=float     &end"<<endl;
+        fout<<"&column name=AbsIQY,                                   type=float     &end"<<endl;
+        fout<<"&column name=AbsIQZ,                                   type=float     &end"<<endl;
+        fout<<"&column name=ArgIQX,                     units=rad,    type=float     &end"<<endl;
+        fout<<"&column name=ArgIQY,                     units=rad,    type=float     &end"<<endl;
+        fout<<"&column name=ArgIQZ,                     units=rad,    type=float     &end"<<endl;
+
+        fout<<"&column name=AbsCBMHilbertAnaX,         units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AbsCBMHilbertAnaY,         units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AbsCBMHilbertAnaZ,         units=m,      type=float     &end"<<endl;
+        fout<<"&column name=ArgCBMHilbertAnaX,         units=rad,    type=float     &end"<<endl;
+        fout<<"&column name=ArgCBMHilbertAnaY,         units=rad,    type=float     &end"<<endl;
+        fout<<"&column name=ArgCBMHilbertAnaZ,         units=rad,    type=float     &end"<<endl;
+
+        // fout<<"&column name=AverX,                      units=m,      type=float     &end"<<endl;
+        // fout<<"&column name=AverY,                      units=m,      type=float     &end"<<endl;
+        // fout<<"&column name=AverZ,                      units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AnalyticalAverX,            units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AnalyticalAverY,            units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AnalyticalAverZ,            units=m,      type=float     &end"<<endl;
+        // fout<<"&column name=AnalyticalAverPX,           units=rad,    type=float     &end"<<endl;
+        // fout<<"&column name=AnalyticalAverPY,           units=rad,    type=float     &end"<<endl;
+        // fout<<"&column name=AnalyticalAverPZ,           units=rad,    type=float     &end"<<endl;      
+        fout<<"&column name=AbsHilbertAnaX,                 units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AbsHilbertAnaY,                 units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AbsHilbertAnaZ,                 units=m,      type=float     &end"<<endl;        
+        fout<<"&data mode=ascii &end"<<endl;          
+            
+        for(int i=0; i<beamVec.size(); i++)
+        {
+            for(int n=0;n<dim;n++)
+            {                
+                fitWeight[n]            = 1.E0;
+                fitX[n]                 = n * inputParameter.ringRun->bunchInfoPrintInterval;
+                fitFFTX[n]              = log(coupledBunchModeAmpX[n+indexStart][i]);
+                fitFFTY[n]              = log(coupledBunchModeAmpY[n+indexStart][i]);
+                fitFFTZ[n]              = log(coupledBunchModeAmpZ[n+indexStart][i]);
+                fitAmpIQX[n]            = log(              ampXIQ[n+indexStart][i]);
+                fitAmpIQY[n]            = log(              ampYIQ[n+indexStart][i]);
+                fitAmpIQZ[n]            = log(              ampZIQ[n+indexStart][i]);
+                fitHilbertCBMX[n]       = log(hilbertCoupledBunchModeAmpX[n+indexStart][i]);
+                fitHilbertCBMY[n]       = log(hilbertCoupledBunchModeAmpY[n+indexStart][i]);
+                fitHilbertCBMZ[n]       = log(hilbertCoupledBunchModeAmpZ[n+indexStart][i]);
+
+                fitAbsAverXAna[n]       = log(abs(          anaSignalAverX[n+indexStart][i]));
+                fitAbsAverYAna[n]       = log(abs(          anaSignalAverY[n+indexStart][i]));
+                fitAbsAverZAna[n]       = log(abs(          anaSignalAverZ[n+indexStart][i]));
+                
+
+            }
+                     
+            resFitFFTX        = fittingGSL.FitALinear(fitX,fitWeight,fitFFTX,dim);
+            resFitFFTY        = fittingGSL.FitALinear(fitX,fitWeight,fitFFTY,dim);   
+            resFitFFTZ        = fittingGSL.FitALinear(fitX,fitWeight,fitFFTZ,dim); 
+            resFitIQX         = fittingGSL.FitALinear(fitX,fitWeight,fitAmpIQX,dim);
+            resFitIQY         = fittingGSL.FitALinear(fitX,fitWeight,fitAmpIQY,dim);
+            resFitIQZ         = fittingGSL.FitALinear(fitX,fitWeight,fitAmpIQZ,dim);
+
+            resfitHilbertCBMX = fittingGSL.FitALinear(fitX,fitWeight,fitHilbertCBMX,dim);
+            resfitHilbertCBMY = fittingGSL.FitALinear(fitX,fitWeight,fitHilbertCBMY,dim);
+            resfitHilbertCBMZ = fittingGSL.FitALinear(fitX,fitWeight,fitHilbertCBMZ,dim);
+
+            resFitAbsAverXAna = fittingGSL.FitALinear(fitX,fitWeight,fitAbsAverXAna,dim);
+            resFitAbsAverYAna = fittingGSL.FitALinear(fitX,fitWeight,fitAbsAverYAna,dim);
+            resFitAbsAverZAna = fittingGSL.FitALinear(fitX,fitWeight,fitAbsAverZAna,dim);
+
+
+            fout<<"! page number "<<i<<endl;
+            fout<<setw(15)<<left<<dim<<endl;           
+            fout<<setw(15)<<left<<i<<endl;
+            fout<<setw(15)<<left<<resFitFFTX[1] / inputParameter.ringParBasic->t0<<endl;
+            fout<<setw(15)<<left<<resFitFFTY[1] / inputParameter.ringParBasic->t0<<endl; 
+            fout<<setw(15)<<left<<resFitFFTZ[1] / inputParameter.ringParBasic->t0<<endl;
+            fout<<setw(15)<<left<<resFitIQX[1]  / inputParameter.ringParBasic->t0<<endl;
+            fout<<setw(15)<<left<<resFitIQY[1]  / inputParameter.ringParBasic->t0<<endl; 
+            fout<<setw(15)<<left<<resFitIQZ[1]  / inputParameter.ringParBasic->t0<<endl;
+            fout<<setw(15)<<left<<resfitHilbertCBMX[1] / inputParameter.ringParBasic->t0<<endl;
+            fout<<setw(15)<<left<<resfitHilbertCBMY[1] / inputParameter.ringParBasic->t0<<endl; 
+            fout<<setw(15)<<left<<resfitHilbertCBMZ[1] / inputParameter.ringParBasic->t0<<endl; 
+
+            fout<<setw(15)<<left<<beamVec[i].bunchHarmNum<<endl;
+            fout<<setw(15)<<left<<resFitAbsAverXAna[1] / inputParameter.ringParBasic->t0<<endl;
+            fout<<setw(15)<<left<<resFitAbsAverYAna[1] / inputParameter.ringParBasic->t0<<endl; 
+            fout<<setw(15)<<left<<resFitAbsAverZAna[1] / inputParameter.ringParBasic->t0<<endl;
+
+
+            fout<<ampXIQ.size()<<endl;
+
+            for(int n=0;n<ampXIQ.size();n++)
+            {
+                fout<<setw(15)<<left<<n * inputParameter.ringRun->bunchInfoPrintInterval
+                    <<setw(15)<<left<<coupledBunchModeAmpX[n][i]
+                    <<setw(15)<<left<<coupledBunchModeAmpY[n][i]
+                    <<setw(15)<<left<<coupledBunchModeAmpZ[n][i]
+                    <<setw(15)<<left<<coupledBunchModeArgX[n][i]
+                    <<setw(15)<<left<<coupledBunchModeArgY[n][i]
+                    <<setw(15)<<left<<coupledBunchModeArgZ[n][i]
+                    <<setw(15)<<left<<ampXIQ[n][i]
+                    <<setw(15)<<left<<ampYIQ[n][i]
+                    <<setw(15)<<left<<ampZIQ[n][i]
+                    <<setw(15)<<left<<argXIQ[n][i]
+                    <<setw(15)<<left<<argXIQ[n][i]
+                    <<setw(15)<<left<<argXIQ[n][i]
+                    <<setw(15)<<left<<hilbertCoupledBunchModeAmpX[n][i]
+                    <<setw(15)<<left<<hilbertCoupledBunchModeAmpX[n][i]
+                    <<setw(15)<<left<<hilbertCoupledBunchModeAmpZ[n][i]
+                    <<setw(15)<<left<<hilbertCoupledBunchModeArgX[n][i]
+                    <<setw(15)<<left<<hilbertCoupledBunchModeArgX[n][i]
+                    <<setw(15)<<left<<hilbertCoupledBunchModeArgZ[n][i]
+                    <<setw(15)<<left<<    anaSignalAverX[n][i].real()
+                    <<setw(15)<<left<<    anaSignalAverY[n][i].real()
+                    <<setw(15)<<left<<    anaSignalAverZ[n][i].real()
+                    <<setw(15)<<left<<abs(anaSignalAverX[n][i])
+                    <<setw(15)<<left<<abs(anaSignalAverY[n][i])
+                    <<setw(15)<<left<<abs(anaSignalAverZ[n][i])
+                    <<endl;
+            }    
+            
+        }
+
+        fout.close();
+    }
+
+    gsl_fft_complex_workspace_free (workspace);
+    gsl_fft_complex_wavetable_free (wavetable);
+}
+
+void SPBeam::GetAnalyticalWithFilter(const ReadInputSettings &inputParameter)
+{
+    int turns = historyAverX.size();
+    double workQx = inputParameter.ringParBasic->workQx;
+    double workQy = inputParameter.ringParBasic->workQy;
+    double workQz = inputParameter.ringParBasic->workQz;
+    int harmonics = inputParameter.ringParBasic->harmonics;
+    vector<double> xSignal(turns);
+    vector<double> ySignal(turns);
+    vector<double> zSignal(turns);
+
+    anaSignalAverX.resize(turns);
+    anaSignalAverY.resize(turns);
+    anaSignalAverZ.resize(turns);
+    
+    for(int n=0;n<turns;n++)
+    {
+        anaSignalAverX[n].resize(beamVec.size());
+        anaSignalAverY[n].resize(beamVec.size());
+        anaSignalAverZ[n].resize(beamVec.size());
+    }
+
+
+    for(int i=0;i<beamVec.size();i++)
+    {
+        for(int n=0;n<turns;n++)
+        {
+            xSignal[n] = historyAverX[n][i];
+            ySignal[n] = historyAverY[n][i];
+            zSignal[n] = historyAverZ[n][i];
+        }
+        vector<complex<double> > xAnalytical = GetHilbertAnalytical(xSignal,"x",0.01,inputParameter);
+        vector<complex<double> > yAnalytical = GetHilbertAnalytical(ySignal,"y",0.01,inputParameter);
+        vector<complex<double> > zAnalytical = GetHilbertAnalytical(zSignal,"z",0.01,inputParameter);  
+
+        for(int n=0;n<turns;n++)
+        {
+            anaSignalAverX[n][i] = xAnalytical[n];
+            anaSignalAverY[n][i] = yAnalytical[n];
+            anaSignalAverZ[n][i] = zAnalytical[n];
+        }
+    }
+
+}
+
+
+void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter)
+{
+    // get the spectrum of the center motion...
+
+    double alphax = latticeInterActionPoint.twissAlphaX[0];
+    double betax  = latticeInterActionPoint.twissBetaX [0];
+    double alphay = latticeInterActionPoint.twissAlphaY[0];
+    double betay  = latticeInterActionPoint.twissBetaY[0] ;
+    double alphaz = 0;
+    double betaz  = inputParameter.ringBunchPara->rmsBunchLength / inputParameter.ringBunchPara->rmsEnergySpread;
+    double workQx = inputParameter.ringParBasic->workQx;
+    double workQy = inputParameter.ringParBasic->workQy;
+    double workQz = inputParameter.ringParBasic->workQz;
+    int harmonics = inputParameter.ringParBasic->harmonics;
+    double tRF    = inputParameter.ringParBasic->t0 / harmonics; 
      
     string filePrefix = inputParameter.ringRun->TBTBunchAverData;
     string fname = filePrefix + ".sdds";
     ofstream fout(fname,ios_base::app);
-   
-    if(nTurns==0)
+    
+    if(nTurns == 0)
 	{
 	    fout<<"SDDS1"<<endl;
 	    fout<<"&column name=Turns,                                 type=long,   &end"<<endl;
@@ -879,26 +1505,7 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 	    fout<<"&column name=dpxLRW,                     units=rad, type=float,  &end"<<endl;
 	    fout<<"&column name=dpyLRW,                     units=rad, type=float,  &end"<<endl;
 	    fout<<"&column name=dpzLRW,                     units=rad, type=float,  &end"<<endl;
-        fout<<"&column name=ModeNum,                               type=long,   &end"<<endl;
-	    fout<<"&column name=AbsFFTAverX,                           type=float,  &end"<<endl;
-	    fout<<"&column name=AbsFFTAverY,                           type=float,  &end"<<endl;
-	    fout<<"&column name=AbsFFTAverZ,                           type=float,  &end"<<endl;
-        fout<<"&column name=ArgFFTAverX,                           type=float,  &end"<<endl;
-	    fout<<"&column name=ArgFFTAverY,                           type=float,  &end"<<endl;
-	    fout<<"&column name=ArgFFTAverZ,                           type=float,  &end"<<endl;
-        fout<<"&column name=AbsHilbertAverX,                       type=float,  &end"<<endl;
-        fout<<"&column name=AbsHilbertAverY,                       type=float,  &end"<<endl;
-        fout<<"&column name=AbsHilbertAverZ,                       type=float,  &end"<<endl;
-        fout<<"&column name=ArgHilbertAverX,                       type=float,  &end"<<endl;
-        fout<<"&column name=ArgHilbertAverY,                       type=float,  &end"<<endl;
-        fout<<"&column name=ArgHilbertAverZ,                       type=float,  &end"<<endl;
-        fout<<"&column name=HilbertAverX,                          type=float,  &end"<<endl;
-        fout<<"&column name=HilbertAverY,                          type=float,  &end"<<endl;
-        fout<<"&column name=HilbertAverZ,                          type=float,  &end"<<endl;
-        fout<<"&column name=HilbertAverXP,                         type=float,  &end"<<endl;
-        fout<<"&column name=HilbertAverYP,                         type=float,  &end"<<endl;
-        fout<<"&column name=HilbertAverZP,                         type=float,  &end"<<endl;
-        fout<<"&column name=timeToNextBunch,             units=s,  type=float,  &end"<<endl;
+
 
 	    for(int j=0; j<inputParameter.ringParRf->resNum;j++)
 	    {
@@ -922,7 +1529,6 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
     fout<<"! page number "<<nTurns + 1<<endl;
     fout<<beamVec.size()<<endl;
 
-
     for(int i=0;i<beamVec.size();i++)
     {
         fout<<setw(24)<<left<<setprecision(16)<<nTurns
@@ -934,12 +1540,6 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].pxAver
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].pyAver
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].pzAver
-            // <<setw(24)<<left<<setprecision(16)<<tempX[2*i]
-            // <<setw(24)<<left<<setprecision(16)<<tempY[2*i]
-            // <<setw(24)<<left<<setprecision(16)<<tempZ[2*i] 
-            // <<setw(24)<<left<<setprecision(16)<<tempX[2*i+1]
-            // <<setw(24)<<left<<setprecision(16)<<tempY[2*i+1]
-            // <<setw(24)<<left<<setprecision(16)<<tempZ[2*i+1]
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].actionJx
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].actionJy
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].totIonCharge
@@ -947,29 +1547,7 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].eFyDueToIon[0]
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].lRWakeForceAver[0]
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].lRWakeForceAver[1]
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].lRWakeForceAver[2]
-            <<setw(24)<<left<<setprecision(16)<<i
-            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempXFFT[2*i],2) + pow(tempXFFT[2*i+1],2) )
-            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempYFFT[2*i],2) + pow(tempYFFT[2*i+1],2) )
-            <<setw(24)<<left<<setprecision(16)<<sqrt( pow(tempZFFT[2*i],2) + pow(tempZFFT[2*i+1],2) )
-            <<setw(24)<<left<<setprecision(16)<<atan2(    tempXFFT[2*i],         tempXFFT[2*i+1] )
-            <<setw(24)<<left<<setprecision(16)<<atan2(    tempYFFT[2*i],         tempYFFT[2*i+1] )
-            <<setw(24)<<left<<setprecision(16)<<atan2(    tempZFFT[2*i],         tempZFFT[2*i+1] )
-            <<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].xAverAnalytical)
-            <<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].yAverAnalytical)
-            <<setw(24)<<left<<setprecision(16)<<abs(beamVec[i].zAverAnalytical)
-            <<setw(24)<<left<<setprecision(16)<<arg(beamVec[i].xAverAnalytical)
-            <<setw(24)<<left<<setprecision(16)<<arg(beamVec[i].yAverAnalytical)
-            <<setw(24)<<left<<setprecision(16)<<arg(beamVec[i].zAverAnalytical)
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].xAverAnalytical.real()
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].yAverAnalytical.real()
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].zAverAnalytical.real()
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].xAverAnalytical.imag()
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].yAverAnalytical.imag()
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].zAverAnalytical.imag()
-            <<setw(24)<<left<<setprecision(16)<<beamVec[i].timeFromCurrnetBunchToNextBunch; 
-
-            
+            <<setw(24)<<left<<setprecision(16)<<beamVec[i].lRWakeForceAver[2];
 
             for(int j=0; j<inputParameter.ringParRf->resNum;j++)
             {
@@ -995,199 +1573,6 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 
     fout.close();
     
-    
-    // ofstream foutX("coupledBunchedModeX.sdds",ios_base::app);
-    // ofstream foutY("coupledBunchedModeY.sdds",ios_base::app);
-
-    // foutX<<setw(15)<<left<<nTurns;
-    // foutY<<setw(15)<<left<<nTurns;
-    // for(int i=0;i<beamVec.size();i++)
-    // {    
-    //     foutX<<setw(15)<<left<< tempXFFTAmp[i] ;
-    //     foutY<<setw(15)<<left<< tempYFFTAmp[i] ;
-    // }
-    // foutX<<endl;
-    // foutY<<endl;
-    // foutX.close();
-    // foutY.close();
-
-    // ofstream foutZ("coupledBunchedModeZ.sdds",ios_base::app);
-    // foutZ<<setw(15)<<left<<nTurns;
-    // for(int i=0;i<beamVec.size();i++)
-    // {    
-    //     foutZ<<setw(15)<<left<< tempZFFTAmp[i] ;
-    // }
-    // foutZ<<endl;
-    // foutZ.close();
-
-
-    // get the growth rate of the coupled bunched mode
-    
-    int turns = nTurns + inputParameter.ringRun->bunchInfoPrintInterval;
-   
-    vector<double> tempXFFTAmp(beamVec.size());
-    vector<double> tempYFFTAmp(beamVec.size());
-    vector<double> tempZFFTAmp(beamVec.size());
-    
-    vector<double> tempXHilbertAmp(beamVec.size());
-    vector<double> tempYHilbertAmp(beamVec.size());
-    vector<double> tempZHilbertAmp(beamVec.size());
-
-    vector<double> historyTempAverX(beamVec.size());
-    vector<double> historyTempAverY(beamVec.size());
-    vector<double> historyTempAverZ(beamVec.size());
-   
-    for (int i=0;i<beamVec.size();i++)
-    {
-        tempXFFTAmp[i] = log(sqrt( pow(tempXFFT[2*i],2) + pow(tempXFFT[2*i+1],2) ) );
-        tempYFFTAmp[i] = log(sqrt( pow(tempYFFT[2*i],2) + pow(tempYFFT[2*i+1],2) ) );
-        tempZFFTAmp[i] = log(sqrt( pow(tempZFFT[2*i],2) + pow(tempZFFT[2*i+1],2) ) );
-
-        tempXHilbertAmp[i]  = log( abs(beamVec[i].xAverAnalytical) );
-        tempYHilbertAmp[i]  = log( abs(beamVec[i].yAverAnalytical) );
-        tempZHilbertAmp[i]  = log( abs(beamVec[i].zAverAnalytical) );
-
-        historyTempAverX[i] =  beamVec[i].xAver;
-        historyTempAverY[i] =  beamVec[i].yAver;
-        historyTempAverZ[i] =  beamVec[i].zAver;
-    }
-
-    coupledBunchModeAmpX.push_back(tempXFFTAmp);
-    coupledBunchModeAmpY.push_back(tempYFFTAmp);
-    coupledBunchModeAmpZ.push_back(tempZFFTAmp);
-
-    hilbertCoupledBunchModeAmpX.push_back(tempXHilbertAmp);
-    hilbertCoupledBunchModeAmpY.push_back(tempYHilbertAmp);
-    hilbertCoupledBunchModeAmpZ.push_back(tempZHilbertAmp);
-
-    historyAverX.push_back(historyTempAverX);
-    historyAverY.push_back(historyTempAverY);
-    historyAverZ.push_back(historyTempAverZ);
-
-    
-    if( turns == inputParameter.ringRun->nTurns )
-    {
-        
-        int dim =  coupledBunchModeAmpX.size();
-        ofstream foutCoupMode("coupledBunchedModeGrowthRate.sdds");
-        foutCoupMode<<"SDDS1"<<endl;
-	    foutCoupMode<<"&column name=ModeIndex,                                type=long,   &end"<<endl;
-	    foutCoupMode<<"&column name=CBMGRX,                      units=1/s,   type=float,   &end"<<endl;
-	    foutCoupMode<<"&column name=CBMGRY,                      units=1/s,   type=float,  &end"<<endl;
-        foutCoupMode<<"&column name=CBMGRZ,                      units=1/s,   type=float,  &end"<<endl;
-        foutCoupMode<<"&column name=CBMHilbertGRX,               units=1/s,   type=float,   &end"<<endl;
-	    foutCoupMode<<"&column name=CBMHilbertGRY,               units=1/s,   type=float,  &end"<<endl;
-        foutCoupMode<<"&column name=CBMHilbertGRZ,               units=1/s,   type=float,  &end"<<endl;
-        foutCoupMode<<"&column name=BunchHilbertGRX,             units=1/s,   type=float,   &end"<<endl;
-	    foutCoupMode<<"&column name=BunchHilbertGRY,             units=1/s,   type=float,  &end"<<endl;
-        foutCoupMode<<"&column name=BunchHilbertGRZ,             units=1/s,   type=float,  &end"<<endl;
-        foutCoupMode<<"&data mode=ascii, &end"<<endl;
-        foutCoupMode<<"! page number "<<1<<endl;
-        foutCoupMode<<beamVec.size()<<endl;
-
-        FittingGSL fittingGSL;        
-        double fitWeight[dim];
-        double fitX[dim];
-        double tempXFFTAmpOneMode[dim];
-        double tempYFFTAmpOneMode[dim];
-        double tempZFFTAmpOneMode[dim]; 
-
-        vector<double> xAverHis(dim);
-        vector<double> yAverHis(dim);
-        vector<double> zAverHis(dim);
-
-
-        for(int i=0; i<beamVec.size(); i++)
-        {
-            // coupled bunch mode gorwth rate calculation--- mode-by-mode process -- FFT of averZ  in one turn.
-            vector<double> resFitX(2,0.E0);
-            vector<double> resFitY(2,0.E0);
-            vector<double> resFitZ(2,0.E0);
-                       
-            for(int n=0;n<dim;n++)
-            {                
-                tempXFFTAmpOneMode[n]  = coupledBunchModeAmpX[n][i];
-                tempYFFTAmpOneMode[n]  = coupledBunchModeAmpY[n][i];
-                tempZFFTAmpOneMode[n]  = coupledBunchModeAmpZ[n][i];
-                fitWeight[n]          = 1.E0;
-                fitX[n]               = n * inputParameter.ringRun->bunchInfoPrintInterval;              
-            } 
-
-            resFitX = fittingGSL.FitALinear(fitX, fitWeight, tempXFFTAmpOneMode,dim);
-            resFitY = fittingGSL.FitALinear(fitX, fitWeight, tempYFFTAmpOneMode,dim);
-            resFitZ = fittingGSL.FitALinear(fitX, fitWeight, tempZFFTAmpOneMode,dim);
-            ////////////////////////////////////////////////////////////////////////////////////////////
-
-            // coupled bunch mode gorwth rate calculation--- mode-by-mode process -- FFT analytical signal in one turn.
-            vector<double> resHilbertCBMFitX(2,0.E0);
-            vector<double> resHilbertCBMFitY(2,0.E0);
-            vector<double> resHilbertCBMFitZ(2,0.E0);
-
-            for(int n=0;n<dim;n++)
-            {    
-                tempXFFTAmpOneMode[n]  = hilbertCoupledBunchModeAmpX[n][i];
-                tempYFFTAmpOneMode[n]  = hilbertCoupledBunchModeAmpY[n][i];
-                tempZFFTAmpOneMode[n]  = hilbertCoupledBunchModeAmpZ[n][i];
-                fitWeight[n]          = 1.E0;
-                fitX[n]               = n * inputParameter.ringRun->bunchInfoPrintInterval;    
-            }
-            
-            resHilbertCBMFitX = fittingGSL.FitALinear(fitX, fitWeight, tempXFFTAmpOneMode,dim);
-            resHilbertCBMFitY = fittingGSL.FitALinear(fitX, fitWeight, tempYFFTAmpOneMode,dim);
-            resHilbertCBMFitZ = fittingGSL.FitALinear(fitX, fitWeight, tempZFFTAmpOneMode,dim);
-            ////////////////////////////////////////////////////////////////////////////////////////////
-
-            // bunch-by-bunch growth rate calculation --- bunch-by-bunch process 
-            // With Hilber transform  get the envelope and do fitting.
-            vector<double> resFitHilbertBunchX(2,0.E0);
-            vector<double> resFitHilbertBunchY(2,0.E0);
-            vector<double> resFitHilbertBunchZ(2,0.E0);
-
-            for(int n=0;n<dim;n++)
-            {                
-                xAverHis[n]  = historyAverX[n][i];
-                yAverHis[n]  = historyAverY[n][i];
-                zAverHis[n]  = historyAverZ[n][i];
-            } 
-
-            vector<complex<double> > xAnalytical = GetHilbertAnalytical(xAverHis);
-            vector<complex<double> > yAnalytical = GetHilbertAnalytical(yAverHis);
-            vector<complex<double> > zAnalytical = GetHilbertAnalytical(zAverHis);    
-
-            double tempXHilberOneBunch[dim], tempYHilberOneBunch[dim], tempZHilberOneBunch[dim];
-            
-            for(int n=0;n<dim;n++)
-            {                
-                tempXHilberOneBunch[n] = log(abs(xAnalytical[n]));
-                tempYHilberOneBunch[n] = log(abs(yAnalytical[n]));
-                tempZHilberOneBunch[n] = log(abs(zAnalytical[n]));   
-                fitWeight[n]          = 1.E0;
-                fitX[n]               = n * inputParameter.ringRun->bunchInfoPrintInterval; 
-             
-            } 
-
-            resFitHilbertBunchX = fittingGSL.FitALinear(fitX, fitWeight, tempXHilberOneBunch,dim);
-            resFitHilbertBunchY = fittingGSL.FitALinear(fitX, fitWeight, tempYHilberOneBunch,dim);
-            resFitHilbertBunchZ = fittingGSL.FitALinear(fitX, fitWeight, tempZHilberOneBunch,dim);
-        
-            // print out results
-            foutCoupMode<<setw(15)<<left<<i
-                        <<setw(15)<<left<<resFitX[1]             / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resFitY[1]             / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resFitZ[1]             / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resHilbertCBMFitX[1]   / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resHilbertCBMFitY[1]   / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resHilbertCBMFitX[1]   / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resFitHilbertBunchX[1] / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resFitHilbertBunchY[1] / inputParameter.ringParBasic->t0
-                        <<setw(15)<<left<<resFitHilbertBunchZ[1] / inputParameter.ringParBasic->t0 
-                        <<endl;              
-        }
-
-        foutCoupMode.close();
-    }
-
-
 }
 
 void SPBeam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k)
@@ -1220,7 +1605,7 @@ void SPBeam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParamete
 
 void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator, int turns)
 { 
-       
+         
     vector<double> resAmpFBRatioForTotSelfLoss = inputParameter.ringParRf->resAmpFBRatioForTotSelfLoss;
 
     vector<complex<double> > vbKickAver;
@@ -1308,11 +1693,11 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
     //longitudinal tracking ---
     if(beamVec.size()==1)
     {
-        beamVec[0].timeFromCurrnetBunchToNextBunch  = beamVec[0].bunchGap * tRF - (beamVec[0].zAver - beamVec[0].zAverLastTurn) / CLight / rBeta;
-        beamVec[0].zAverLastTurn                    = beamVec[0].zAver;        
+        beamVec[0].timeFromCurrnetBunchToNextBunch  = beamVec[0].bunchGap * tRF + (beamVec[0].zAverLastTurn - beamVec[0].zAver ) / CLight / rBeta;
+        beamVec[0].zAverLastTurn                    = beamVec[0].zAver;              
         // beamVec[0].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);
         beamVec[0].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator);
-        beamVec[0].GetSPBunchRMS(latticeInterActionPoint, 0);   
+        beamVec[0].GetSPBunchRMS(latticeInterActionPoint, 0);  
     }
     else
     {
@@ -1324,26 +1709,26 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         
         for(int i=0;i<beamVec.size();i++)
         {     
-            // get the time from current bunch to next bunch 
+            // get the time for next bunch move to RF interaction point:  Trf + deltaT[i+1] - deltaT[1] 
             if(i<beamVec.size()-1)
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - (beamVec[i].zAver - beamVec[i+1].zAver)/ CLight / rBeta; 
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[i+1].zAver)/ CLight / rBeta; 
             }
             else
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF - (beamVec[i].zAver - beamVec[0].zAver ) / CLight / rBeta;
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0].zAver ) / CLight / rBeta;
             }
 
             // get the time from last bunch to current bunch not used in simulation 
             if(i==0)
             {
                 beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[beamVec.size()-1].bunchGap * tRF 
-                                                            -(beamVec[beamVec.size()-1].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight; 
+                                                            -(beamVec[beamVec.size()-1].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight / rBeta; 
             }
             else
             {
                 beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[i-1             ].bunchGap * tRF 
-                                                            -(beamVec[i -1            ].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight;
+                                                            -(beamVec[i -1            ].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight / rBeta;
             }
 
             // beamVec[i].BunchTransferDueToLatticeL(inputParameter,cavityResonator,turns);          
@@ -1692,6 +2077,7 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
     int harmonics               = inputParameter.ringParBasic->harmonics;
     double electronBeamEnergy   = inputParameter.ringParBasic->electronBeamEnergy;
     double rBeta                = inputParameter.ringParBasic->rBeta;
+
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
     double circRing   = inputParameter.ringParBasic->circRing;
 
@@ -1724,6 +2110,7 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
     double tauijStastic=0.e0;
     int nTauij=0;
     double deltaZij=0;
+    double deltaTij=0;
     double tRF   = inputParameter.ringParBasic->t0 / double(harmonics);
     double rfLen = circRing  / ringHarmH;
 
@@ -1755,23 +2142,21 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
                 tempIndex1   = beamVec.size()-1;
             }
             // bunch i in the leadng particle in previous turn during the simulation --Alex eq.4.3
-            // dLij =  -nkL_rf + z_j - z_i
-            //      =  -nkT_rf - dz_i /c + dz_j / c 
-            //      =  -nkT_rf - (dz_i - dz_j ) / c
+            //  Tij =  nij * Trf + (deltaT_j - deltaT_i)
+            //      =  nij * Trf - (deltaZ_j - deltaZ_i) / c 
+            //      =  nij * Trf - (deltaZ_j - deltaZ_i) / c
+            
+            // finnally  -Tij  is applied in the wake-force subroutine.
+            // -Tij =  - nij * Trf + (deltaZ_j - deltaZ_i) / c
+
             for(int i=tempIndex0;i<=tempIndex1;i++)
             {                 
-                // Alex Chao Eq.(4.3) -- W'(k C - n C + z_n -z_k) i(k): leading bunch; j(n): wittness bunch
-                deltaZij = wakefunction.poszData[nTurnswakeTrunction-1-n][i] - beamVec[j].zAver;
                 nTauij   = beamVec[i].bunchHarmNum - beamVec[j].bunchHarmNum - n * harmonics;
                 tauijStastic = nTauij * tRF;
-                if(beamVec.size()==1)
-                {
-                    tauij        = nTauij * tRF  - deltaZij / CLight;   
-                }
-                else
-                {
-                    tauij        = nTauij * tRF  + deltaZij / CLight;   
-                }
+                
+                deltaTij = (beamVec[j].zAver -  wakefunction.poszData[nTurnswakeTrunction-1-n][i]) / CLight / rBeta;
+                tauij    = tauijStastic  + deltaTij;   
+
                 
                 // notification: 
                 // ensure the wakefucntion return the focusing strength in transverse and energy loss in longitudinal. 
@@ -1790,22 +2175,21 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
                     wakeForceTemp = wakefunction.GetBBRWakeFun(tauij);                                       
                     beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
                     beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]                   
-                    beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch ; 
-                    // to subsctract the "stastic term"
+                    beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch; 
+                    // to subsctract the "stastic term -- only when coupled bunch modes"
                     // wakeStasticForceTemp = wakefunction.GetBBRWakeFun(tauijStastic);
                     // beamVec[j].lRWakeForceAver[2] -= (wakeForceTemp[2] - wakeStasticForceTemp[2]) * beamVec[i].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]                
-                }             
+                }
             }   
-              
         }
         
-        
+
         beamVec[j].lRWakeForceAver[0] *=  ElectronCharge / electronBeamEnergy / pow(rBeta,2);   // [V/C] * [C] * [1e] / [eV] ->rad
         beamVec[j].lRWakeForceAver[1] *=  ElectronCharge / electronBeamEnergy / pow(rBeta,2);   // [V/C] * [C] * [1e] / [eV] ->rad
         beamVec[j].lRWakeForceAver[2] *=  ElectronCharge / electronBeamEnergy / pow(rBeta,2);   // [V/C] * [C] * [1e] / [eV] ->rad
-
     }
 
+    BeamTransferPerTurnDueWake(); 
 
     // Reference to "simulation of transverse multi-bunch instabilities of proton beam in LHC, PHD thesis, Alexander Koshik P. 32, Eq. (3.22)"
     // with BBR cavity model, to get the coupled bunch mode growth rate, the potential well distortation has to be substrcted.

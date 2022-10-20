@@ -127,10 +127,10 @@ void WakeFunction::BBRWakeParaReadIn(string inputfilename)
 
 	        lRs     .push_back(stod(strVec[0]));
 	        lQ      .push_back(stod(strVec[1]));
-	        lOmega  .push_back(stod(strVec[2]));
+	        lOmega  .push_back(stod(strVec[2]) * 2 * PI );
 	        tRs     .push_back(stod(strVec[3]));
 	        tQ      .push_back(stod(strVec[4]));
-	        tOmega  .push_back(stod(strVec[5]));
+	        tOmega  .push_back(stod(strVec[5])* 2 * PI);
 
 	        i++;
         }			

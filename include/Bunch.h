@@ -137,9 +137,10 @@ public:
     void BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void SetBunchPosHistoryDataWithinWindow();
-
+    void MarkLostParticle(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchTransferDueToWake();
+    void BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter, const int n);
     
 
     // bunch haissinski solution//deal the data in Haissinski structure. 

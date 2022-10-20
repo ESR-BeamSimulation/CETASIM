@@ -151,6 +151,20 @@ void Bunch::BassettiErskine1(double posx,double posy,double rmsRxTemp, double rm
     }
 }
 
+void Bunch::MarkLostParticle(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
+{
+    int ringHarm        = inputParameter.ringParRf->ringHarm;
+    double t0           = inputParameter.ringParBasic->t0;
+
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[0],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[0],2) ; 
+        if(lossTemp >1) eSurive[i] = 0;       
+        if( abs(ePositionZ[i]) > t0 * CLight / ringHarm ) eSurive[i] = 0;
+    }
+
+}
+
 void Bunch::GaussianField(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy)
 {
     double r2 = pow(posx,2) + pow(posy,2);
@@ -209,13 +223,6 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
 
         // ePositionZ[i] = ztemp;
         // eMomentumZ[i] = zPtemp;
-
-        double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2);
-
-        if( lossTemp > 1)
-        {            
-            eSurive[i] = 0;  // particle is lost in transverse when  eSurive[i]==0
-        }
     }
     
 }
@@ -556,6 +563,53 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_free (vecNX);
 
 }
+
+void Bunch::BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter, const int n)
+{
+    // Ref to Alex Chao Eq.(2.90) in transverse and Eq.(2.86) in longitudinal
+    // Can be translated to BBR model as well
+    double time = 0.E0;
+    int ringHarm        = inputParameter.ringParRf->ringHarm;
+    double f0           = inputParameter.ringParBasic->f0;
+    double t0           = inputParameter.ringParBasic->t0;
+    double rBeta        = inputParameter.ringParBasic->rBeta;
+    double tRF          = t0 / ringHarm;
+    double driveAmp     = inputParameter.driveMode->driveAmp;
+    double driveFre     = inputParameter.driveMode->driveFre;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+
+    if(inputParameter.driveMode->drivePlane == 0) // mode is exicted in z direction
+    {
+        for(int i=0;i<ePositionX.size();i++)
+        {
+            time = n * t0 + bunchHarmNum * tRF - ePositionZ[i] /  CLight / rBeta;            
+            eMomentumZ[i] += driveAmp * cos( 2 * PI * driveFre * time) / electronBeamEnergy;
+        }
+    }
+    else if (inputParameter.driveMode->drivePlane == 1) // mode is exicted in x direction
+    {
+        for(int i=0;i<ePositionX.size();i++)
+        {
+            time = n * t0 + bunchHarmNum * tRF - ePositionZ[i] /  CLight / rBeta;
+            eMomentumX[i] += driveAmp * sin( 2 * PI * driveFre * time);
+        }
+    }
+    else if (inputParameter.driveMode->drivePlane == 2) // // mode is exicted in y direction
+    {
+        for(int i=0;i<ePositionX.size();i++)
+        {
+            time = n * t0 + bunchHarmNum * tRF - ePositionZ[i] /  CLight / rBeta;
+            eMomentumY[i] += driveAmp * sin( 2 * PI * driveFre * time);
+        }
+    }
+    else
+    {
+        cerr<<"wrong settings in the DRIVEMode->drivePlane, have to be 0,or 1 0r 2 "<<endl;
+    }
+    
+
+}
+
 
 void Bunch::BunchTransferDueToWake()
 {

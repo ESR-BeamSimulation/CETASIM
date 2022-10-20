@@ -61,12 +61,38 @@ public:
     WeakStrongBeamInfo *weakStrongBeamInfo = new WeakStrongBeamInfo;    
     
     vector<SPBunch> beamVec;
+
+    // for coupled bunch mode or bunch-by-bunch grwoth rate calculation
+    // nominal method to get the coupled bunch grwothe rate
     vector<vector<double> > coupledBunchModeAmpX;
     vector<vector<double> > coupledBunchModeAmpY;
-    vector<vector<double> > coupledBunchModeAmpZ; 
+    vector<vector<double> > coupledBunchModeAmpZ;
+    vector<vector<double> > coupledBunchModeArgX;
+    vector<vector<double> > coupledBunchModeArgY;
+    vector<vector<double> > coupledBunchModeArgZ;
+    // IQ decomposition to get the coupled bunch grwothe rate  -- only the unstable mode can be identified
+    vector<vector<double > > ampXIQ;
+    vector<vector<double > > ampYIQ;
+    vector<vector<double > > ampZIQ;
+    vector<vector<double > > argXIQ;
+    vector<vector<double > > argYIQ;
+    vector<vector<double > > argZIQ;
+
+    // analytical signal along the tracking turns.
+    vector<vector<complex<double> > > anaSignalAverX;
+    vector<vector<complex<double> > > anaSignalAverY;
+    vector<vector<complex<double> > > anaSignalAverZ;
+    //--------------------------------------------------------------------------------
+
     vector<vector<double> > hilbertCoupledBunchModeAmpX;
     vector<vector<double> > hilbertCoupledBunchModeAmpY;
     vector<vector<double> > hilbertCoupledBunchModeAmpZ; 
+    vector<vector<double> > hilbertCoupledBunchModeArgX;
+    vector<vector<double> > hilbertCoupledBunchModeArgY;
+    vector<vector<double> > hilbertCoupledBunchModeArgZ;
+
+    
+
     vector<vector<double> > hilbertAmpX;
     vector<vector<double> > hilbertAmpY;
     vector<vector<double> > hilbertAmpZ; 
@@ -74,6 +100,13 @@ public:
     vector<vector<double> > historyAverY;
     vector<vector<double> > historyAverZ;
 
+    
+    // for excitation print 
+    vector<double > freXIQDecompScan;
+    vector<double > freYIQDecompScan;
+    vector<double > freZIQDecompScan;
+    vector<double> ampIQ;
+    vector<double> phaseIQ;
 
 
     void Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator);
@@ -84,8 +117,11 @@ public:
     void GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);
-
+    void GetDriveModeGrowthRate(const int n, const ReadInputSettings &inputParameter);
+    void GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter);
+    void GetAnalyticalWithFilter(const ReadInputSettings &inputParameter);
     // shared funcitons by MP and SP cases.         
+    
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
     void BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k);
@@ -94,9 +130,10 @@ public:
     void BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint);
     void WSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);   
     void SetBeamPosHistoryDataWithinWindow();
-    vector<complex<double> > GetHilbertAnalytical(vector<double> signal);
-    // vector<complex<double> > GetHilbertAnalytical();
-    void GetHilbertAnalyticalInOneTurn();                  
+    vector<complex<double> > GetHilbertAnalytical(vector<double> signal,const string plane, const double filterBandWithdNu, const ReadInputSettings &inputParameter);
+    void GetHilbertAnalyticalInOneTurn(const ReadInputSettings &inputParameter);
+    void BeamTransferDuetoDriveMode(const ReadInputSettings &inputParameter,const int n);                 
+    void MarkParticleLostInBunch(const ReadInputSettings &inputParameter, const LatticeInterActionPoint &latticeInterActionPoint);
 
     void BeamSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns);
