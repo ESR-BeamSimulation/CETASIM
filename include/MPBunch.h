@@ -52,11 +52,19 @@ public:
     double GSSlover(const double if0);
     void GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoint, int k);    
     void SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
-    void BunchTransferDueToLatticeLTest(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
-    void BunchTransferDueToLatticeLTest1(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void BunchLongiInfoUpdate(const ReadInputSettings &inputParameter);
     void BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const LatticeInterActionPoint &latticeInterActionPoint, int turns);
-    vector<double> GetZMinMax();
+    void GetZMinMax();
+    
+    void BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    // BeamInduced Voltage calculated once per bunch. Bunch distance is from center to center.
+    // beaminduced voltage rotate and decay once per bunch
+
+    void BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    // BeamInduced Voltage calculated bin-by-bin per bunch. Bunch distance is from zMax of ith bunch to zMin of (i+1)th bunch.
+    
+    void BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    // very first version, now used now. 
 private:
 
 };

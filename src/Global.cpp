@@ -25,6 +25,8 @@ using namespace std;
 int         numProcess;
 int         myRank;
 
+double TrackingTime=0.E0;
+
 //double      Omegas;               //sychronous revolution frequency Hz
 //double      T0;                   //evolution period [s]
 //int         Harmonics;     

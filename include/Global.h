@@ -36,8 +36,10 @@ const double VaccumZ0				= 120 * PI;
 const double FactorGaussSI        = VaccumZ0 * CLight / (4 * PI); //[ohm] [m/s]
 const  complex<double> li(0,1);
 
+extern double TrackingTime;
 extern int      numProcess;
 extern int      myRank;
+
 
 
 double Gaussrand(double rms, double aver,double randomIndex);

@@ -88,7 +88,7 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
 
     // get the initial bunch distance
     SPGetBeamInfo();
-    GetTimeDisToNextBunchIntial(inputParameter);
+    GetTimeDisToNextBunch(inputParameter);
 
     // set the IQDecompose scan frequency
     double workQx = inputParameter.ringParBasic->workQx;
@@ -256,16 +256,14 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
         vbAccumAver =  (vbAccumAver1 + vbAccumAver2) /2.0/ double(beamVec.size());   // (1)
         vbAccumAver =  vbAccumAver1/double(beamVec.size());                          // before decay and rotate, just  after bunch left.
         // vbAccumAver =  vbAccumAver2/double(beamVec.size());                       // after decay and rotate.
- 
         // DC solution -- which is exactly the same as above equaiton (1)'s reuslts, very good agreement.
         vbAccumAver = 2.0 * beamCurr * cavityResonator.resonatorVec[i].resShuntImpRs / (1.0 + cavityResonator.resonatorVec[i].resCouplingBeta)
                                     * cos(cavityResonator.resonatorVec[i].resDeTunePsi) * exp(li * (PI + cavityResonator.resonatorVec[i].resDeTunePsi)  );
-
-        cavityResonator.resonatorVec[i].vbAccum   =  vbAccumAver;               // set cavity beam induced voltage
+        
+        cavityResonator.resonatorVec[i].vbAccum   =  vbAccumAver;               // set cavity beam induced voltage. It is the value particle feel
         cavityResonator.resonatorVec[i].vbAccum0  =  vbAccumAver;
         cavityResonator.resonatorVec[i].vbAccumRFFrame = vbAccumAver;
         
-
         vbKickAver  =  vbKickAccum /double(beamVec.size());                     // average energy that bunch is kicked by self-loss Vb0/2. 
 
 
@@ -303,15 +301,15 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
         // set initial cavity voltage, beam indcued volage for each bunch         
         for(int j=0;j<beamVec.size();j++)
         {
-            beamVec[j].cavFBCenInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // set vol as the requried voltage.
-            beamVec[j].cavFBCenInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
-            beamVec[j].cavFBCenInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
-            beamVec[j].cavFBCenInfo->selfLossVolBunchCen[i] = vbKickAver;
+            beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // set vol as the requried voltage.
+            beamVec[j].bunchRFModeInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
+            beamVec[j].bunchRFModeInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
+            beamVec[j].bunchRFModeInfo->selfLossVolBunchCen[i] =    vbKickAver;
         }
     }
     
 
-    // print out the data to show the cavity voltage buildup process. Generated voltage compansate the Vb0/2 already by amplitude feedback. 
+    // print out the data to show the cavity voltage buildup process.  
     vb0=(0,0);
     vbAccum=(0,0);
 
@@ -367,15 +365,6 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                                             cavityResonator.resonatorVec[i].resQualityQ0,0.E0) * beamVec[j].electronNumPerBunch * ElectronCharge;
                 vbAccum += vb0;                                       //[V]
 
-                tB = beamVec[j].bunchGap * t0 / ringHarmH ;  //[s]
-                
-                time +=  tB;
-                deltaL = tB / tF ;
-
-                // cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
-                cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
-                vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
-
                 fout<<setw(15)<<left<<time*f0 
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolAmp
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolPhase
@@ -386,6 +375,13 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resGenVol)
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resGenVol)
                     <<endl;
+
+                tB = beamVec[j].bunchGap * t0 / ringHarmH ;  //[s]
+                time +=  tB;
+                deltaL = tB / tF ;
+                // cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
+                cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
+                vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
             }
         }
         
@@ -517,7 +513,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         if(fIRBunchByBunchFeedbackFlag)  
         {     
             SPBeamRMSCal(latticeInterActionPoint, 0);
-            FIRBunchByBunchFeedback(firFeedBack,n);
+            FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
         }
 
         if(synRadDampingFlag[0]==1) // transverse SR effect
@@ -525,15 +521,16 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             SPBeamRMSCal(latticeInterActionPoint, 0);
             BeamSynRadDamping(inputParameter,latticeInterActionPoint);
         }
-        
-        SPBeamRMSCal(latticeInterActionPoint, 0);
-        SPGetBeamInfo();
-       
+
         if((inputParameter.driveMode->driveModeOn!=0) && (inputParameter.driveMode->driveStart <n )  &&  (inputParameter.driveMode->driveEnd >n) )
         {
+            SPBeamRMSCal(latticeInterActionPoint, 0);
             BeamTransferDuetoDriveMode(inputParameter,n);
-        }
-        
+        }   
+
+        SPBeamRMSCal(latticeInterActionPoint, 0);
+        SPGetBeamInfo();
+                    
         if(bunchInfoPrintInterval && (n%bunchInfoPrintInterval==0) )
         {      
             SPBeamDataPrintPerTurn(n,latticeInterActionPoint,inputParameter);           
@@ -747,9 +744,9 @@ void SPBeam::GetHilbertAnalyticalInOneTurn(const ReadInputSettings &inputParamet
         zSignal[i] = beamVec[i].zAver; //* exp (li * phasez).real();
 
     }
-    vector<complex<double> > xAnalytical = GetHilbertAnalytical(xSignal,"x",0.01,inputParameter);
-    vector<complex<double> > yAnalytical = GetHilbertAnalytical(ySignal,"y",0.01,inputParameter);
-    vector<complex<double> > zAnalytical = GetHilbertAnalytical(zSignal,"z",0.01,inputParameter);    
+    vector<complex<double> > xAnalytical = GetHilbertAnalytical(xSignal,0.01,workQx);
+    vector<complex<double> > yAnalytical = GetHilbertAnalytical(ySignal,0.01,workQy);
+    vector<complex<double> > zAnalytical = GetHilbertAnalytical(zSignal,0.01,workQz);    
 
     for(int i=0;i<beamVec.size();i++)
 	{
@@ -789,24 +786,11 @@ void SPBeam::GetHilbertAnalyticalInOneTurn(const ReadInputSettings &inputParamet
     // getchar();
 } 
 
-vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal, const string plane, const double filterBandWithdNu, const ReadInputSettings &inputParameter)
+vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal, const double filterBandWithdNu,  double workQ)
 {   
     // with hilbert transform to get analytical signal Bessy in VSR
     // Ref. Calculation of coupled bunch effects in the synchrotorn loight source bessy VSR
     
-    double workQ;
-    if(plane=="x")
-    {
-        workQ = inputParameter.ringParBasic->workQx;
-    }
-    else if(plane=="y")
-    {
-        workQ = inputParameter.ringParBasic->workQy;
-    }
-    else if (plane=="z")
-    {
-        workQ = inputParameter.ringParBasic->workQz;
-    }
     workQ -= floor(workQ);
     if(workQ>0.5) workQ = 1 - workQ;  
 
@@ -861,11 +845,11 @@ vector<complex<double> > SPBeam::GetHilbertAnalytical(vector<double> signal, con
         xFFT[2*i + 1] = 0.E0;
     }
 
-    for(int i=0;i<signal.size();i++)
-    {
-        xFFT[2*i    ] *= gaussFilter[i];       
-        xFFT[2*i + 1] *= gaussFilter[i];
-    }
+    // for(int i=0;i<signal.size();i++)
+    // {
+    //     xFFT[2*i    ] *= gaussFilter[i];       
+    //     xFFT[2*i + 1] *= gaussFilter[i];
+    // }
 
     // ofstream fout("test.sdds");   
     // for(int i=0;i<signal.size();i++)
@@ -1181,8 +1165,7 @@ void SPBeam::GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInt
     // if no px info is generated.--- cannnot get the grwoth rate if there is no excitation. 
     // 
     if( (turns + inputParameter.ringRun->bunchInfoPrintInterval)  == inputParameter.ringRun->nTurns   )
-    {        
-        
+    {               
         GetAnalyticalWithFilter(inputParameter);
     
         int indexStart =  int(inputParameter.ringRun->growthRateFittingStart / inputParameter.ringRun->bunchInfoPrintInterval);
@@ -1306,9 +1289,9 @@ void SPBeam::GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInt
         fout<<"&column name=ArgCBMHilbertAnaY,         units=rad,    type=float     &end"<<endl;
         fout<<"&column name=ArgCBMHilbertAnaZ,         units=rad,    type=float     &end"<<endl;
 
-        // fout<<"&column name=AverX,                      units=m,      type=float     &end"<<endl;
-        // fout<<"&column name=AverY,                      units=m,      type=float     &end"<<endl;
-        // fout<<"&column name=AverZ,                      units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AverX,                      units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AverY,                      units=m,      type=float     &end"<<endl;
+        fout<<"&column name=AverZ,                      units=m,      type=float     &end"<<endl;
         fout<<"&column name=AnalyticalAverX,            units=m,      type=float     &end"<<endl;
         fout<<"&column name=AnalyticalAverY,            units=m,      type=float     &end"<<endl;
         fout<<"&column name=AnalyticalAverZ,            units=m,      type=float     &end"<<endl;
@@ -1401,9 +1384,12 @@ void SPBeam::GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInt
                     <<setw(15)<<left<<hilbertCoupledBunchModeArgX[n][i]
                     <<setw(15)<<left<<hilbertCoupledBunchModeArgX[n][i]
                     <<setw(15)<<left<<hilbertCoupledBunchModeArgZ[n][i]
-                    <<setw(15)<<left<<    anaSignalAverX[n][i].real()
-                    <<setw(15)<<left<<    anaSignalAverY[n][i].real()
-                    <<setw(15)<<left<<    anaSignalAverZ[n][i].real()
+                    <<setw(15)<<left<<historyAverX[n][i]
+                    <<setw(15)<<left<<historyAverY[n][i]
+                    <<setw(15)<<left<<historyAverZ[n][i]
+                    <<setw(15)<<left<<anaSignalAverX[n][i].real()
+                    <<setw(15)<<left<<anaSignalAverY[n][i].real()
+                    <<setw(15)<<left<<anaSignalAverZ[n][i].real()
                     <<setw(15)<<left<<abs(anaSignalAverX[n][i])
                     <<setw(15)<<left<<abs(anaSignalAverY[n][i])
                     <<setw(15)<<left<<abs(anaSignalAverZ[n][i])
@@ -1450,9 +1436,9 @@ void SPBeam::GetAnalyticalWithFilter(const ReadInputSettings &inputParameter)
             ySignal[n] = historyAverY[n][i];
             zSignal[n] = historyAverZ[n][i];
         }
-        vector<complex<double> > xAnalytical = GetHilbertAnalytical(xSignal,"x",0.01,inputParameter);
-        vector<complex<double> > yAnalytical = GetHilbertAnalytical(ySignal,"y",0.01,inputParameter);
-        vector<complex<double> > zAnalytical = GetHilbertAnalytical(zSignal,"z",0.01,inputParameter);  
+        vector<complex<double> > xAnalytical = GetHilbertAnalytical(xSignal,0.01,workQx);
+        vector<complex<double> > yAnalytical = GetHilbertAnalytical(ySignal,0.01,workQy);
+        vector<complex<double> > zAnalytical = GetHilbertAnalytical(zSignal,0.01,workQz);  
 
         for(int n=0;n<turns;n++)
         {
@@ -1491,6 +1477,7 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 	    fout<<"&column name=Turns,                                 type=long,   &end"<<endl;
         fout<<"&column name=BunchIndex,                            type=long,   &end"<<endl;
 	    fout<<"&column name=HarmIndex,                             type=long,   &end"<<endl;
+        fout<<"&column name=Time,                                  type=float,  &end"<<endl;
 	    fout<<"&column name=AverX,                      units=m,   type=float,  &end"<<endl;
 	    fout<<"&column name=AverY,                      units=m,   type=float,  &end"<<endl;
 	    fout<<"&column name=AverZ,                      units=m,   type=float,  &end"<<endl;
@@ -1534,6 +1521,7 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
         fout<<setw(24)<<left<<setprecision(16)<<nTurns
             <<setw(24)<<left<<setprecision(16)<<i
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].bunchHarmNum
+            <<setw(24)<<left<<setprecision(16)<<TrackingTime
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].xAver
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].yAver
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].zAver
@@ -1551,14 +1539,14 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 
             for(int j=0; j<inputParameter.ringParRf->resNum;j++)
             {
-                double absCavVolBunchCen =abs(beamVec[i].cavFBCenInfo->cavVolBunchCen[j]);
-                double argCavVolBunchCen =arg(beamVec[i].cavFBCenInfo->cavVolBunchCen[j]);
+                double absCavVolBunchCen =abs(beamVec[i].bunchRFModeInfo->cavVolBunchCen[j]);
+                double argCavVolBunchCen =arg(beamVec[i].bunchRFModeInfo->cavVolBunchCen[j]);
                 if(absCavVolBunchCen==0) argCavVolBunchCen=0;                
-                double absGenVolBunchAver =abs(beamVec[i].cavFBCenInfo->genVolBunchAver[j]);
-                double argGenVolBunchAver =arg(beamVec[i].cavFBCenInfo->genVolBunchAver[j]);  
+                double absGenVolBunchAver =abs(beamVec[i].bunchRFModeInfo->genVolBunchAver[j]);
+                double argGenVolBunchAver =arg(beamVec[i].bunchRFModeInfo->genVolBunchAver[j]);  
                 if(absGenVolBunchAver==0) argGenVolBunchAver=0;
-                double absInduceVolBunchCen = abs(beamVec[i].cavFBCenInfo->induceVolBunchCen[j]);
-                double argInduceVolBunchCen = arg(beamVec[i].cavFBCenInfo->induceVolBunchCen[j]);
+                double absInduceVolBunchCen = abs(beamVec[i].bunchRFModeInfo->induceVolBunchCen[j]);
+                double argInduceVolBunchCen = arg(beamVec[i].bunchRFModeInfo->induceVolBunchCen[j]);
                 if(absInduceVolBunchCen==0) argInduceVolBunchCen=0;
 
                 fout<<setw(24)<<left<<setprecision(16)<<absCavVolBunchCen
@@ -1606,47 +1594,53 @@ void SPBeam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParamete
 void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator, int turns)
 { 
          
-    vector<double> resAmpFBRatioForTotSelfLoss = inputParameter.ringParRf->resAmpFBRatioForTotSelfLoss;
-
+    // vector<double> resAmpFBRatioForTotSelfLoss = inputParameter.ringParRf->resAmpFBRatioForTotSelfLoss;
     vector<complex<double> > vbKickAver;
     vector<complex<double> > vbAccumAver;
     vector<complex<double> > selfLossToCompensate;
+    vector<complex<double> > genVolAver;
     complex<double> totSelfLoss;
+
     vbKickAver.resize(inputParameter.ringParRf->resNum);
     vbAccumAver.resize(inputParameter.ringParRf->resNum);
+    genVolAver.resize(inputParameter.ringParRf->resNum);
     selfLossToCompensate.resize(inputParameter.ringParRf->resNum);
+
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
     double circRing   = inputParameter.ringParBasic->circRing;
     double rfLen      = circRing  / ringHarmH;
     double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
     double rBeta      = inputParameter.ringParBasic->rBeta;
+    double t0         = inputParameter.ringParBasic->t0;
 
     
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {
         complex<double> vbKickAverSum=(0.e0,0.e0);
         complex<double> vbAccumAverSum=(0.e0,0.e0);
-
+        complex<double> genVolAverSum=(0.e0,0.e0);
         for(int j=0;j<beamVec.size();j++)
         {
-            vbKickAverSum      += beamVec[j].cavFBCenInfo->selfLossVolBunchCen[i];
-            vbAccumAverSum     += beamVec[j].cavFBCenInfo->induceVolBunchCen[i];
+            vbKickAverSum      += beamVec[j].bunchRFModeInfo->selfLossVolBunchCen[i];
+            vbAccumAverSum     += beamVec[j].bunchRFModeInfo->induceVolBunchCen[i];
+            genVolAverSum      += beamVec[j].bunchRFModeInfo->genVolBunchAver[i];
         }
         vbKickAver[i]      = vbKickAverSum   / double(beamVec.size());
         vbAccumAver[i]     = vbAccumAverSum  / double(beamVec.size());
+        genVolAver[i]      = genVolAverSum   / double(beamVec.size());
     }
-        
+
+
+
     // for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     // {
     //     totSelfLoss += vbKickAver[i];
     // }
 
-
-    for(int i=0;i<inputParameter.ringParRf->resNum;i++)
-    {
-        // selfLossToCompensate[i] = resAmpFBRatioForTotSelfLoss[i] * totSelfLoss;
-        selfLossToCompensate[i] = vbKickAver[i];
-    }
+    // for(int i=0;i<inputParameter.ringParRf->resNum;i++)
+    // {
+    //     selfLossToCompensate[i] = vbKickAver[i];    
+    // }
     
 
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
@@ -1674,32 +1668,29 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         {
             cavityResonator.resonatorVec[i].resGenVol = complex<double>(0.E0,0.E0);
         }
-        
-        for(int j=0;j<beamVec.size();j++)
-        {
-            beamVec[j].cavFBCenInfo->genVolBunchAver[i] =  cavityResonator.resonatorVec[i].resGenVol;
-        }
-        
+                
         // set voltage and phase for hainssinki solver
         for(int j=0;j<beamVec.size();j++)
         {              
-            beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + cavityResonator.resonatorVec[i].resGenVol);
-            beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].cavFBCenInfo->induceVolBunchCen[i] + cavityResonator.resonatorVec[i].resGenVol);            
+            beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]);
+            beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]);            
         }
 
-    }
+    }   
 
 
     //longitudinal tracking ---
-    if(beamVec.size()==1)
+    if(beamVec.size()==1)   
     {
+        //get the time distance from current bunch to next bunch - in SP model 
         beamVec[0].timeFromCurrnetBunchToNextBunch  = beamVec[0].bunchGap * tRF + (beamVec[0].zAverLastTurn - beamVec[0].zAver ) / CLight / rBeta;
-        beamVec[0].zAverLastTurn                    = beamVec[0].zAver;              
-        // beamVec[0].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);
-        beamVec[0].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator);
-        beamVec[0].GetSPBunchRMS(latticeInterActionPoint, 0);  
+        beamVec[0].zAverLastTurn                    = beamVec[0].zAver; 
+        // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);            
+        // beamVec[0].BunchTransferDueToLatticeLYamamoto(inputParameter,cavityResonator);
+        beamVec[0].BunchTransferDueToLatticeL(inputParameter,cavityResonator); 
+        beamVec[0].GetSPBunchRMS(latticeInterActionPoint, 0);                 
     }
-    else
+    else    // when multi-bunches in tracking
     {
         // save the last turn position info    
         for(int i=0;i<beamVec.size();i++)
@@ -1709,7 +1700,7 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         
         for(int i=0;i<beamVec.size();i++)
         {     
-            // get the time for next bunch move to RF interaction point:  Trf + deltaT[i+1] - deltaT[1] 
+            // get the time for next bunch move to RF interaction point:  Trf + deltaT[i+1] - deltaT[i] 
             if(i<beamVec.size()-1)
             {
                 beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[i+1].zAver)/ CLight / rBeta; 
@@ -1718,36 +1709,25 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
             {
                 beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0].zAver ) / CLight / rBeta;
             }
-
-            // get the time from last bunch to current bunch not used in simulation 
-            if(i==0)
-            {
-                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[beamVec.size()-1].bunchGap * tRF 
-                                                            -(beamVec[beamVec.size()-1].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight / rBeta; 
-            }
-            else
-            {
-                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[i-1             ].bunchGap * tRF 
-                                                            -(beamVec[i -1            ].zAverLastTurn - beamVec[i].zAverLastTurn) / CLight / rBeta;
-            }
-
-            // beamVec[i].BunchTransferDueToLatticeL(inputParameter,cavityResonator,turns);          
-            // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);
-            beamVec[i].BunchTransferDueToLatticeLTest(inputParameter,cavityResonator);             
-            beamVec[i].GetSPBunchRMS(latticeInterActionPoint, 0);   
+            // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);            
+            // beamVec[i].BunchTransferDueToLatticeLYamamoto(inputParameter,cavityResonator);
+             beamVec[i].BunchTransferDueToLatticeL(inputParameter,cavityResonator);      
+            beamVec[i].GetSPBunchRMS(latticeInterActionPoint,0);          
         }
-    }
-    
-        
+    }       
 }
 
-void SPBeam::GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter)
+void SPBeam::GetTimeDisToNextBunch(ReadInputSettings &inputParameter)
 {
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
     double circRing   = inputParameter.ringParBasic->circRing;
     double rfLen      = circRing  / ringHarmH;
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
+
     double temp=0;
     // get the bunch distance
+
     if(beamVec.size()>1)
     {
         for(int i=0;i<beamVec.size();i++)
@@ -1755,34 +1735,29 @@ void SPBeam::GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter)
             // get the time from current bunch to next bunch
             if(i<beamVec.size()-1)
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * rfLen - (beamVec[i].zAver - beamVec[i+1].zAver); 
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[i+1].zAver) / CLight / rBeta; 
             }
             else
             {
-                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * rfLen - (beamVec[i].zAver - beamVec[0  ].zAver ) ;
+                beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0  ].zAver ) / CLight / rBeta;
             }
-            beamVec[i].timeFromCurrnetBunchToNextBunch /= CLight;     
-
-            // get the time from last bunch to current bunch
-            if(i==0)
-            {
-                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[beamVec.size()-1].bunchGap * rfLen - (beamVec[beamVec.size()-1].zAver - beamVec[0].zAver ); 
-            }
-            else
-            {
-                beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[i-1             ].bunchGap * rfLen - (beamVec[i             -1].zAver - beamVec[i].zAver ) ;
-            }
-
-            beamVec[i].timeFromLastBunchToCurrentBunch /= CLight;  
+   
+            // // get the time from last bunch to current bunch
+            // if(i==0)
+            // {
+            //     beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[beamVec.size()-1].bunchGap * tRF + (beamVec[beamVec.size()-1].zAver - beamVec[0].zAver ) / CLight / rBeta; 
+            // }
+            // else
+            // {
+            //     beamVec[i].timeFromLastBunchToCurrentBunch  = beamVec[i-1             ].bunchGap * tRF + (beamVec[i             -1].zAver - beamVec[i].zAver ) / CLight / rBeta;
+            // }
         }
     }
     else
     {
         // if one bunch the inital bunch distance is set as ring circumference.
-        beamVec[0].timeFromCurrnetBunchToNextBunch   = beamVec[0].bunchGap * rfLen ; 
-        beamVec[0].timeFromCurrnetBunchToNextBunch  /= CLight;          
-        beamVec[0].timeFromLastBunchToCurrentBunch   = beamVec[0].bunchGap * rfLen ; 
-        beamVec[0].timeFromLastBunchToCurrentBunch  /= CLight;    
+        beamVec[0].timeFromCurrnetBunchToNextBunch   = beamVec[0].bunchGap * tRF;        
+        beamVec[0].timeFromLastBunchToCurrentBunch   = beamVec[0].bunchGap * tRF; 
     }
 }
 
@@ -1871,7 +1846,6 @@ void SPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInt
 
 void SPBeam::BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint)
 {
-    
     for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
     {
         BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);
@@ -1973,11 +1947,11 @@ void SPBeam::GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParamet
 }
 
 
-void SPBeam::FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns)
+void SPBeam::FIRBunchByBunchFeedback(const ReadInputSettings &inputParameter,FIRFeedBack &firFeedBack,int nTurns)
 {
     //y[0] = \sum_0^{N} a_k x[-k]
     //Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
-
+    double rBeta = inputParameter.ringParBasic->rBeta;
     double eta  = firFeedBack.kickerDisp;
     double etaP = firFeedBack.kickerDispP;
 
@@ -2055,7 +2029,7 @@ void SPBeam::FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns)
         {
             beamVec[i].eMomentumX[j] = beamVec[i].eMomentumX[j] + tranAngleKickx[i];
             beamVec[i].eMomentumY[j] = beamVec[i].eMomentumY[j] + tranAngleKicky[i];
-            beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i];
+            beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i] / pow(rBeta,2);
         }
 
     }
@@ -2156,7 +2130,6 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
                 
                 deltaTij = (beamVec[j].zAver -  wakefunction.poszData[nTurnswakeTrunction-1-n][i]) / CLight / rBeta;
                 tauij    = tauijStastic  + deltaTij;   
-
                 
                 // notification: 
                 // ensure the wakefucntion return the focusing strength in transverse and energy loss in longitudinal. 

@@ -66,16 +66,58 @@ public:
     };
     StrongStrongBunchInfo *strongStrongBunchInfo = new StrongStrongBunchInfo;      
     vector<MPBunch> beamVec;
-    vector<double> timeBetweenBunch; 
+    vector<vector<double> > bunchZMinZMax; // bunchTMaxTMinTAver[i][0,1] -> [mic,max]
+
+
+    // for coupled bunch mode or bunch-by-bunch growth rate calculation
+    // nominal method to get the coupled bunch grwothe rate
+    vector<vector<double> > coupledBunchModeAmpX;
+    vector<vector<double> > coupledBunchModeAmpY;
+    vector<vector<double> > coupledBunchModeAmpZ;
+    vector<vector<double> > coupledBunchModeArgX;
+    vector<vector<double> > coupledBunchModeArgY;
+    vector<vector<double> > coupledBunchModeArgZ;
+    // IQ decomposition to get the coupled bunch grwothe rate  -- only the unstable mode can be identified
+    vector<vector<double > > ampXIQ;
+    vector<vector<double > > ampYIQ;
+    vector<vector<double > > ampZIQ;
+    vector<vector<double > > argXIQ;
+    vector<vector<double > > argYIQ;
+    vector<vector<double > > argZIQ;
+    // history bunch position info
+    vector<vector<double> > historyAverX;
+    vector<vector<double> > historyAverY;
+    vector<vector<double> > historyAverZ;
+      // analytical signal along the tracking turns.
+    vector<vector<complex<double> > > anaSignalAverX;
+    vector<vector<complex<double> > > anaSignalAverY;
+    vector<vector<complex<double> > > anaSignalAverZ;
+    // hilbert transfer for compled bunch mode calculation
+    vector<vector<double> > hilbertCoupledBunchModeAmpX;
+    vector<vector<double> > hilbertCoupledBunchModeAmpY;
+    vector<vector<double> > hilbertCoupledBunchModeAmpZ; 
+    vector<vector<double> > hilbertCoupledBunchModeArgX;
+    vector<vector<double> > hilbertCoupledBunchModeArgY;
+    vector<vector<double> > hilbertCoupledBunchModeArgZ;
+
+
+    vector<double > freXIQDecompScan;
+    vector<double > freYIQDecompScan;
+    vector<double > freZIQDecompScan;
+    //--------------------------------------------------------------------------------
+
+
+    vector<double> ampIQ;
+    vector<double> phaseIQ;
 
     void Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator);
     void MPBeamRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
     void MPGetBeamInfo();
     void MPBeamDataPrintPerTurn(int turns, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
-    void GetBinDistBetweenBunch(ReadInputSettings &inputParameter);
     void SRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint,int turns);    
-    void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);    
+    void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);
+    void GetBunchMinZMaxZ();
 
 
     //// shared funcitons by MP and SP--just copy of each other.         
@@ -88,11 +130,17 @@ public:
     void SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);  
     void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
+    void BeamTransferDuetoDriveMode(const ReadInputSettings &inputParameter, const int n);
+    void MarkParticleLostInBunch(const ReadInputSettings &inputParameter, const LatticeInterActionPoint &latticeInterActionPoint);
+    void GetDriveModeGrowthRate(const int turns, const ReadInputSettings &inputParameter);
+    void GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter);
+    void GetAnalyticalWithFilter(const ReadInputSettings &inputParameter); 
+    vector<complex<double> > GetHilbertAnalytical(vector<double> signal, const double filterBandWithdNu, double workQ);  
     //void SetBeamPosHistoryDataWithinWindow();
                   
                                	                       
     void BeamSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
-    void FIRBunchByBunchFeedback(FIRFeedBack &firFeedBack,int nTurns);
+    void FIRBunchByBunchFeedback(const ReadInputSettings &inputParameter,FIRFeedBack &firFeedBack,int nTurns);
     void BeamTransferPerTurnDueWake();
     //// for long range RW wake function
 	void LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint);  

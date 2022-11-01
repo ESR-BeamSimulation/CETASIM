@@ -79,6 +79,7 @@ public:
         vector <int>   rfResExciteIntability;
         vector <int>   rfResCavVolFB;
         string transResonParWriteTo;
+        string methodForVb="rigid";
         
      };     
     RingParRf *ringParRf = new RingParRf;

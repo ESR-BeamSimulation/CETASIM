@@ -33,7 +33,7 @@ Bunch::Bunch()
 
 Bunch::~Bunch()
 {
-    delete cavFBCenInfo; 
+    delete bunchRFModeInfo; 
     delete haissinski;  
 }
 
@@ -68,25 +68,21 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
     eFxDueToIon.resize(macroEleNumPerBunch,0E0);
     eFyDueToIon.resize(macroEleNumPerBunch,0E0);
     eFzDueToIon.resize(macroEleNumPerBunch,0E0);
-    eSurive.resize(macroEleNumPerBunch,1);
+    eSurive.resize(macroEleNumPerBunch,0);
     
     
-    cavFBCenInfo->cavVolBunchCen.resize(inputParameter.ringParRf->resNum);
-    // cavFBCenInfo->cavAmpBunchCen.resize(inputParameter.ringParRf->resNum);
-    cavFBCenInfo->genVolBunchAver.resize(inputParameter.ringParRf->resNum);
-    // cavFBCenInfo->cavPhaseBunchCen.resize(inputParameter.ringParRf->resNum);
-    cavFBCenInfo->induceVolBunchCen.resize(inputParameter.ringParRf->resNum);
-    cavFBCenInfo->selfLossVolBunchCen.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->cavVolBunchCen.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->genVolBunchAver.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->induceVolBunchCen.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->selfLossVolBunchCen.resize(inputParameter.ringParRf->resNum);
 
     
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {        
-        cavFBCenInfo->genVolBunchAver[i]     =complex<double>(0.e0,0.e0);
-        cavFBCenInfo->induceVolBunchCen[i]   =complex<double>(0.e0,0.e0);
-        cavFBCenInfo->selfLossVolBunchCen[i] =complex<double>(0.e0,0.e0);
-        cavFBCenInfo->cavVolBunchCen[i]      =complex<double>(0.e0,0.e0);
-        // cavFBCenInfo->cavAmpBunchCen[i]      =0.E0;
-        // cavFBCenInfo->cavPhaseBunchCen[i]    =0.E0;                
+        bunchRFModeInfo->genVolBunchAver[i]     =complex<double>(0.e0,0.e0);
+        bunchRFModeInfo->induceVolBunchCen[i]   =complex<double>(0.e0,0.e0);
+        bunchRFModeInfo->selfLossVolBunchCen[i] =complex<double>(0.e0,0.e0);
+        bunchRFModeInfo->cavVolBunchCen[i]      =complex<double>(0.e0,0.e0);              
     }
 
     // refer to Maro -- 2015 PRAB 18 031001 --Eq(24) to get the coupled bunch mode growth rate. 
@@ -157,10 +153,8 @@ void Bunch::MarkLostParticle(const ReadInputSettings &inputParameter,const Latti
     double t0           = inputParameter.ringParBasic->t0;
 
     for(int i=0;i<macroEleNumPerBunch;i++)
-    {
-        double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[0],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[0],2) ; 
-        if(lossTemp >1) eSurive[i] = 0;       
-        if( abs(ePositionZ[i]) > t0 * CLight / ringHarm ) eSurive[i] = 0;
+    {    
+        if( abs(ePositionZ[i]) > t0 * CLight / ringHarm ) eSurive[i] = 2;   // loss in longitudianl
     }
 
 }
@@ -214,15 +208,8 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
         eMomentumX[i] = xPtemp;
         eMomentumY[i] = yPtemp;
 
-
-        // ztemp  = latticeInterActionPoint.zTransferMatrix[k][0] * ePositionZ[i]
-        //        + latticeInterActionPoint.zTransferMatrix[k][1] * eMomentumZ[i];
-
-        // zPtemp = latticeInterActionPoint.zTransferMatrix[k][2] * ePositionZ[i]
-        //        + latticeInterActionPoint.zTransferMatrix[k][3] * eMomentumZ[i];
-
-        // ePositionZ[i] = ztemp;
-        // eMomentumZ[i] = zPtemp;
+        double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2) ; 
+        if(lossTemp >1) eSurive[i] = 1;   // loss in transverse
     }
     
 }
@@ -583,7 +570,7 @@ void Bunch::BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter,
         for(int i=0;i<ePositionX.size();i++)
         {
             time = n * t0 + bunchHarmNum * tRF - ePositionZ[i] /  CLight / rBeta;            
-            eMomentumZ[i] += driveAmp * cos( 2 * PI * driveFre * time) / electronBeamEnergy;
+            eMomentumZ[i] += driveAmp * cos( 2 * PI * driveFre * time) / electronBeamEnergy / pow(rBeta,2);
         }
     }
     else if (inputParameter.driveMode->drivePlane == 1) // mode is exicted in x direction
@@ -606,8 +593,6 @@ void Bunch::BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter,
     {
         cerr<<"wrong settings in the DRIVEMode->drivePlane, have to be 0,or 1 0r 2 "<<endl;
     }
-    
-
 }
 
 
@@ -615,21 +600,9 @@ void Bunch::BunchTransferDueToWake()
 {
     for(int i=0;i<ePositionX.size();i++)
     {
-        /*    
-        if(wakeForceAver[0]>1.E-10) eMomentumX[i] -= wakeForceAver[0];
-        if(wakeForceAver[1]>1.E-10) eMomentumY[i] -= wakeForceAver[1];
-        if(wakeForceAver[2]>1.E-10) eMomentumZ[i] -= wakeForceAver[2];
-        */
-        //cout<<setw(15)<<left<<xAver
-        //   <<setw(15)<<left<<lRWakeForceAver[0]
-        //    <<setw(15)<<left<<lRWakeForceAver[1]
-        //    <<setw(15)<<left<<lRWakeForceAver[2]
-        //    <<setw(15)<<left<<__LINE__<<__FILE__<<endl;
-        //getchar();
         eMomentumX[i] += lRWakeForceAver[0];      //rad
         eMomentumY[i] += lRWakeForceAver[1];    
-        eMomentumZ[i] += lRWakeForceAver[2];
-        
+        eMomentumZ[i] += lRWakeForceAver[2];        
     }
 }
 

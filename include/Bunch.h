@@ -52,11 +52,10 @@ public:
     double pzAver=0.E0;
     double zAverLastTurn=0.E0;
     double pzAverLastTurn=0.E0;
+
     // for beam loading to get the time distance between bunches
     double zMinCurrentTurn =0.E0;
     double zMaxCurrentTurn =0.E0;
-    double zMinLastTurn =0.E0;
-    double zMaxLastTurn =0.E0;
     
     complex<double> xAverAnalytical;
     complex<double> yAverAnalytical;
@@ -91,18 +90,15 @@ public:
     double emittanceZ;
     double totIonCharge;
 
-    struct CAVFBCenInfo{
-        
+    struct BunchRFModeInfo{
         vector<complex<double> > induceVolBunchCen;
         vector<complex<double> > genVolBunchAver;
         vector<complex<double> > selfLossVolBunchCen;         
-        vector<complex<double> > cavVolBunchCen;           
+        vector<complex<double> > cavVolBunchCen;
     };
-    CAVFBCenInfo *cavFBCenInfo = new CAVFBCenInfo;
-    
-    
+    BunchRFModeInfo *bunchRFModeInfo = new BunchRFModeInfo;
+        
     struct Haissinski{
-
     double dt = 1.e-12 ;      // set as a default value.. 1 ps 
     double dz = dt * CLight;      
     int    nz  ;   

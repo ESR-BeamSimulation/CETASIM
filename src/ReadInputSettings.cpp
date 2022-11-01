@@ -253,7 +253,11 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         if (strVec[0]=="rfbunchbinnum") 
         {
             ringParRf->rfBunchBinNum = stod(strVec[1]);
-        }  
+        }
+        if (strVec[0]=="rfmethodforvb") 
+        {
+            ringParRf->methodForVb = strVec[1];
+        }    
                  
         if (strVec[0]=="rfrescold") 
         {
@@ -705,6 +709,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
                                                                
     }
 
+
   if (driveMode->driveStart > driveMode->driveStart)
   {
     cerr<<"wrong setting in DRIVEMode, driveMode->driveStart have to be less than driveMode->driveEnd"<<endl;
@@ -733,6 +738,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     //    ringRun->TBTBunchDisDataBunchIndex[i] = i; 
     // }
     
+
 
     if(ringRun->TBTBunchPrintNum > ringFillPatt->totBunchNumber )
     {
@@ -764,9 +770,11 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     double  rGamma             = electronBeamEnergy/ElectronMassEV;
     double  eta                = alphac - 1./pow(rGamma,2);
     double  rBeta              = sqrt(1.E0 -pow(rGamma,-2) );
-    double  t0                 = circRing / CLight;
+    double  t0                 = circRing / CLight / rBeta;
     double  f0                 = 1 / t0;
     double  omega0             = 2 * PI * f0;
+
+  
 
     
     //2) data from ringParRF    
