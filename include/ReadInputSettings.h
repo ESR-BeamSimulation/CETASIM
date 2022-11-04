@@ -52,8 +52,8 @@ public:
         double current;
         double betaFunAver[3];      // x y z
                             
-     };
-     RingParBasic *ringParBasic = new RingParBasic;
+    };
+    RingParBasic *ringParBasic = new RingParBasic;
    
     //2) rf basic parameter 
     struct RingParRf
@@ -81,7 +81,7 @@ public:
         string transResonParWriteTo;
         string methodForVb="rigid";
         
-     };     
+    };     
     RingParRf *ringParRf = new RingParRf;
     
    

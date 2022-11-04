@@ -49,7 +49,7 @@ void MPBunch::InitialMPBunch(const  ReadInputSettings &inputParameter)
     int bunchBinNumberZ = inputParameter.ringParRf->rfBunchBinNum;
     
     beamCurDenZProf.resize(bunchBinNumberZ+1);
-    posZBins.resize(bunchBinNumberZ+1);
+    posZBins.resize(bunchBinNumberZ);
     densProfVsBin.resize(bunchBinNumberZ+1);
     densProfVsBinAnalytical.resize(bunchBinNumberZ+1);
     hamiltonPotenWell.resize(bunchBinNumberZ+1);
@@ -574,20 +574,20 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
     double dzBin = (zMaxCurrentTurn - zMinCurrentTurn) / bunchBinNumberZ;
     double dtBin = dzBin / CLight / rBeta;
 
+    // bunch bins are alined from head to tail [zmax-> zMin] when i=0,1,2,...
+    for(int i=0;i<posZBins.size();i++)
+    {
+        posZBins[i] = zMaxCurrentTurn - i * dzBin  - dzBin / 2.0;   
+    }
+
     vector<vector<int>> histoParIndex;
-    histoParIndex.resize(bunchBinNumberZ+1);
+    histoParIndex.resize(bunchBinNumberZ);
     for(int i=0;i<ePositionZ.size();i++)
     {
         if(eSurive[i]!=0) continue;
-        int index = int( ( ePositionZ[i] - zMinCurrentTurn ) / dzBin );   
+        int index = floor((  zMaxCurrentTurn - ePositionZ[i] ) / dzBin); 
         histoParIndex[index].push_back(i);    
     }
-
-    for(int i=0;i<posZBins.size();i++)
-    {
-        posZBins[i] = zMinCurrentTurn + i * dzBin;
-    }
-
 
     for(int j=0;j<resNum;j++)
     {
@@ -598,13 +598,14 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
         // accumulate is along bin-by-bin--------
  
         complex<double> selfLossVolAccume=(0.0,0.0);
-
-        double cavVoltageAbsSum=0.E0;
-        double cavVoltageArgSum=0.E0;
-        double induceVolAbsSum=0.E0;
-        double induceVolArgSum=0.E0;
-        double genVolAbsSum=0.E0;
-        double genVolArgSum=0.E0;
+        // do the averaging process in  Cartesian system...
+        // polar system average will bring trouble when all values around -pi        
+        double cavVoltageReal = 0.E0;
+        double cavVoltageImag = 0.E0;
+        double induceVolReal = 0.E0;
+        double induceVolImag = 0.E0;
+        double genVolReal = 0.E0;
+        double genVolImag = 0.E0;
 
         complex<double> vb0=(0,0);
         complex<double> cavVoltage=(0.E0,0.E0);
@@ -613,15 +614,15 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
 
         // calculate the Vb0 once per bunch
         vb0  = complex<double>(-1 * 2 * PI * resFre * cavityResonator.resonatorVec[j].resShuntImpRs /
-                            cavityResonator.resonatorVec[j].resQualityQ0,0.E0) * electronNumPerBunch * ElectronCharge;  // [Volt]
-        
-        // loop for bin-by-bin in one bunch 
+                            cavityResonator.resonatorVec[j].resQualityQ0,0.E0) * electronNumPerBunch * ElectronCharge;  // [Volt]s
+
+        // loop for bin-by-bin in one bunch from head to tail...
         for(int k=0;k<histoParIndex.size();k++) 
         {
             genVoltage = cavityResonator.resonatorVec[j].resGenVol * exp( - li * posZBins[k]  / CLight * 2. * PI * double(resHarm) * fRF );   
             cavVoltage = cavityResonator.resonatorVec[j].vbAccum   +  genVoltage;
                         
-            // loop for particle in each bin          
+            // loop for particle in each bin --- histoParIndex is ligned from head to tail [-t,t]          
             for(int i=0;i<histoParIndex[k].size();i++)
             {
                 int index          = histoParIndex[k][i];
@@ -633,27 +634,27 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
             particleInBunch   += histoParIndex[k].size();
             selfLossVolAccume += vb0/2.0    * double(histoParIndex[k].size());
 
-            cavVoltageAbsSum  += abs(cavVoltage) * double(histoParIndex[k].size());
-            cavVoltageArgSum  += arg(cavVoltage) * double(histoParIndex[k].size());
-            genVolAbsSum      += abs(genVoltage) * double(histoParIndex[k].size());
-            genVolArgSum      += arg(genVoltage) * double(histoParIndex[k].size());
-            induceVolAbsSum   += abs(cavityResonator.resonatorVec[j].vbAccum + vb0 ) *  double(histoParIndex[k].size());
-            induceVolArgSum   += arg(cavityResonator.resonatorVec[j].vbAccum + vb0 ) *  double(histoParIndex[k].size());            
+            cavVoltageReal    += cavVoltage.real() * double(histoParIndex[k].size());
+            cavVoltageImag    += cavVoltage.imag() * double(histoParIndex[k].size());
+            genVolReal        += genVoltage.real() * double(histoParIndex[k].size());
+            genVolImag        += genVoltage.imag() * double(histoParIndex[k].size());
+            induceVolReal     += (cavityResonator.resonatorVec[j].vbAccum + vb0).real() * double(histoParIndex[k].size()); 
+            induceVolImag     += (cavityResonator.resonatorVec[j].vbAccum + vb0).imag() * double(histoParIndex[k].size());         
         }
         
-        cavVoltageAbsSum /= double(particleInBunch);
-        cavVoltageArgSum /= double(particleInBunch);
-        genVolAbsSum     /= double(particleInBunch);
-        genVolArgSum     /= double(particleInBunch);
-        induceVolAbsSum  /= double(particleInBunch);
-        induceVolArgSum  /= double(particleInBunch);
-         
-        bunchRFModeInfo->cavVolBunchCen[j]    = complex<double>(cavVoltageAbsSum * cos(cavVoltageArgSum),cavVoltageAbsSum * sin(cavVoltageArgSum) );
-        bunchRFModeInfo->genVolBunchAver[j]   = complex<double>(genVolAbsSum     * cos(genVolArgSum)    ,genVolAbsSum     * sin(genVolArgSum)     ); 
-        bunchRFModeInfo->induceVolBunchCen[j] = complex<double>(induceVolAbsSum  * cos(induceVolArgSum) ,induceVolAbsSum  * sin(induceVolArgSum)  ); 
-        bunchRFModeInfo->selfLossVolBunchCen[j]  =  selfLossVolAccume / double(particleInBunch) ;
-       
-        
+        cavVoltageReal /= double(particleInBunch);
+        cavVoltageImag /= double(particleInBunch);
+        genVolReal     /= double(particleInBunch);
+        genVolImag     /= double(particleInBunch);
+        induceVolReal  /= double(particleInBunch);
+        induceVolImag  /= double(particleInBunch); 
+
+        bunchRFModeInfo->cavVolBunchCen[j]    = complex<double>(cavVoltageReal,cavVoltageImag);
+        bunchRFModeInfo->genVolBunchAver[j]   = complex<double>(genVolReal    ,genVolImag    ); 
+        bunchRFModeInfo->induceVolBunchCen[j] = complex<double>(induceVolReal ,induceVolImag); 
+        bunchRFModeInfo->selfLossVolBunchCen[j]  =  selfLossVolAccume / double(particleInBunch);
+   
+
         // beam induced voltage rotate to next bunch   
         tB     = timeFromCurrnetBunchToNextBunch;
         deltaL = tB / cavityResonator.resonatorVec[j].tF;        
@@ -661,7 +662,8 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
         cavityResonator.resonatorVec[j].vbAccum +=  vb0;   
         cavityResonator.resonatorVec[j].vbAccum *=  exp(- deltaL ) * exp (li * cPsi);
     }
-    
+
+
     BunchLongiInfoUpdate(inputParameter);
 }
 
@@ -669,7 +671,6 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
 void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     // Ref. bunch.h that ePositionZ = - ePositionT * c. head pariticles: deltaT<0, ePositionZ[i]>0.
-
     double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
     
     int resNum        = inputParameter.ringParRf->resNum;
@@ -679,56 +680,65 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     int bunchBinNumberZ = inputParameter.ringParRf->rfBunchBinNum;
     double fRF         = f0 * ringHarmH;
-   
-    GetZMinMax();
+
     // cut the bunch into  bins and store the particle index
     double dzBin = (zMaxCurrentTurn - zMinCurrentTurn) / bunchBinNumberZ;
     double dtBin = dzBin / CLight / rBeta;
 
+
+    // bunch bins are alined from head to tail [zmax-> zMin] when i=0,1,2,...
+    for(int i=0;i<posZBins.size();i++)
+    {
+        posZBins[i] = zMaxCurrentTurn - i * dzBin  - dzBin / 2.0;   
+    }
+
     vector<vector<int>> histoParIndex;
-    histoParIndex.resize(bunchBinNumberZ+1);
+    histoParIndex.resize(bunchBinNumberZ);
     for(int i=0;i<ePositionZ.size();i++)
     {
         if(eSurive[i]!=0) continue;
-        int index = int( ( ePositionZ[i] - zMinCurrentTurn ) / dzBin );   
+        int index = floor((  zMaxCurrentTurn - ePositionZ[i] ) / dzBin);         
         histoParIndex[index].push_back(i);    
     }
 
-    for(int i=0;i<posZBins.size();i++)
-    {
-        posZBins[i] = zMinCurrentTurn + i * dzBin;
-    }
+    // ofstream fest("test.sdds",ios_base::app);
 
     for(int j=0;j<resNum;j++)
-    {
+    {           
         double resHarm = cavityResonator.resonatorVec[j].resHarm;
         double resFre  = cavityResonator.resonatorVec[j].resFre;
         double tB, deltaL, cPsi;
-
+        tB = deltaL = cPsi = 0.E0;    
         // accumulate is along bin-by-bin--------
-        complex<double> selfLossVolAccume=(0.0,0.0);
-                
-        double cavVoltageAbsSum=0.E0;
-        double cavVoltageArgSum=0.E0;
-        double induceVolAbsSum=0.E0;
-        double induceVolArgSum=0.E0;
-        double genVolAbsSum=0.E0;
-        double genVolArgSum=0.E0;
+        complex<double> selfLossVolAccume=(0.E0,0.E0);
+
+        // do the averaging process in  Cartesian system...
+        // polar system average will bring trouble when all values around -pi        
+        double cavVoltageReal = 0.E0;
+        double cavVoltageImag = 0.E0;
+        double induceVolReal = 0.E0;
+        double induceVolImag = 0.E0;
+        double genVolReal = 0.E0;
+        double genVolImag = 0.E0;
 
         complex<double> vb0=(0,0);
         complex<double> cavVoltage=(0.E0,0.E0);
         complex<double> genVoltage=(0.E0,0.E0);
         int particleInBunch=0;
 
-        // loop for bin-by-bin in one bunch -- each bin excite beam induced voltage itself
+
+        // loop for bin-by-bin in one bunch, bins is alined from head to tail
+        // each bin excite beam induced voltage itself
         for(int k=0;k<histoParIndex.size();k++) 
         {
-            genVoltage = cavityResonator.resonatorVec[j].resGenVol * exp( - li * posZBins[k]  / CLight * 2. * PI * double(resHarm) * fRF );   
+            // change in the real time frame for generator voltage calculation...
+            
+            genVoltage = cavityResonator.resonatorVec[j].resGenVol * exp(  - li * posZBins[k]  / CLight * 2. * PI * double(resHarm) * fRF); 
             cavVoltage = cavityResonator.resonatorVec[j].vbAccum   +  genVoltage;
-
+            
             vb0  = complex<double>(-1 * 2 * PI * resFre * cavityResonator.resonatorVec[j].resShuntImpRs /
                     cavityResonator.resonatorVec[j].resQualityQ0,0.E0) * macroEleCharge * double(histoParIndex[k].size()) * ElectronCharge;  // [Volt]
-                  
+
             // loop for particle in each bin          
             for(int i=0;i<histoParIndex[k].size();i++)
             {
@@ -736,48 +746,49 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
                 eMomentumZ[index] += cavVoltage.real() / electronBeamEnergy / pow(rBeta,2);
                 eMomentumZ[index] += vb0.real()/2.0    / electronBeamEnergy / pow(rBeta,2);
             }
-
+  
             // to get the weighing average of cavvity voltage, beam inuced voltage...
             particleInBunch   += histoParIndex[k].size();
             selfLossVolAccume += vb0/2.0 * double(histoParIndex[k].size());
+           
+            cavVoltageReal    += cavVoltage.real() * double(histoParIndex[k].size());
+            cavVoltageImag    += cavVoltage.imag() * double(histoParIndex[k].size());
+            genVolReal        += genVoltage.real() * double(histoParIndex[k].size());
+            genVolImag        += genVoltage.imag() * double(histoParIndex[k].size());
+            induceVolReal     += (cavityResonator.resonatorVec[j].vbAccum + vb0).real() * double(histoParIndex[k].size()); 
+            induceVolImag     += (cavityResonator.resonatorVec[j].vbAccum + vb0).imag() * double(histoParIndex[k].size());
 
-            cavVoltageAbsSum  += abs(cavVoltage) * double(histoParIndex[k].size());
-            cavVoltageArgSum  += arg(cavVoltage) * double(histoParIndex[k].size());
-            genVolAbsSum      += abs(genVoltage) * double(histoParIndex[k].size());
-            genVolArgSum      += arg(genVoltage) * double(histoParIndex[k].size());
-            induceVolAbsSum   += abs(cavityResonator.resonatorVec[j].vbAccum + vb0 ) *  double(histoParIndex[k].size());
-            induceVolArgSum   += arg(cavityResonator.resonatorVec[j].vbAccum + vb0 ) *  double(histoParIndex[k].size()); 
-                              
             // beam induced voltage retotate and decay bin-by-bin            
             tB     = dtBin;
             deltaL = tB  / cavityResonator.resonatorVec[j].tF;
             cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB;
-            if(k<histoParIndex.size()-1)
-            {
-                cavityResonator.resonatorVec[j].vbAccum += vb0;
-                cavityResonator.resonatorVec[j].vbAccum *=  exp(- deltaL ) * exp (li * cPsi);
-            }
+            cavityResonator.resonatorVec[j].vbAccum += vb0;
+            cavityResonator.resonatorVec[j].vbAccum = cavityResonator.resonatorVec[j].vbAccum * exp(- deltaL ) * exp (li * cPsi);
+    
         }
         
-        cavVoltageAbsSum /= double(particleInBunch);
-        cavVoltageArgSum /= double(particleInBunch);
-        genVolAbsSum     /= double(particleInBunch);
-        genVolArgSum     /= double(particleInBunch);
-        induceVolAbsSum  /= double(particleInBunch);
-        induceVolArgSum  /= double(particleInBunch); 
-    
-        bunchRFModeInfo->cavVolBunchCen[j]    = complex<double>(cavVoltageAbsSum * cos(cavVoltageArgSum),cavVoltageAbsSum * sin(cavVoltageArgSum) );
-        bunchRFModeInfo->genVolBunchAver[j]   = complex<double>(genVolAbsSum     * cos(genVolArgSum)    ,genVolAbsSum     * sin(genVolArgSum)     ); 
-        bunchRFModeInfo->induceVolBunchCen[j] = complex<double>(induceVolAbsSum  * cos(induceVolArgSum) ,induceVolAbsSum  * sin(induceVolArgSum)  ); 
+        cavVoltageReal /= double(particleInBunch);
+        cavVoltageImag /= double(particleInBunch);
+        genVolReal     /= double(particleInBunch);
+        genVolImag     /= double(particleInBunch);
+        induceVolReal  /= double(particleInBunch);
+        induceVolImag  /= double(particleInBunch); 
+
+        bunchRFModeInfo->cavVolBunchCen[j]    = complex<double>(cavVoltageReal,cavVoltageImag);
+        bunchRFModeInfo->genVolBunchAver[j]   = complex<double>(genVolReal    ,genVolImag    ); 
+        bunchRFModeInfo->induceVolBunchCen[j] = complex<double>(induceVolReal ,induceVolImag); 
         bunchRFModeInfo->selfLossVolBunchCen[j]  =  selfLossVolAccume / double(particleInBunch) ;
 
-
+        
         // beam induced voltage rotate to next bunch   
         tB     = timeFromCurrnetBunchToNextBunch;
         deltaL = tB / cavityResonator.resonatorVec[j].tF;        
         cPsi   = 2.0 * PI * cavityResonator.resonatorVec[j].resFre * tB;
+        cavityResonator.resonatorVec[j].vbAccum +=  vb0;   
         cavityResonator.resonatorVec[j].vbAccum *=  exp(- deltaL ) * exp (li * cPsi);
     }
+
+    // fest.close();
     
     BunchLongiInfoUpdate(inputParameter);
 }
@@ -1057,8 +1068,8 @@ void MPBunch::GetZMinMax()
         } 
     }
 
-    zMinCurrentTurn = zMin;
-    zMaxCurrentTurn = zMax; 
+    zMinCurrentTurn = zMin - 1.e-6;
+    zMaxCurrentTurn = zMax + 1.e-6; 
 }
 
 void MPBunch::BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter, WakeFunction &sRWakeFunction, const LatticeInterActionPoint &latticeInterActionPoint,int turns)

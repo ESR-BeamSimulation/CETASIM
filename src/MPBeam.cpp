@@ -90,6 +90,33 @@ void MPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     MPGetBeamInfo();
 	GetTimeDisToNextBunchIntial(inputParameter); 
     RMOutPutFiles();
+
+   // set section is used to generate the beam filling pattern data for elegant .
+    ofstream fout1 ("elegant_filling_train_para.sdds",ios::out);
+
+    fout1<<"SDDS1"<<endl;
+    fout1<<"&parameter name=BucketNumber, type=long, &end"<<endl;
+    fout1<<"&parameter name=Intensity, type=long, &end"<<endl;
+    fout1<<"&data mode=ascii, &end"<<endl;
+
+    counter=0;
+
+    for(int i=0;i<harmonics;i++)
+    {
+        if(counter<beamVec.size())
+        {
+            if(i==beamVec[counter].bunchHarmNum)
+            {
+                fout1<<"!page number "<<counter+1<<endl;
+                fout1<<i<<endl;
+                fout1<<1<<endl;
+                counter += 1;
+            }
+        }
+
+    }
+    fout1.close();
+    //------------------------------------end ------------------------------------------
 }
 
 void MPBeam::GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter)
@@ -1875,11 +1902,11 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         }           
     }
 
-    GetBunchMinZMaxZ();
+   
 
     if(inputParameter.ringParRf->methodForVb=="rigid")
     {
-        // elegant and HeFei code approaches..    
+        //  HeFei code approaches..    
         if(beamVec.size()==1)
         {        
             beamVec[0].timeFromCurrnetBunchToNextBunch  =  beamVec[0].bunchGap * tRF + (beamVec[0].zAverLastTurn  - beamVec[0].zAver) / CLight / rBeta;
@@ -1907,10 +1934,10 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
     }
     else if (inputParameter.ringParRf->methodForVb=="soft")
     {
-        //  MBtrack's approach; It requires initial beam induced voltage well calculated. Or put the simple feedback into simulation to adjust generate voltage accordingly
+        // elegnat and MBtrack's approach; It requires initial beam induced voltage well calculated. 
+        GetBunchMinZMaxZ();
         if(beamVec.size()==1)
         {        
-            beamVec[0].GetZMinMax();
             beamVec[0].timeFromCurrnetBunchToNextBunch  =  beamVec[0].bunchGap * tRF + (beamVec[0].zMinCurrentTurn - beamVec[0].zMaxCurrentTurn) / CLight / rBeta;
             beamVec[0].zAverLastTurn                    =  beamVec[0].zAver;                                                   
             beamVec[0].BunchTransferDueToLatticeLBinByBin(inputParameter,cavityResonator);    
@@ -1926,13 +1953,16 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
                     beamVec[i].GetZMinMax();
                     beamVec[i+1].GetZMinMax();
                     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zMinCurrentTurn - beamVec[i+1].zMaxCurrentTurn) / CLight / rBeta;
+                    // beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[i+1].zAver) / CLight / rBeta;  
                 }
                 else
                 {
                     beamVec[i].GetZMinMax();
                     beamVec[0].GetZMinMax();
                     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zMinCurrentTurn - beamVec[0  ].zMaxCurrentTurn) / CLight / rBeta;
+                    // beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0  ].zAver) / CLight / rBeta;
                 }
+                
                 beamVec[i].BunchTransferDueToLatticeLBinByBin(inputParameter,cavityResonator);
                 beamVec[i].GetMPBunchRMS(latticeInterActionPoint, 0);
             }        

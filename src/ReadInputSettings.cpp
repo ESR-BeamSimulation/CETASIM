@@ -24,7 +24,7 @@ using std::vector;
 
 ReadInputSettings::ReadInputSettings()
 {
-    
+  
 }
 ReadInputSettings::~ReadInputSettings()
 {
@@ -38,7 +38,8 @@ ReadInputSettings::~ReadInputSettings()
     delete ringLRWake;
     delete ringSRWake;
     delete ringImpedance;
-    delete ringRun; 
+    delete ringRun;
+    delete driveMode; 
     
 }
 
@@ -62,7 +63,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     if (! fin.is_open())
     {
         cerr<< "Error opening file input.dat"<<endl;
-        exit (1);
+        exit(0);
     }
     
 
