@@ -11,6 +11,7 @@ ringElectronBeamEnergy     = 6.0E+9
 ringAlphac                 = 3.328808e-5
 ringSdelta0                = 9.277e-4
 ringU0                     = 4.166343E+6
+ringCurrent                = 0.2 
 &end
 
 
@@ -37,8 +38,7 @@ rfResCold          = 0 0                          // in tracking, cavity is cold
 rfResExciteIntability = 1 1                       // to exite coupled bunch instability or not
 rfResCavVolFB         = 0 0                       // to apply a simple feedback to cavity voltage phasor--only works for active cavity.
 
-rfBunchBinNum      =  32                          // MP model used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]   
-rfMethodForVb     =  soft                        // MP model soft: Vb is calcuated bin-by-bin in each bunch; rigid: Vb is calculated once as a whole in each bunch.  
+rfBunchBinNum      =  32                          // MP model used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]    
 &end
 
 // long range RW wake function  Ref. NIMA 221-230 806 (2016) Nagaoka  Eq.(26), rigid bunch approximation for long range wake simulation. 
@@ -158,11 +158,13 @@ fpBunchNumberPerTrain = 100 100
 fpTrainGaps = 920 920
 fpBunchGaps = 9 9
 
+fpSetBunchchargeNum = 10
+fpSetBunchChargeIndex = 0 1 2 3 4 5 6 7 8 9   
+fpsetBunchCharge = 2 2 2 2 2 2 2 2 2 2
 &end
 
 
 &bunch
-bunchCurrent         = 1.E-3
 bunchEmittanceX      = 20.E-12
 bunchKappa           = 0.2
 bunchRmsBunchLength  = 2.3E-3

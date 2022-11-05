@@ -93,8 +93,6 @@ void Train::Initial(ReadInputSettings &inputParameter)
             }
         }
     }
-
-
 }
 
 

@@ -40,21 +40,19 @@ Bunch::~Bunch()
 
 void Bunch::Initial(const  ReadInputSettings &inputParameter)
 {    
-    macroEleNumPerBunch = inputParameter.ringBunchPara->macroEleNumPerBunch;      // macroEleNumPerBunch=1 -- electron beam weak-strong model
-    current             = inputParameter.ringBunchPara->current;                                                                              
+    macroEleNumPerBunch = inputParameter.ringBunchPara->macroEleNumPerBunch;      // macroEleNumPerBunch=1 -- electron beam weak-strong model                                                                           
     electronEnergy      = inputParameter.ringParBasic->electronBeamEnergy;
     rmsEnergySpread     = inputParameter.ringBunchPara-> rmsEnergySpread;
     rmsBunchLength      = inputParameter.ringBunchPara-> rmsBunchLength;
     rGamma              = inputParameter.ringParBasic->rGamma;
     rBeta               = inputParameter.ringParBasic->rBeta;
-    
+    // current             = inputParameter.ringBunchPara->current; 
     // in sp model, it does not change during the tracking 
     emittanceZ      = inputParameter.ringBunchPara->emittanceZ;
     emittanceX      = inputParameter.ringBunchPara->emittanceX;
     emittanceY      = inputParameter.ringBunchPara->emittanceY;
-    
-    
-    electronNumPerBunch = current / inputParameter.ringParBasic->f0  / ElectronCharge;
+     
+    electronNumPerBunch = current  / inputParameter.ringParBasic->f0  / ElectronCharge;
     macroEleCharge      = electronNumPerBunch / macroEleNumPerBunch;
 
     lRWakeForceAver.resize(3,0E0);

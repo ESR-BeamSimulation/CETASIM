@@ -663,7 +663,6 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
         cavityResonator.resonatorVec[j].vbAccum *=  exp(- deltaL ) * exp (li * cPsi);
     }
 
-
     BunchLongiInfoUpdate(inputParameter);
 }
 
@@ -701,7 +700,6 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
         histoParIndex[index].push_back(i);    
     }
 
-    // ofstream fest("test.sdds",ios_base::app);
 
     for(int j=0;j<resNum;j++)
     {           
@@ -788,7 +786,6 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
         cavityResonator.resonatorVec[j].vbAccum *=  exp(- deltaL ) * exp (li * cPsi);
     }
 
-    // fest.close();
     
     BunchLongiInfoUpdate(inputParameter);
 }

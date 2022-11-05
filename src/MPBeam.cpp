@@ -72,20 +72,40 @@ void MPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
             counter++;
         }
     }
-    
+    // -----------------------------------------------------------------------
+
+    // set the different bunch charge according to index read in
+    for(int i=0;i<inputParameter.ringFillPatt->bunchChargeNum;i++)
+    {
+        int index = inputParameter.ringFillPatt->bunchChargeIndex[i];
+        beamVec[index].normCurrent = inputParameter.ringFillPatt->bunchCharge[i];
+    }
+    int totNormCurrent=0;
+    for(int i=0;i<totBunchNum;i++)
+    {
+        totNormCurrent += beamVec[i].normCurrent; 
+    }
+
+    for(int i=0;i<totBunchNum;i++)
+    {
+        beamVec[i].current = beamVec[i].normCurrent * inputParameter.ringParBasic->ringCurrent / totNormCurrent;
+    }
+    //---------------------------------------------------------------------------------------
+
     // set the bunch initial distribution
     for(int i=0;i<totBunchNum;i++)
     {
         beamVec[i].InitialMPBunch(inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,inputParameter,i);
     }
- 
+    // -----------------------------------------------------------------------
     
     for(int i=0;i<totBunchNum-1;i++)
     {
         beamVec[i].bunchGap = beamVec[i+1].bunchHarmNum - beamVec[i].bunchHarmNum;
     }
     beamVec[totBunchNum-1].bunchGap = harmonics - beamVec[totBunchNum-1].bunchHarmNum;
+    // -----------------------------------------------------------------------
 
     MPGetBeamInfo();
 	GetTimeDisToNextBunchIntial(inputParameter); 

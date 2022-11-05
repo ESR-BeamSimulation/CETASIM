@@ -67,7 +67,7 @@ public:
     // double pyAverHilbertAnalytical=0.E0;
     // double pzAverHilbertAnalytical=0.E0;
     
-
+    int normCurrent = 1;
     int macroEleNumPerBunch=1;
     double macroEleCharge;
     double electronNumPerBunch;

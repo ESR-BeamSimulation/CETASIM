@@ -72,12 +72,29 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
         }
     }
     
+    // set the different bunch charge according to index read in
+    for(int i=0;i<inputParameter.ringFillPatt->bunchChargeNum;i++)
+    {
+        int index = inputParameter.ringFillPatt->bunchChargeIndex[i];
+        beamVec[index].normCurrent = inputParameter.ringFillPatt->bunchCharge[i];
+    }
+    int totNormCurrent=0;
+    for(int i=0;i<totBunchNum;i++)
+    {
+        totNormCurrent += beamVec[i].normCurrent; 
+    }
+
+    for(int i=0;i<totBunchNum;i++)
+    {
+        beamVec[i].current = beamVec[i].normCurrent * inputParameter.ringParBasic->ringCurrent / totNormCurrent;
+    }
+    //---------------------------------------------------------------------------------------
+
     // in one bunch train, leading and tail bunch covention [head, tail] = [0,1,2,...i,]
     for(int i=0;i<totBunchNum;i++)
     {
         beamVec[i].InitialSPBunch(inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,inputParameter,i);
-        // beamVec[i].ePositionX[0] = 0.001 * cos(4* 2 * PI * i / totBunchNum);
     }
 
     for(int i=0;i<totBunchNum-1;i++)
@@ -181,9 +198,11 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
     int resNum      = inputParameter.ringParRf->resNum;
     int ringHarmH   = inputParameter.ringParBasic->harmonics;
-    double beamCurr = inputParameter.ringBunchPara->current * beamVec.size();
+    // double beamCurr = inputParameter.ringBunchPara->current * beamVec.size();
+    double beamCurr = inputParameter.ringParBasic->ringCurrent ;
     double f0       = inputParameter.ringParBasic->f0;
     double t0       = inputParameter.ringParBasic->t0;
+
 
     double deltaL;
     double cPsi;
@@ -1477,7 +1496,7 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 	    fout<<"&column name=Turns,                                 type=long,   &end"<<endl;
         fout<<"&column name=BunchIndex,                            type=long,   &end"<<endl;
 	    fout<<"&column name=HarmIndex,                             type=long,   &end"<<endl;
-        fout<<"&column name=Time,                                  type=float,  &end"<<endl;
+        fout<<"&column name=BunchCurrent,               units=mA   type=float,  &end"<<endl;
 	    fout<<"&column name=AverX,                      units=m,   type=float,  &end"<<endl;
 	    fout<<"&column name=AverY,                      units=m,   type=float,  &end"<<endl;
 	    fout<<"&column name=AverZ,                      units=m,   type=float,  &end"<<endl;
@@ -1521,7 +1540,7 @@ void SPBeam::SPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
         fout<<setw(24)<<left<<setprecision(16)<<nTurns
             <<setw(24)<<left<<setprecision(16)<<i
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].bunchHarmNum
-            <<setw(24)<<left<<setprecision(16)<<TrackingTime
+            <<setw(24)<<left<<setprecision(16)<<beamVec[i].current
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].xAver
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].yAver
             <<setw(24)<<left<<setprecision(16)<<beamVec[i].zAver

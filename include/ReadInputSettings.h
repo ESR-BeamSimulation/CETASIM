@@ -49,7 +49,7 @@ public:
         double workQz;
         double kappa;
         double sigmaT0;
-        double current;
+        double ringCurrent;
         double betaFunAver[3];      // x y z
                             
     };
@@ -93,6 +93,9 @@ public:
         vector<int> bunchNumberPerTrain;
         vector<int> trainGaps;
         vector<int> bunchGaps; 
+        int bunchChargeNum;
+        vector<int> bunchChargeIndex;
+        vector<int> bunchCharge;
     };
     RingFillPatt *ringFillPatt = new RingFillPatt;
 

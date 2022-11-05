@@ -270,6 +270,8 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
     complex<double> genVoltage =(0.E0,0.E0);
     complex<double> vb0=(0,0);
 
+ 
+
     // loop of cavities. 
     for(int j=0;j<resNum;j++)
     {                              
@@ -305,7 +307,7 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
      
         deltaL = tB / cavityResonator.resonatorVec[j].tF;        
         cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB; // - 2 * PI * resHarm * bunchGap;      
-        cavityResonator.resonatorVec[j].vbAccum *= exp(- deltaL ) * exp(li * cPsi); 
+        cavityResonator.resonatorVec[j].vbAccum *= exp( - deltaL ) * exp (li * cPsi); 
         //-----------------------------------------------------------------------------------------------------------------------------------------
     }
        

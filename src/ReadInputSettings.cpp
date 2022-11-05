@@ -123,7 +123,12 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         if(strVec[0]=="ringsdelta0")
         {
             ringParBasic->sdelta0 = stod(strVec[1]);
-        }         
+        }  
+        if(strVec[0]=="ringcurrent")
+        {
+            ringParBasic->ringCurrent = stod(strVec[1]);
+        }  
+              
         //----------------------------------------------------------------
          
       
@@ -258,6 +263,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         if (strVec[0]=="rfmethodforvb") 
         {
             ringParRf->methodForVb = strVec[1];
+            ringParRf->methodForVb = "soft";
         }    
                  
         if (strVec[0]=="rfrescold") 
@@ -306,6 +312,27 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringFillPatt->bunchGaps[i] = stoi(strVec[i+1]);
           }
         }
+        if(strVec[0]=="fpsetbunchchargenum")
+        {
+          ringFillPatt->bunchChargeNum =  stoi(strVec[1]);
+          ringFillPatt->bunchChargeIndex.resize(ringFillPatt->bunchChargeNum );
+          ringFillPatt->bunchCharge.resize(ringFillPatt->bunchChargeNum);
+        }
+        if(strVec[0]=="fpsetbunchchargeindex")
+        {
+          for(int i=0;i<ringFillPatt->bunchChargeNum;i++)
+          { 
+            ringFillPatt->bunchChargeIndex[i] = stoi(strVec[i+1]);
+          }
+        }
+        if(strVec[0]=="fpsetbunchcharge")
+        {
+          for(int i=0;i<ringFillPatt->bunchChargeNum;i++)
+          { 
+            ringFillPatt->bunchCharge[i] = stoi(strVec[i+1]);
+          }
+        }
+
         //---------------------------------------------------------------------- 
 
 
@@ -813,15 +840,16 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
  
 
     ringParBasic->eta = eta;
-    ringParBasic->current = ringBunchPara->current * ringFillPatt->totBunchNumber;
+    // ringParBasic->ringCurrent = ringBunchPara->current * ringFillPatt->totBunchNumber;
     ringParBasic->betaFunAver[0] = circRing / 2/ PI / ringParBasic->workQx ;
     ringParBasic->betaFunAver[1] = circRing / 2/ PI / ringParBasic->workQy ;
     ringParBasic->betaFunAver[2] = circRing / 2/ PI / ringParBasic->workQz ;
-        
-         
+                
     double emittanceY = emittanceX * kappa;    
     ringBunchPara->emittanceY = emittanceY;
-                  
+
+    // ringBunchPara->current = 1.e-3;
+              
           
     fin.close();    
 
