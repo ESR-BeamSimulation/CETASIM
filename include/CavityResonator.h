@@ -38,7 +38,8 @@ public:
     
     double GetWakefunction(double tauij);      // used to get the longitudinal wakefunction. (short range) BBR model as usuall
     
-
+    void GetInitalCavityPowerInfo(ReadInputSettings &inputParameter); 
+    void GetIntialGenIg();
 private:
 
 };

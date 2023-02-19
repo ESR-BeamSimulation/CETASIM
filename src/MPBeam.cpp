@@ -1896,23 +1896,23 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
     
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {        
-        if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==1)
-        {    
-            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - vbAccumAver[i];
-        }
-        else if(cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==1)
-        {
-            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resGenVol;
-        }
-        else if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==0)
-        {
-            cerr<<"Wrong setting: passive cavity can set cavitiy FB"<<endl;
-            exit(0);
-        }
-        else if (cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==0)
-        {
-            cavityResonator.resonatorVec[i].resGenVol = complex<double>(0.E0,0.E0);
-        }        
+        // if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==1)
+        // {    
+        //     cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - vbAccumAver[i];
+        // }
+        // else if(cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==1)
+        // {
+        //     cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resGenVol;
+        // }
+        // else if(cavityResonator.resonatorVec[i].rfResCavVolFB==1  && cavityResonator.resonatorVec[i].resType==0)
+        // {
+        //     cerr<<"Wrong setting: passive cavity can set cavitiy FB"<<endl;
+        //     exit(0);
+        // }
+        // else if (cavityResonator.resonatorVec[i].rfResCavVolFB==0  && cavityResonator.resonatorVec[i].resType==0)
+        // {
+        //     cavityResonator.resonatorVec[i].resGenVol = complex<double>(0.E0,0.E0);
+        // }        
 
         // set voltage and phase for hainssinki solver
         for(int j=0;j<beamVec.size();j++)

@@ -95,6 +95,11 @@ public:
         vector<complex<double> > genVolBunchAver;
         vector<complex<double> > selfLossVolBunchCen;         
         vector<complex<double> > cavVolBunchCen;
+        vector<complex<double> > genIgBunchAver;
+        vector<double>           genPower;
+        vector<double>           beamPower;
+        vector<double>           cavPower;
+        vector<double>           refPower;
     };
     BunchRFModeInfo *bunchRFModeInfo = new BunchRFModeInfo;
         
@@ -137,7 +142,8 @@ public:
     void BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchTransferDueToWake();
     void BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter, const int n);
-    
+    void GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void GetVBSampledDueToIthBunch(const int j,const int k,const ReadInputSettings &inputParameter, CavityResonator &cavityResonator);
 
     // bunch haissinski solution//deal the data in Haissinski structure. 
     void GetBunchHaissinski(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);

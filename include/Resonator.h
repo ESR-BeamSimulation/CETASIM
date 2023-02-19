@@ -9,6 +9,7 @@
 #define RESONATOR_H
 
 #include "Global.h"
+#include "ReadInputSettings.h"
 #include <vector>
 #include <complex>
 
@@ -41,8 +42,42 @@ public:
     int    resCold;
     double resVolAbsReq;
     double resPhaseReq;
-    int rfResExciteIntability=1;
-    int rfResCavVolFB=1;
+    int resExciteIntability=1;
+    
+    // to get the initial status of generator
+    complex<double> resGenVgr = (0.0,0.0);      // generator voltage on resonance
+    complex<double> resGenIg  = (0.0,0);        // generaot current
+    double resBeamPower  = 0.0;
+    double resCavPower  = 0.0;
+    double resGenPower   = 0.0;
+    double resGenPowerReflect   = 0.0;
+
+    int resDirFB = 0;
+    struct DirCavFB
+    {
+        double gain;
+        double phaseShift;
+        double delay;       
+    };     
+    DirCavFB *dirCavFB = new DirCavFB;
+ 
+    int resFilterFB=0;
+    struct FilterCavFB
+    {
+        // read from input
+        double gain;
+        double phaseShift;
+        double delay;       
+    };     
+    FilterCavFB *filterCavFB = new FilterCavFB;
+
+    complex<double> vBSampleTemp=(0,0);
+    vector<complex<double> > vBSample;
+    vector<complex<double> > vCavSample;
+    vector<complex<double> > deltaVCavSample;
+    vector<complex<double> > vGenSample;
+    vector<complex<double> > vCavDueToDirFB;
+
 
     complex<double> resCavVolReq=(0,0);     // it is the target value -- take into the self-beam loading voltage into account.   
     complex<double> resGenVol=(0,0);        // in the cos  convention used in the code, the real part represents the momentum change
@@ -58,7 +93,12 @@ public:
 
     vector<vector<complex<double> > > resCavVolOffsetPastTurns;
     vector<complex<double> > resCavVolOffsetAver;
+
+    //function to evoolution the  resGenVol, which is always solved at the  
+    void CavityResonatorDynamics(double time);
+    void GetInitialGenIg();
     
+    void GetInitialCavityPower(const ReadInputSettings &inputParameter);
             
 private:
 

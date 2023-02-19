@@ -73,6 +73,11 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
     bunchRFModeInfo->genVolBunchAver.resize(inputParameter.ringParRf->resNum);
     bunchRFModeInfo->induceVolBunchCen.resize(inputParameter.ringParRf->resNum);
     bunchRFModeInfo->selfLossVolBunchCen.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->genIgBunchAver.resize(inputParameter.ringParRf->resNum); 
+    bunchRFModeInfo->genPower.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->beamPower.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->cavPower.resize(inputParameter.ringParRf->resNum);
+    bunchRFModeInfo->refPower.resize(inputParameter.ringParRf->resNum);
 
     
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
@@ -603,6 +608,90 @@ void Bunch::BunchTransferDueToWake()
         eMomentumZ[i] += lRWakeForceAver[2];        
     }
 }
+
+void Bunch::GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+{
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double circRing   = inputParameter.ringParBasic->circRing;
+    double rfLen      = circRing  / ringHarmH;
+    double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double t0         = inputParameter.ringParBasic->t0;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+
+    for(int j=0;j<cavityResonator.resonatorVec.size();j++)
+    {
+        for(int k=0;k<bunchGap;k++)
+        {
+
+            int index = bunchHarmNum + k; 
+
+            cavityResonator.resonatorVec[j].vBSample[index]   = cavityResonator.resonatorVec[j].vBSampleTemp;
+            cavityResonator.resonatorVec[j].vGenSample[index] = cavityResonator.resonatorVec[j].resGenVol;
+            cavityResonator.resonatorVec[j].vCavSample[index] = cavityResonator.resonatorVec[j].resGenVol + cavityResonator.resonatorVec[j].vBSampleTemp;
+            cavityResonator.resonatorVec[j].deltaVCavSample[index] = cavityResonator.resonatorVec[j].vCavSample[index]
+                                                                   - cavityResonator.resonatorVec[j].resCavVolReq ;
+
+            //method 1: set this vCavVolDueToDirFB value directly as deltaVCavSample, not robust idea 
+            if(cavityResonator.resonatorVec[j].resDirFB!=0)
+            {
+                cavityResonator.resonatorVec[j].vCavDueToDirFB[index] = cavityResonator.resonatorVec[j].deltaVCavSample[index];
+            }
+
+            // method 2: according to vCavDueToDirFB try to get Ig
+            // to update the cavity voltage due to the generator currnt genIg, and with updated genIG track the cavity dynamics, 
+            // Ref. https://www.aps.anl.gov/files/APS-Uploads/ASDSeminars/2015/2015-05-27_Berenc.pdf
+            // slid 44. in his loop, deltaVCavSample is applied to build the control loop
+            
+            
+            
+            
+            cavityResonator.resonatorVec[j].CavityResonatorDynamics(TrackingTime + k * tRF);
+            GetVBSampledDueToIthBunch(j,k,inputParameter,cavityResonator);
+        }
+    }
+   
+    TrackingTime += bunchGap * tRF;
+
+
+    complex<double> cavFB=(0.E0,0.E0);
+    double absCavFB,argCavFB;
+
+    // kick due to the cavity feedback, here in below only works with dirFB scheme. It seesm not a good idea for our case.
+    for(int j=0;j<cavityResonator.resonatorVec.size();j++)
+    {
+        if(cavityResonator.resonatorVec[j].resDirFB!=0)
+        {
+            cavFB    = cavityResonator.resonatorVec[j].vCavDueToDirFB[bunchHarmNum];
+            absCavFB = abs(cavFB) * cavityResonator.resonatorVec[j].dirCavFB->gain;
+            argCavFB = arg(cavFB) + cavityResonator.resonatorVec[j].dirCavFB->phaseShift 
+                                  + cavityResonator.resonatorVec[j].dirCavFB->delay * cavityResonator.resonatorVec[j].resFre * 2 * PI;
+            
+            cavFB    = absCavFB * exp(li * argCavFB);
+
+            for(int i=0;i<ePositionX.size();i++)
+            {
+                eMomentumZ[i] -= cavFB.real() /electronBeamEnergy / pow(rBeta,2);
+            }
+        }
+    }
+    // end of the kick from the dirfb scheme----------------------------------------------------
+
+}
+
+void Bunch::GetVBSampledDueToIthBunch(const int j,const int k,const ReadInputSettings &inputParameter, CavityResonator &cavityResonator)
+{
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
+
+
+    double deltaL = tRF / cavityResonator.resonatorVec[j].tF;        
+    double cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tRF;
+    cavityResonator.resonatorVec[j].vBSampleTemp *= exp( - deltaL ) * exp (li * cPsi);
+    
+}
+
+
 
 void Bunch::SetBunchPosHistoryDataWithinWindow()
 {

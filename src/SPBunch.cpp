@@ -282,21 +282,47 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         vb0  = complex<double>( -1 * cavityResonator.resonatorVec[j].resFre * 2 * PI * cavityResonator.resonatorVec[j].resShuntImpRs /
                                      cavityResonator.resonatorVec[j].resQualityQ0, 0.E0) * electronNumPerBunch * ElectronCharge;       //[Volt]
 
-        genVoltage = cavityResonator.resonatorVec[j].resGenVol * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF );        
-        cavVoltage = cavityResonator.resonatorVec[j].vbAccum + genVoltage;
- 
-        eMomentumZ[0] += cavVoltage.real()  /electronBeamEnergy / pow(rBeta,2) ;
-        eMomentumZ[0] += vb0.real()/2.0     /electronBeamEnergy / pow(rBeta,2) ;
-        cavityResonator.resonatorVec[j].vbAccum += vb0;  
+        //Elegant method    
+        // genVoltage = cavityResonator.resonatorVec[j].resGenVol * exp( - li * ePositionZ[0] / CLight * 2. * PI * double(resHarm) * fRF );        
+        // cavVoltage = cavityResonator.resonatorVec[j].vbAccum + genVoltage;
+        // eMomentumZ[0] += cavVoltage.real()  /electronBeamEnergy / pow(rBeta,2) ;
+        // eMomentumZ[0] += vb0.real()/2.0     /electronBeamEnergy / pow(rBeta,2) ;
+        // cavityResonator.resonatorVec[j].vbAccum += vb0;  
+        //---------------------------------------------------------------------------------------------------
 
-        // set the data used for feedback -- data before the decay  
+        //Yamamoto;s approaches, can be used to get stable solution
+        genVoltage = cavityResonator.resonatorVec[j].resGenVol; 
+        cavVoltage = cavityResonator.resonatorVec[j].vbAccum + cavityResonator.resonatorVec[j].resGenVol; 
+        eMomentumZ[0] += (cavVoltage * exp(  - li * ePositionZ[0] / CLight / rBeta * 2. * PI * double(resHarm) * fRF ) ).real() / electronBeamEnergy / pow(rBeta,2);
+        eMomentumZ[0] += vb0.real()/2.0     / electronBeamEnergy / pow(rBeta,2);
+        cavityResonator.resonatorVec[j].vbAccum += vb0; 
+        //---------------------------------------------------------------------------------------------------
+
+
+        
+        // get the beam induced voltage sampled at the time t = m*Trf according to the ePositionZ[0] = - c dt[0],
+        // if dt[0]>0, or ePositionZ[0]<0,  phasor grow and rotate inversely to t = m*Trf 
+        // if dt[0]<0, or ePositionZ[0]>0,  show grow and rotate as it is
+        // for main cavity, -- opposite direction 
+        // head particle, dt[0]<0, or ePositionZ[0]>0, dtTemp < 0, deltaL<0: growth; cPsi<0,  rotate clockwise 
+        // tail particle, dt[0]>0, or ePositionZ[0]<0, dtTemp > 0, deltaL>0: decay;  cPsi>0,  rotate anticlockwise, just as cavity evolove extra dt[0]                
+        cavityResonator.resonatorVec[j].vBSampleTemp = cavityResonator.resonatorVec[j].vbAccum;  
+        double dtTemp = - ePositionZ[0] / CLight / rBeta; 
+        deltaL = dtTemp / cavityResonator.resonatorVec[j].tF;        
+        cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * dtTemp;      
+        cavityResonator.resonatorVec[j].vBSampleTemp *=  exp( - deltaL ) * exp (li * cPsi);        
+        //---------------------------------------------------------------------------------------------------
+
+
+
+        // set the to pinrt, what bunch feels.
         bunchRFModeInfo->induceVolBunchCen[j]   = cavityResonator.resonatorVec[j].vbAccum;
         bunchRFModeInfo->genVolBunchAver[j]     = genVoltage;               
         bunchRFModeInfo->cavVolBunchCen[j]      = cavVoltage;
         bunchRFModeInfo->selfLossVolBunchCen[j] = vb0/2.0;
         ///////////////////////////////////////////////////////////////////////
         
-        if(cavityResonator.resonatorVec[j].rfResExciteIntability==0)
+        if(cavityResonator.resonatorVec[j].resExciteIntability==0)
         {
             tB = bunchGap * 1.0 / f0 / ringHarmH;    // instablity is not exited
         }
@@ -471,7 +497,7 @@ void SPBunch::BunchTransferDueToLatticeLYamamoto(const ReadInputSettings &inputP
 
 
         // time to next bunch
-        if(cavityResonator.resonatorVec[j].rfResExciteIntability==0)
+        if(cavityResonator.resonatorVec[j].resExciteIntability==0)
         {
             tB = bunchGap * 1.0 / f0 / ringHarmH;    // instablity is not exited
         }

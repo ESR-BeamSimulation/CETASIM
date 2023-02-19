@@ -47,6 +47,14 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
     }
     
     resonatorVec.resize(resNum);
+    for(int i=0;i<resNum;i++)
+    {
+        resonatorVec[i].vCavSample.resize(ringHarmH);
+        resonatorVec[i].vGenSample.resize(ringHarmH);
+        resonatorVec[i].deltaVCavSample.resize(ringHarmH);
+        resonatorVec[i].vBSample.resize(ringHarmH);
+        resonatorVec[i].vCavDueToDirFB.resize(ringHarmH);      
+    }
     
      //initialize the resonator paramters -- can be modified to cover the passive and active cavities cases.     
     for(int i=0;i<resNum;i++)
@@ -62,9 +70,17 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         resonatorVec[i].resVolAbsReq       = inputParameter.ringParRf-> resVol[i];
         resonatorVec[i].resPhaseReq        = inputParameter.ringParRf-> resPhase[i];                 
         resonatorVec[i].resCold            = inputParameter.ringParRf-> resCold[i];
-        resonatorVec[i].rfResCavVolFB      = inputParameter.ringParRf-> rfResCavVolFB[i]; 
-        resonatorVec[i].rfResExciteIntability = inputParameter.ringParRf-> rfResExciteIntability[i]; 
- 
+        resonatorVec[i].resExciteIntability = inputParameter.ringParRf-> resExciteIntability[i]; 
+
+        
+        resonatorVec[i].resDirFB             = inputParameter.ringParRf-> resDirFB[i];
+        // set the dirFB parameter
+        if(resonatorVec[i].resDirFB!=0)
+        {
+            resonatorVec[i].dirCavFB->gain       = inputParameter.ringParRf->resDirFBGain[i];
+            resonatorVec[i].dirCavFB->phaseShift = inputParameter.ringParRf->resDirFBPhase[i];
+            resonatorVec[i].dirCavFB->delay      = inputParameter.ringParRf->resDirFBDelay[i]; 
+        }
              
         // calcuated....
         resonatorVec[i].resQualityQL       = resonatorVec[i].resQualityQ0 / (1 + resonatorVec[i].resCouplingBeta );                
@@ -138,6 +154,24 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
  
 }
 
+
+void CavityResonator::GetIntialGenIg()
+{
+    for(int i=0;i<resonatorVec.size();i++)
+    {
+        resonatorVec[i].GetInitialGenIg();
+    }
+}
+
+void CavityResonator::GetInitalCavityPowerInfo(ReadInputSettings &inputParameter)
+{
+    // refers to Markus Honer thesis (2015) Eq. 5.18 or Appendix A.3
+    // the same as P.B. Wilson Eq. (4.1.2)
+    for(int i=0;i<resonatorVec.size();i++)
+    {
+        resonatorVec[i].GetInitialCavityPower(inputParameter);
+    }
+}  
 
 
 double CavityResonator::GetWakefunction(double tau)  

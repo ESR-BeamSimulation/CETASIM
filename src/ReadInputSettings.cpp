@@ -153,8 +153,11 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringParRf->resCouplingBeta.resize(ringParRf->resNum);
             ringParRf->resDetuneFre   .resize(ringParRf->resNum); 
             ringParRf->resCold        .resize(ringParRf->resNum);
-            ringParRf->rfResExciteIntability.resize(ringParRf->resNum);
-            ringParRf->rfResCavVolFB.resize(ringParRf->resNum);               
+            ringParRf->resExciteIntability.resize(ringParRf->resNum);
+            ringParRf->resDirFB.resize(ringParRf->resNum);
+            ringParRf->resDirFBGain.resize(ringParRf->resNum);
+            ringParRf->resDirFBPhase.resize(ringParRf->resNum);
+            ringParRf->resDirFBDelay.resize(ringParRf->resNum);               
             ringParRf->resAmpFBRatioForTotSelfLoss.resize(ringParRf->resNum);                                 
         }
 
@@ -162,17 +165,42 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         {
             for(int i=0;i<ringParRf->resNum;i++)
             {
-                ringParRf->rfResExciteIntability[i] = stod(strVec[i+1]);               
+                ringParRf->resExciteIntability[i] = stod(strVec[i+1]);               
             }                    
         }
 
-        if (strVec[0]=="rfrescavvolfb") 
+        if (strVec[0]=="rfresdirfb") 
         {
             for(int i=0;i<ringParRf->resNum;i++)
             {
-                ringParRf->rfResCavVolFB[i] = stod(strVec[i+1]);               
+                ringParRf->resDirFB[i] = stod(strVec[i+1]);               
             }                    
         }
+
+        if (strVec[0]=="rfresdirfbgain") 
+        {
+            for(int i=0;i<ringParRf->resNum;i++)
+            {
+                ringParRf->resDirFBGain[i] = stod(strVec[i+1]);               
+            }                    
+        }
+
+        if (strVec[0]=="rfresdirfbphaseshift") 
+        {
+            for(int i=0;i<ringParRf->resNum;i++)
+            {
+                ringParRf->resDirFBPhase[i] = stod(strVec[i+1]);               
+            }                    
+        }
+        
+        if (strVec[0]=="rfresdirfbdelay") 
+        {
+            for(int i=0;i<ringParRf->resNum;i++)
+            {
+                ringParRf->resDirFBDelay[i] = stod(strVec[i+1]);               
+            }                    
+        }
+
 
         if (strVec[0]=="rfresampfbratiofortotselfloss") 
         {

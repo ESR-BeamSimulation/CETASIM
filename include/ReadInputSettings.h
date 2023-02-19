@@ -76,8 +76,11 @@ public:
         double synPhaseOffset;
         vector<double> resAmpFBRatioForTotSelfLoss;
         vector<double> resPhase;
-        vector <int>   rfResExciteIntability;
-        vector <int>   rfResCavVolFB;
+        vector <int>    resExciteIntability;
+        vector <int>    resDirFB;
+        vector <double> resDirFBGain;
+        vector <double> resDirFBPhase;
+        vector <double> resDirFBDelay;
         string transResonParWriteTo;
         string methodForVb="rigid";
         
