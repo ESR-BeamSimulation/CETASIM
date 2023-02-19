@@ -27,19 +27,25 @@ rfResPhase        = 0.944817  -1.80728            // cavity phase   [rad], targe
                                                   // if only with 1 cavity, the ideal value will be set as default  
 !rfResPhase        = 1.02302  -1.5707                                                  
                                                   
-!rfResShuntImpRs   = 81.6E+6 36.E+6                // [ohm]
-rfResShuntImpRs    = 40.8E+6  1.8E+6                // [ohm]
+rfResShuntImpRs   = 81.6E+6 36.E+6                // [ohm]
+!rfResShuntImpRs    = 40.8E+6  1.8E+6                // [ohm]
 rfResQualityQ0     = 29600   17000                 // unLoaded quality factor
 rfResCouplingBeta  = 3.0     5.3                   // coupling factor   
-!rfResDetuneFre    = -27.9e+3  233.44e+3          // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
-rfResDetuneFre     = -13.943e+3  13.882e+3              // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+rfResDetuneFre    = -27.9e+3  233.44e+3          // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+!rfResDetuneFre     = -13.943e+3  13.882e+3              // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
 rfTransientCavParWriteTo = rfTransientPar         // Data file to store the initial cavity and genertor setiings.
 rfResCold          = 0 0                          // in tracking, cavity is cold (1) or beam induced volage is built up already (0).
-rfResExciteIntability = 1 1                       // to exite coupled bunch instability or not
-rfResCavVolFB         = 0 0                       // to apply a simple feedback to cavity voltage phasor--only works for active cavity.
+rfResExciteIntability = 0 0                       // to exite coupled bunch instability or not
+
+
+rfResDirFB            = 1 1                       // direct feedback
+rfResDirFBGain        = 1.E-2 1.E-1               // direct feedback -- gain factor dimenionless 
+rfResDirFBPhaseShift  = 0.0  0.0                  // direct feedback -- rad
+rfResDirFBDelay       = 0.E-6 0.E-6               // direct feedback -- second  
 
 rfBunchBinNum      =  32                          // MP model used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]    
 &end
+
 
 // long range RW wake function  Ref. NIMA 221-230 806 (2016) Nagaoka  Eq.(26), rigid bunch approximation for long range wake simulation. 
 &LongRangeWake
@@ -74,93 +80,37 @@ SRWBunchBinNum   =  100                                 // specifiy the bins num
 &end
 
 
-//it is assume that in each train, bunch gaps is fixed harmonic =1240 = 100 * (3+1) + 10 + 200 * (3+1) + 30
+
 &filling_pattern
 
-
-fpTrainNumber = 60
-fpTotBunchNumber = 1200
-fpBunchNumberPerTrain = 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 
-fpTrainGaps = 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 968 
-fpBunchGaps = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
-
-fpTrainNumber = 40
-fpTotBunchNumber = 800
-fpBunchNumberPerTrain = 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 
-fpTrainGaps = 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 1928 
-fpBunchGaps = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
-
 fpTrainNumber = 1
-fpTotBunchNumber = 960
+fptotBunchNumber = 960
 fpBunchNumberPerTrain = 960 
-fpTrainGaps = 960 
-fpBunchGaps = 2 
-
-fpTrainNumber = 1
-fpTotBunchNumber = 1600
-fpBunchNumberPerTrain = 1600 
-fpTrainGaps =  640
-fpBunchGaps = 1 
-
-
-fpTrainNumber = 40
-fptotBunchNumber = 200
-fpBunchNumberPerTrain = 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5 5
-fpTrainGaps = 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26 26
-fpBunchGaps = 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13 13
-
-
-fpTrainNumber = 80
-fpTotBunchNumber = 1600
-fpBunchNumberPerTrain = 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
-fpTrainGaps = 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
-fpBunchGaps = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-
-
-
-fpTrainNumber = 1
-fptotBunchNumber = 240
-fpBunchNumberPerTrain = 240 
 fpTrainGaps = 0
-fpBunchGaps = 15
-
-
-fpTrainNumber = 1
-fptotBunchNumber = 480
-fpBunchNumberPerTrain = 480 
-fpTrainGaps = 0
-fpBunchGaps = 7
-
-
-fpTrainNumber = 1
-fptotBunchNumber = 2
-fpBunchNumberPerTrain = 2 
-fpTrainGaps = 0
-fpBunchGaps = 1919
-
-
-fpTrainNumber = 1
-fptotBunchNumber = 1
-fpBunchNumberPerTrain = 1 
-fpTrainGaps = 0
-fpBunchGaps = 3839
-
-fpTrainNumber = 1
-fptotBunchNumber = 40
-fpBunchNumberPerTrain = 40 
-fpTrainGaps = 0
-fpBunchGaps = 95
-
+fpBunchGaps = 3
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0    
+fpsetBunchCharge = 1 
 
 fpTrainNumber = 2
 fptotBunchNumber = 200
 fpBunchNumberPerTrain = 100 100 
 fpTrainGaps = 920 920
 fpBunchGaps = 9 9
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0    
+fpsetBunchCharge = 1  
 
-fpSetBunchchargeNum = 10
-fpSetBunchChargeIndex = 0 1 2 3 4 5 6 7 8 9   
-fpsetBunchCharge = 2 2 2 2 2 2 2 2 2 2
+fpTrainNumber = 80
+fpTotBunchNumber = 1600
+fpBunchNumberPerTrain = 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
+fpTrainGaps = 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+fpBunchGaps = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0   
+fpsetBunchCharge = 1 
+
+
 &end
 
 
@@ -172,7 +122,7 @@ bunchRmsEnergySpread = 9.277e-4                                                 
 bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
 bunchInitialDynamicOffSet   = 1.E-4 1.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 1000
+bunchMacroEleNumPerBunch = 1
 &end
 
 
@@ -227,18 +177,18 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 
 &run
-runcalSetting = 2                                          // 1: SP 2:MP 
+runcalSetting = 1                                          // 1: SP 2:MP 
 runNTurns = 1000
-runGrowthRateFittingStart=900
-runGrowthRateFittingEnd=1000
+runGrowthRateFittingStart=90
+runGrowthRateFittingEnd=100
 runBunchInfoPrintInterval = 100                            // settings to print out the TBT data
 
 //set the bunch to be printed out, result.sdds, runTBTBunchAverData, runTBTBunchHaissinski,runTBTBunchLongTraj, and runTBTBunchDisData
 runTBTBunchPrintNum = 21                                       
 runTBTBunchDisDataBunchIndex = 350 355 360 365 370 375 380 385 390 395 400 405 410 415 420 425 430 435 440 445 450                      // bunch index to be printed
 
-runTBTBunchPrintNum = 5                                  // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
-runTBTBunchDisDataBunchIndex = 0 10 20 30 40             // bunch index to be printed
+runTBTBunchPrintNum = 20                                  // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
+runTBTBunchDisDataBunchIndex = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19             // bunch index to be printed
 
 runTBTBunchAverData = TBTBunchAverData
 runTBTBunchDisData  = TBTBunchDisData                         // only works in strong model that calsetting=2

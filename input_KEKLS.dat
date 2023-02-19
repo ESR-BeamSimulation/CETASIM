@@ -11,37 +11,35 @@ ringElectronBeamEnergy     = 3.0E+9
 ringAlphac                 = 2.2e-4
 ringSdelta0                = 7.3e-4
 ringU0                     = 0.851E+6
+ringCurrent                = 0.52 
 &end
 
 
 // Include the generator and RF setting--then the cavities paramters have to be set in this section.
 &rfset
-
 rfRingHarm        = 952                           // harmonics number of the ring
 rfResNum          = 2                             // passive HC can also be treated as RLC impedance--long range wake in time domain treatment 
 rfResHarm         = 1  3                          // harm number of the cavity (normalized by ringHarm). 
-rfResType         = 1  0                          // active=1, passive=0. Main cavity have to be active. Set Rs=0, DetunFre=0 for ideal cavity simulation 
+rfResType         = 1  1                          // active=1, passive=0. Main cavity have to be active. Set Rs=0, DetunFre=0 for ideal cavity simulation 
 rfResVol          = 2.5E+6  0.777e+6              // cavity voltage [V],   target value to be maintained.  
 rfResPhase        = 1.178  -1.708                 // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
                                                   // if only with 1 cavity, the ideal value will be set as default        
-!rfResPhase        =  1.22346  -1.708                                                                                                    
-!rfResShuntImpRs   = 17.5E+6  7.24E+6            // [ohm]
-rfResShuntImpRs   =  0.E+6  7.24E+6               // [ohm]
-rfResQualityQ0     = 40000   37513               // unLoaded quality factor
-rfResCouplingBeta  = 3.5     0.27                // coupling factor   
-!rfResDetuneFre    = -40.3e+3  185.e+3           // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
-rfResDetuneFre    =  0.e+3  185.e+3             // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
-
-rfResExciteIntability = 0 1                       // to exite coupled bunch instability or not
-rfResCavVolFB         = 0 0                       // to apply a simple feedback to cavity voltage phasor.  
+rfResShuntImpRs   =  17.5E+6  7.24E+6             // [ohm]
+rfResQualityQ0    = 40000   37513                 // unLoaded quality factor
+rfResCouplingBeta = 3.5     0.27                  // coupling factor   
+rfResDetuneFre    = -40.3e+3  185.e+3             // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
 rfTransientCavParWriteTo = rfTransientPar         // Data file to store the initial cavity and genertor setiings.
 rfResCold          = 0 0                          // in tracking, if cavity is not cold, then beam induces volage is  built up already.
-rfResAmpFBRatioForTotSelfLoss  = 1 1              // The cavity FB is ideal one. This parameter determin the penstage of the total vb0/2 to be compansated by each cavities.
-                                                  // Cavity FB only affect voltage amplitude right now.  With a strong triansent beam loading, can adjust these parameters
-                                                  // to have an better potential well distortaion effect.
-                                                  // single bunch hainssiki only works well when single bunch current is weak.
-rfBunchBinNum      =  20                         // used bin of a MP model, bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]   
+rfResExciteIntability = 0 0                       // to exite coupled bunch instability or not
 
+rfResDirFB            = 0 0                       // direct feedback
+rfResDirFBGain        = 0 0                       // direct feedback -- gain factor dimenionless 
+rfResDirFBPhaseShift  = 0.0  0.0                   // direct feedback -- rad
+rfResDirFBDelay       = 0.E-6 0.E-6               // direct feedback -- second  
+
+
+rfBunchBinNum      =  20                         // used bin of a MP model, bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]   
+                                                  
 &end
 
 
@@ -101,7 +99,6 @@ fpBunchGaps = 0 0
 
 
 &bunch
-bunchCurrent         = 0.112E-3
 bunchEmittanceX      = 20.E-12
 bunchKappa           = 0.2
 bunchRmsBunchLength  = 3.0E-3
@@ -109,7 +106,7 @@ bunchRmsEnergySpread = 7.3e-4                                                   
 bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
 bunchInitialDynamicOffSet   = 1.E-5 1.E-5 0.E-5 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 2000
+bunchMacroEleNumPerBunch = 1
 &end
 
 
@@ -150,10 +147,11 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 
 &run
-runcalSetting = 2                                             // 1: SP 2:MP 
-runNTurns = 5000
-runBunchInfoPrintInterval = 50
-
+runcalSetting = 1                                          // 1: SP 2:MP 
+runNTurns = 1000
+runGrowthRateFittingStart=900
+runGrowthRateFittingEnd=1000
+runBunchInfoPrintInterval = 100                            // settings to print out the TBT data
 
 
 runTBTBunchPrintNum = 1                                        // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
@@ -172,7 +170,7 @@ runTBTBunchDisDataBunchIndex = 0 1 222 235  333  445          // bunch index to 
 
 runTBTBunchAverData = TBTBunchAverData
 runTBTBunchHaissinski = TBTBunchHaissinski                     
-runTBTBunchLongTraj   = longPariTraj  
+!runTBTBunchLongTraj   = longPariTraj  
 !runTBTBunchDisData    = TBTBunchDisData                       // only works in strong model that calsetting=2
 !runTBTBunchCavVolData = TBTBunchCavVolData                    // only works in strong model that calsetting=2                        
 
