@@ -246,7 +246,6 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
     // cPsi = 2 * PI * cavityResonator.resonatorVec[j].resFre * tB;
     // Then the instability can be excited... 
 
-
     // in the longitudinal tracking, the (z,pz) rotate in phase with anti-colckwise
     double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
 
@@ -271,7 +270,6 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
     complex<double> vb0=(0,0);
 
  
-
     // loop of cavities. 
     for(int j=0;j<resNum;j++)
     {                              
@@ -297,9 +295,7 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         eMomentumZ[0] += vb0.real()/2.0     / electronBeamEnergy / pow(rBeta,2);
         cavityResonator.resonatorVec[j].vbAccum += vb0; 
         //---------------------------------------------------------------------------------------------------
-
-
-        
+  
         // get the beam induced voltage sampled at the time t = m*Trf according to the ePositionZ[0] = - c dt[0],
         // if dt[0]>0, or ePositionZ[0]<0,  phasor grow and rotate inversely to t = m*Trf 
         // if dt[0]<0, or ePositionZ[0]>0,  show grow and rotate as it is
@@ -313,9 +309,7 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         cavityResonator.resonatorVec[j].vBSampleTemp *=  exp( - deltaL ) * exp (li * cPsi);        
         //---------------------------------------------------------------------------------------------------
 
-
-
-        // set the to pinrt, what bunch feels.
+        // set the to print, cav info bunch feels.
         bunchRFModeInfo->induceVolBunchCen[j]   = cavityResonator.resonatorVec[j].vbAccum;
         bunchRFModeInfo->genVolBunchAver[j]     = genVoltage;               
         bunchRFModeInfo->cavVolBunchCen[j]      = cavVoltage;
@@ -337,13 +331,12 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
         //-----------------------------------------------------------------------------------------------------------------------------------------
     }
        
-
     eMomentumZ[0] -= u0 / electronBeamEnergy / pow(rBeta,2);
     if(inputParameter.ringRun->synRadDampingFlag[1]==1)
     {
         eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
     }
-    ePositionZ[0]  -= eta * t0  * CLight  * eMomentumZ[0];    // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight   
+    // ePositionZ[0]  -= eta * t0  * CLight * rBeta  * eMomentumZ[0] ;    // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight * rBeta;  
 }
 
 
@@ -362,7 +355,7 @@ void SPBunch:: BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputP
     double rBeta      = inputParameter.ringParBasic->rBeta;
     double eta        = inputParameter.ringParBasic->eta;
     double u0         = inputParameter.ringParBasic->u0;
-    double alphac     = inputParameter.ringParBasic->alphac;
+    double *alphac  = inputParameter.ringParBasic->alphac;
     double workQz     = inputParameter.ringParBasic->workQz;
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     double circRing = inputParameter.ringParBasic->circRing;
@@ -516,7 +509,7 @@ void SPBunch::BunchTransferDueToLatticeLYamamoto(const ReadInputSettings &inputP
     {
         eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
     }
-    ePositionZ[0]  -= eta * t0  * CLight  * eMomentumZ[0];             // deltaZ = - deltaT * CLight = - eta * T0 * deltaPOverP * CLight 
+    ePositionZ[0]  -= eta * t0  * CLight * rBeta * eMomentumZ[0];             // deltaZ = - deltaT * CLight = - eta * T0 * deltaPOverP * CLight 
    
 }
 

@@ -34,8 +34,12 @@ public:
         double  u0;
         double electronBeamEnergy;
         double synchRadDampTime[3];
-        double pipeAperature[3]; 
-        double alphac;
+        double pipeAperature[3];
+        double chrom[2]; 
+        double alphac[3];
+        double aDTX[2];
+        double aDTY[2];
+        double aDTXY[2];
         double sdelta0;
  
         // calculated
@@ -51,6 +55,7 @@ public:
         double sigmaT0;
         double ringCurrent;
         double betaFunAver[3];      // x y z
+        
                             
     };
     RingParBasic *ringParBasic = new RingParBasic;

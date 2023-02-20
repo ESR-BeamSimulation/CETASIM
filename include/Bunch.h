@@ -126,6 +126,7 @@ public:
     Haissinski *haissinski = new Haissinski;
     
 
+
     
     vector<double> lRWakeForceAver;        // used in the long range wakefunction simulation
     
@@ -137,6 +138,7 @@ public:
     void GaussianField(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
     void BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInterActionPoint, int k);
+    void BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void SetBunchPosHistoryDataWithinWindow();
     void MarkLostParticle(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
@@ -144,6 +146,7 @@ public:
     void BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter, const int n);
     void GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     void GetVBSampledDueToIthBunch(const int j,const int k,const ReadInputSettings &inputParameter, CavityResonator &cavityResonator);
+    
 
     // bunch haissinski solution//deal the data in Haissinski structure. 
     void GetBunchHaissinski(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);

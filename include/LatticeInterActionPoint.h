@@ -112,6 +112,7 @@ public:
     void GetTotIonCharge();
     void GetIonNumberPerInterAction(double electronNumPerBunch, int k);
     
+    
 private:
 
 };

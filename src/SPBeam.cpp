@@ -533,11 +533,13 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         }
         else
         {
-            SPBeamRMSCal(latticeInterActionPoint, 0);
-            BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);            
+            SPBeamRMSCal(latticeInterActionPoint, 0);    
+            // BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);       // here use the one turn matrix with elegant apprpach     
+            BeamTransferPerTurnDueToLatticeTOneTurnR66(inputParameter,latticeInterActionPoint);
         }
         
         SPBeamRMSCal(latticeInterActionPoint, 0);
+        // here tracking partilce in longitudinal due to the RF filed from cavity
         // BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator,n); 
         BeamTransferPerTurnDueToLatticeLTest(inputParameter,latticeInterActionPoint,cavityResonator,n); 
         
@@ -637,6 +639,13 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     //sddsplot();    
 }
 
+void SPBeam::BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
+{
+    for(int i=0;i<beamVec.size();i++)
+    {
+        beamVec[i].BunchTransferDueToLatticeOneTurnT66(inputParameter,latticeInterActionPoint);
+    }
+}
 
 
 void SPBeam::MarkParticleLostInBunch(const ReadInputSettings &inputParameter, const LatticeInterActionPoint &latticeInterActionPoint)
@@ -2045,6 +2054,8 @@ void SPBeam::BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeIn
         BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);
     }
 }
+
+
 
 void SPBeam::GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)
 {

@@ -181,6 +181,127 @@ void Bunch::BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterAct
     }
 }
 
+void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
+{
+    // get the twiss parameters of from lattice
+    double alphax,betax,alphay,betay,gammax,gammay,etax,etaxp,etay,etayp;
+    alphax = latticeInterActionPoint.twissAlphaX[0];
+    alphay = latticeInterActionPoint.twissAlphaY[0];
+    betax  = latticeInterActionPoint.twissBetaX[0];
+    betay  = latticeInterActionPoint.twissBetaY[0];
+    
+    etax   = latticeInterActionPoint.twissDispX[0];
+    etaxp  = latticeInterActionPoint.twissDispPX[0];  // \frac{disP}{ds} 
+    etay   = latticeInterActionPoint.twissDispY[0];
+    etayp  = latticeInterActionPoint.twissDispPY[0];  // \frac{disP}{ds} 
+
+    double *alphac = inputParameter.ringParBasic->alphac;
+    double *aDTX  = inputParameter.ringParBasic->aDTX;
+    double *aDTY  = inputParameter.ringParBasic->aDTY;
+    double *aDTXY = inputParameter.ringParBasic->aDTXY;
+    
+    double circRing = inputParameter.ringParBasic->circRing;
+    double nux = inputParameter.ringParBasic->workQx;
+    double nuy = inputParameter.ringParBasic->workQy;
+    double chromx = inputParameter.ringParBasic->chrom[0];
+    double chromy = inputParameter.ringParBasic->chrom[1];
+
+    gammax = (1 + pow(alphax,2))/betax;
+    gammay = (1 + pow(alphay,2))/betay;
+
+
+    // here follow what elegant approaches to build the R66 matix for each particle
+    gsl_matrix *ILmatrix  = gsl_matrix_alloc (6, 6);
+    gsl_matrix *cord0     = gsl_matrix_alloc (6, 1);
+    gsl_matrix *cord1     = gsl_matrix_alloc (6, 1);
+    gsl_matrix_set_zero(ILmatrix);
+    gsl_matrix_set_zero(cord0);
+    gsl_matrix_set_zero(cord1);
+
+    //ref. Elegant ILMatrix element
+    double xPosN,yPosN,xMomN,yMomN;
+    double ampX,ampY;
+    double nuxtmp,nuytmp,tmp;
+    double phix,phiy;
+    // generate the transfer matrix for each particle in bunch 
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        // only the first order is kept
+        xPosN  = ePositionX[i] - etax  * eMomentumZ[i];   // [m] 
+        yPosN  = ePositionY[i] - etay  * eMomentumZ[i];   // [m]
+        xMomN  = eMomentumX[i] - etaxp * eMomentumZ[i];   // [rad]
+        yMomN  = eMomentumY[i] - etayp * eMomentumZ[i];   // [rad]
+
+
+        ampX   = ( pow(xPosN,2) + pow( alphax * xPosN + betax * xMomN,2) ) / betax;  //[m]
+        ampY   = ( pow(yPosN,2) + pow( alphay * yPosN + betay * yMomN,2) ) / betay;  //[m]
+
+        nuxtmp = nux + chromx * eMomentumZ[i] +  aDTX[0] * ampX + aDTX[1] * pow(ampX,2) / 2 + aDTXY[0] * ampX * ampY;  //[]
+        nuytmp = nuy + chromy * eMomentumZ[i] +  aDTY[0] * ampY + aDTY[1] * pow(ampY,2) / 2 + aDTXY[1] * ampX * ampY;  //[]
+
+        phix = 2 * PI * nuxtmp ;
+        phiy = 2 * PI * nuytmp ;
+
+        tmp = cos(phix) + alphax * sin(phix);   gsl_matrix_set(ILmatrix,0,0,tmp);   //R11
+        tmp =             betax  * sin(phix);   gsl_matrix_set(ILmatrix,0,1,tmp);   //R12
+        tmp =           - gammax * sin(phix);   gsl_matrix_set(ILmatrix,1,0,tmp);   //R21
+        tmp = cos(phix) - alphax * sin(phix);   gsl_matrix_set(ILmatrix,1,1,tmp);   //R22
+
+        tmp = cos(phiy) + alphay * sin(phiy);   gsl_matrix_set(ILmatrix,2,2,tmp);   //R33
+        tmp =             betay  * sin(phiy);   gsl_matrix_set(ILmatrix,2,3,tmp);   //R34
+        tmp =           - gammay * sin(phiy);   gsl_matrix_set(ILmatrix,3,2,tmp);   //R43
+        tmp = cos(phiy) - alphay * sin(phiy);   gsl_matrix_set(ILmatrix,3,3,tmp);   //R44
+
+        tmp = etax  - etax  * cos(phix) - (alphax * etax + betax * etaxp) *  sin(phix);                                    gsl_matrix_set(ILmatrix,0,5,tmp);  //R16
+        tmp = etay  - etay  * cos(phiy) - (alphay * etay + betay * etayp) *  sin(phiy);                                    gsl_matrix_set(ILmatrix,2,5,tmp);  //R36  
+
+        tmp = etaxp - etaxp * cos(phix)  + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; gsl_matrix_set(ILmatrix,1,5,tmp); //R26    
+        tmp = etayp - etayp * cos(phiy)  + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,3,5,tmp); //R46
+
+        tmp = -etaxp + etaxp * cos(phix) + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; gsl_matrix_set(ILmatrix,4,0,tmp); //R51
+        tmp = -etayp + etayp * cos(phiy) + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,4,2,tmp); //R53 
+
+        tmp =  etax  - etax  * cos(phix) + ( alphax * etax +  betax * etaxp) * sin(phix);                                  gsl_matrix_set(ILmatrix,4,1,tmp); //R52 
+        tmp =  etay  - etay  * cos(phiy) + ( alphay * etay +  betay * etayp) * sin(phiy);                                  gsl_matrix_set(ILmatrix,4,3,tmp); //R54  
+
+        // how to set R55, R56, R65, R66. checked it with yong-chul recently.
+        gsl_matrix_set(ILmatrix,4,4,1); //R55
+        gsl_matrix_set(ILmatrix,5,5,1); //R66
+
+        // set the right particle coordinate (x_{beta} ) for one turn transfer. Kick the particle position here, but not in rf cavity subroutine.
+        // also make the R56 kick extra due to high order momentum compact factor, ampllidude depended length...    
+        ePositionX[i] = xPosN; 
+        ePositionY[i] = yPosN;
+        eMomentumX[i] = xMomN;
+        eMomentumY[i] = yMomN;
+        
+        gsl_matrix_set(cord0,0,0,ePositionX[i]);
+        gsl_matrix_set(cord0,1,0,eMomentumX[i]);
+        gsl_matrix_set(cord0,2,0,ePositionY[i]);
+        gsl_matrix_set(cord0,3,0,eMomentumY[i]);
+        gsl_matrix_set(cord0,4,0,ePositionZ[i]);
+        gsl_matrix_set(cord0,5,0,eMomentumZ[i]);
+
+
+        gsl_matrix_mul(ILmatrix,cord0,cord1);
+        ePositionX[i]  = gsl_matrix_get(cord1,0,0);
+        eMomentumX[i]  = gsl_matrix_get(cord1,1,0);
+        ePositionY[i]  = gsl_matrix_get(cord1,2,0);
+        eMomentumY[i]  = gsl_matrix_get(cord1,3,0);
+        ePositionZ[i]  = gsl_matrix_get(cord1,4,0);
+        eMomentumZ[i]  = gsl_matrix_get(cord1,5,0);
+        
+        
+        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[0] - pow(alphac[1] * eMomentumZ[0] ,2) + pow(alphac[2] * eMomentumZ[0] ,3) ) ;    
+    }
+
+    gsl_matrix_free(ILmatrix);
+    gsl_matrix_free (cord0);
+    gsl_matrix_free (cord1);
+
+}
+
+
 void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
     double xtemp=0.E0;
@@ -874,7 +995,7 @@ void Bunch::GetRFHamiltonian(const ReadInputSettings &inputParameter,const Cavit
     double rBeta      = inputParameter.ringParBasic->rBeta;
     double eta        = inputParameter.ringParBasic->eta;
     double u0         = inputParameter.ringParBasic->u0;
-    double alphac     = inputParameter.ringParBasic->alphac;
+    double *alphac    = inputParameter.ringParBasic->alphac;
     double sdelta0    = inputParameter.ringParBasic->sdelta0;
     double circRing   = inputParameter.ringParBasic->circRing;
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy; 

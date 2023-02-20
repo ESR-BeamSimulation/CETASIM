@@ -88,7 +88,12 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringParBasic->workQy = stod(strVec[2]);
             ringParBasic->workQz = stod(strVec[3]);
         }
-            
+        if(strVec[0]=="ringchrom")
+        {
+            ringParBasic->chrom[0] = stod(strVec[1]);
+            ringParBasic->chrom[1] = stod(strVec[2]);
+        }
+           
         if(strVec[0]=="ringsynchraddamptime")
         {
             ringParBasic->synchRadDampTime[0]=stod(strVec[1]);
@@ -114,8 +119,27 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         }
         if(strVec[0]=="ringalphac")
         {
-          ringParBasic->alphac = stod(strVec[1]);
+          ringParBasic->alphac[0] = stod(strVec[1]);
+          ringParBasic->alphac[1] = stod(strVec[2]);
+          ringParBasic->alphac[2] = stod(strVec[3]);
         }
+
+        if(strVec[0]=="ringadtx")
+        {
+          ringParBasic->aDTX[0] = stod(strVec[1]);
+          ringParBasic->aDTX[1] = stod(strVec[2]);
+        }
+        if(strVec[0]=="ringadty")
+        {
+          ringParBasic->aDTY[0] = stod(strVec[1]);
+          ringParBasic->aDTY[1] = stod(strVec[2]);
+        }
+        if(strVec[0]=="ringadtxy")
+        {
+          ringParBasic->aDTXY[0] = stod(strVec[1]);
+          ringParBasic->aDTXY[1] = stod(strVec[2]);
+        }
+
         if(strVec[0]=="ringu0")
         {
             ringParBasic->u0 = stod(strVec[1]);
@@ -820,17 +844,17 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     //1) data from ringPaBbasic
     double  circRing           = ringParBasic->circRing;
     double  sdelta0            = ringParBasic->sdelta0;
-    double  alphac             = ringParBasic->alphac;
+    double  *alphac            = ringParBasic->alphac;  
     double  electronBeamEnergy = ringParBasic->electronBeamEnergy;
     double  u0                 = ringParBasic->u0;
     double  rGamma             = electronBeamEnergy/ElectronMassEV;
-    double  eta                = alphac - 1./pow(rGamma,2);
+    double  eta                = alphac[0] - 1./pow(rGamma,2);
     double  rBeta              = sqrt(1.E0 -pow(rGamma,-2) );
     double  t0                 = circRing / CLight / rBeta;
     double  f0                 = 1 / t0;
     double  omega0             = 2 * PI * f0;
 
-  
+ 
 
     
     //2) data from ringParRF    

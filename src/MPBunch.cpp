@@ -842,7 +842,7 @@ void MPBunch::BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &i
     double rBeta      = inputParameter.ringParBasic->rBeta;
     double eta        = inputParameter.ringParBasic->eta;
     double u0         = inputParameter.ringParBasic->u0;
-    double alphac     = inputParameter.ringParBasic->alphac;
+    double *alphac    = inputParameter.ringParBasic->alphac;
     double sdelta0    = inputParameter.ringParBasic->sdelta0;                   // natural beam energy spread
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
 
@@ -1009,7 +1009,7 @@ void MPBunch::BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &i
     for(int k=0;k<bunchBinNumberZ;k++)
     {
         hamiltonPotenWell[k] -= temp;
-        hamiltonPotenWell[k] = hamiltonPotenWell[k] * alphac / ( 2 * PI * ringHarmH ) / pow(alphac*sdelta0,2) * 2 * PI * dzBin * ringHarmH * f0 / rBeta /CLight;
+        hamiltonPotenWell[k] = hamiltonPotenWell[k] * alphac[0] / ( 2 * PI * ringHarmH ) / pow(alphac[0] * sdelta0,2) * 2 * PI * dzBin * ringHarmH * f0 / rBeta /CLight;
         densProfVsBinAnalytical[k] = exp(hamiltonPotenWell[k]);
         densityNormAna += densProfVsBinAnalytical[k];
         densityNormTracking += densProfVsBin[k];
