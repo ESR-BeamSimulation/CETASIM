@@ -13,7 +13,7 @@
 #include "MPBeam.h"
 #include "Faddeeva.h"
 #include "WakeFunction.h"
-//#include "LongImpSingalBunch.h"
+#include "BoardBandImp.h"
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -398,9 +398,9 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator)
 {
     int nTurns                      = inputParameter.ringRun->nTurns;
-    int *synRadDampingFlag           = inputParameter.ringRun->synRadDampingFlag;
+    int *synRadDampingFlag          = inputParameter.ringRun->synRadDampingFlag;
     int fIRBunchByBunchFeedbackFlag = inputParameter.ringRun->fIRBunchByBunchFeedbackFlag;
-    int impedanceFlag               = inputParameter.ringRun->impedanceFlag;
+    int bBImpFlag                   = inputParameter.ringRun->bBImpFlag;
     int beamIonFlag                 = inputParameter.ringRun->beamIonFlag;
     int lRWakeFlag                  = inputParameter.ringRun->lRWakeFlag;
     int sRWakeFlag                  = inputParameter.ringRun->sRWakeFlag;
@@ -415,7 +415,21 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         firFeedBack.Initial(inputParameter);
     }
     
-    
+
+    // preapre the data for bunch-by-bunch system ---------------   
+    BoardBandImp boardBandImp;
+    if(bBImpFlag)
+    {
+        boardBandImp.ReadInImp(inputParameter);
+        for(int i=0;i<beamVec.size();i++)
+        {
+            beamVec[i].profileForBunchBBImp.resize(boardBandImp.nBins*2-1,0E0);
+            beamVec[i].beamIndVFromBBImpZ.resize(boardBandImp.nBins*2-1,0E0);
+            beamVec[i].beamIndVFromBBImpX.resize(boardBandImp.nBins*2-1,0E0);
+            beamVec[i].beamIndVFromBBImpY.resize(boardBandImp.nBins*2-1,0E0);
+        }
+    }
+
     // -----------------longRange wake function ---------------    
     WakeFunction lRWakeFunction;
     WakeFunction sRWakeFunction;
@@ -515,6 +529,13 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
         MPBeamRMSCal(latticeInterActionPoint, 0);
         BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator); 
+
+
+        if(bBImpFlag)
+        {
+            MPBeamRMSCal(latticeInterActionPoint, 0);
+            BBImpBeamInteraction(inputParameter,boardBandImp);
+        }
 
         if(lRWakeFlag)
         {
@@ -616,6 +637,14 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     //     cout<<"Haissinski and longitudinal phase space trajectory"<<endl;
     // } 
 
+}
+
+void MPBeam::BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
+{
+    for(int j=0;j<beamVec.size();j++)
+    {
+        beamVec[j].BBImpBunchInteraction(inputParameter,boardBandImp);     
+    }
 }
 
 void MPBeam::BeamTransferDuetoDriveMode(const ReadInputSettings &inputParameter, const int n)

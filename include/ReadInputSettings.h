@@ -54,9 +54,7 @@ public:
         double kappa;
         double sigmaT0;
         double ringCurrent;
-        double betaFunAver[3];      // x y z
-        
-                            
+        double betaFunAver[3];      // x y z                           
     };
     RingParBasic *ringParBasic = new RingParBasic;
    
@@ -193,7 +191,7 @@ public:
         int bunchBinNumberZ=100;
         string impedInput;
     };    
-    RingImpedance * ringImpedance =  new RingImpedance;    
+    RingImpedance *ringBBImp =  new RingImpedance;    
     
     // 9 DRIVEDAMP 
     struct DriveMode
@@ -219,7 +217,7 @@ public:
         int nTurns;
         int growthRateFittingStart;
         int growthRateFittingEnd;
-        int impedanceFlag;
+        int bBImpFlag;
         int lRWakeFlag;
         int sRWakeFlag;
         int TBTBunchPrintNum;

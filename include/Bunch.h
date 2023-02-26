@@ -69,7 +69,7 @@ public:
     
     int normCurrent = 1;
     int macroEleNumPerBunch=1;
-    double macroEleCharge;
+    double macroEleCharge;               // [C]
     double electronNumPerBunch;
     double current;                      // [A]
     double electronEnergy;               // [eV]

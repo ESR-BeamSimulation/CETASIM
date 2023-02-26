@@ -18,6 +18,7 @@
 #include "Bunch.h"
 #include "WakeFunction.h"
 #include "Spline.h"
+#include "BoardBandImp.h"
 using namespace std;
 using std::vector;
 using std::complex;
@@ -45,6 +46,10 @@ public:
     double zAverAnalytical;
     double bunchLengthAnalytical;
     vector<vector<double>> srWakePoten;
+    vector<double> profileForBunchBBImp;
+    vector<double> beamIndVFromBBImpZ;
+    vector<double> beamIndVFromBBImpX;
+    vector<double> beamIndVFromBBImpY;
 
          
     void InitialMPBunch(const ReadInputSettings &inputParameter);        
@@ -55,7 +60,10 @@ public:
     void BunchLongiInfoUpdate(const ReadInputSettings &inputParameter);
     void BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const LatticeInterActionPoint &latticeInterActionPoint, int turns);
     void GetZMinMax();
-    
+    void BBImpBunchInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
+    void GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
+
+
     void BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     // BeamInduced Voltage calculated once per bunch. Bunch distance is from center to center.
     // beaminduced voltage rotate and decay once per bunch

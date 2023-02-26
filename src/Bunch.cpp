@@ -52,8 +52,8 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
     emittanceX      = inputParameter.ringBunchPara->emittanceX;
     emittanceY      = inputParameter.ringBunchPara->emittanceY;
      
-    electronNumPerBunch = current  / inputParameter.ringParBasic->f0  / ElectronCharge;
-    macroEleCharge      = electronNumPerBunch / macroEleNumPerBunch;
+    electronNumPerBunch = current  / inputParameter.ringParBasic->f0  / ElectronCharge;  // [dimmenless]
+    macroEleCharge      = electronNumPerBunch / macroEleNumPerBunch;                     // [dimmenless]
 
     lRWakeForceAver.resize(3,0E0);
     
@@ -1150,8 +1150,10 @@ void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPara
     totHamiltonianFit.set_points(haissinski->bunchPosZ,haissinski->totHamiltonian,tk::spline::cspline);    // fitting the totHamilton 1/[m]
 
 
-    double zMax = haissinski->averZ + haissinski->rmsZ * 5;
-    double zMin = haissinski->averZ - haissinski->rmsZ * 5;
+    double zMax = haissinski->averZ + haissinski->rmsZ * 5 + 0.1;
+    double zMin = haissinski->averZ - haissinski->rmsZ * 5 - 0.1;
+    zMax = + 0.075;
+    zMin = - 0.075;
     
     int nz      = 41;                               // total have 41 partilces at differet initial conditions 
     double dz   = (zMax - zMin) / nz;     

@@ -26,6 +26,14 @@
 #include <algorithm>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_histogram.h>
+#include <gsl/gsl_fft_real.h>
+#include <gsl/gsl_fft_halfcomplex.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_filter.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_vector.h>
+#include <memory.h>
 
 
 MPBunch::MPBunch()
@@ -1209,3 +1217,175 @@ void MPBunch::BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter,
         }
     }
 }
+
+
+void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
+{
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double zMinBin = -boardBandImp.zMax;
+    double dzBin   =  boardBandImp.dz;
+    
+    GetBunchProfileForBeamBBImpEffect(inputParameter,boardBandImp);
+    int nBins = profileForBunchBBImp.size();
+
+    gsl_fft_real_workspace          *workspace  = gsl_fft_real_workspace_alloc (nBins);
+    gsl_fft_real_wavetable          *wavetable0 = gsl_fft_real_wavetable_alloc (nBins); 
+    gsl_fft_halfcomplex_wavetable   *wavetable1 = gsl_fft_halfcomplex_wavetable_alloc (nBins);
+   
+	double temp[nBins];                     
+    double bunchSpectrum[nBins];        // bunch spectrum only in the positive frequency side
+	for(int i=0;i<nBins;i++)
+	{
+		temp[i] = profileForBunchBBImp[i];              //  [C/s]
+    }
+    gsl_fft_real_transform (temp,1, nBins, wavetable0, workspace);  //  rho(\tau) -> rho(f) [C/s] -> [C/s]  // refer to (2.69)   
+    for(int i=0;i<nBins;i++) bunchSpectrum[i] = temp[i];
+
+    // (0) z longitudial kick s	
+    temp[0] = 0;  // in longitudial, DC term impedance is zZ(0) = (0 + 0I)    
+    for(int i=1;i<boardBandImp.zZImp.size();i++)
+    {
+        complex<double> indVF = complex<double> (temp[2*i-1], temp[2*i] ) * boardBandImp.zZImp[i];
+        temp[2*i-1] = indVF.real();
+        temp[2*i  ] = indVF.imag();                                       // [C/s] * [Ohm] = [V]                          
+    }
+    gsl_fft_halfcomplex_inverse (temp, 1, nBins, wavetable1, workspace);  // [V] -> [V]
+    for(int i=0;i<nBins;i++) beamIndVFromBBImpZ[i] = - temp[i];           // Eq. (3.7)  
+
+    //-------------------------------------------------------------------------------    
+    // (1) x kick 
+    // for(int i=0;i<nBins;i++) temp[i] = bunchSpectrum[i]; 
+    // temp[0] = - bunchSpectrum[0] * boardBandImp.zDxImp[0].imag();     // in x DC term impedance is zX(0) = (0 + I * Im);  
+    // for(int i=1;i<boardBandImp.zDxImp.size();i++)
+    // {
+    //     complex<double> indVF = complex<double> (temp[2*i-1], temp[2*i] ) * boardBandImp.zDxImp[i] * li;  
+    //     temp[2*i-1] = indVF.real();
+    //     temp[2*i  ] = indVF.imag();                                       // [C/s] * [Ohm/m] = [V/m]                          
+    // }
+    // gsl_fft_halfcomplex_inverse (temp, 1, nBins, wavetable1, workspace);  // [V/m] -> [V/m]
+    // for(int i=0;i<nBins;i++) beamIndVFromBBImpX[i] = temp[i];             // Eq. (3.51)   
+    //---------------------------------------------------------------------------------------------------
+
+    // (2) y kick 
+    // for(int i=0;i<nBins;i++) temp[i] = bunchSpectrum[i];
+    // temp[0] = - bunchSpectrum[0] * boardBandImp.zDyImp[0].imag();     
+    // for(int i=1;i<boardBandImp.zDyImp.size();i++)
+    // {
+    //     complex<double> indVF = complex<double> (temp[2*i-1], temp[2*i] ) * boardBandImp.zDyImp[i] * li;  
+    //     temp[2*i-1] = indVF.real();
+    //     temp[2*i  ] = indVF.imag();                                       // [C/s] * [Ohm/m] = [V/m]                          
+    // }
+    // gsl_fft_halfcomplex_inverse (temp, 1, nBins, wavetable1, workspace);  // [V/m] -> [V/m]
+    // for(int i=0;i<nBins;i++) beamIndVFromBBImpY[i] = temp[i];             // Eq. (3.51)  
+    //---------------------------------------------------------------------------------------------------
+
+    // kick particles in bunch
+    int index;
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        index  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+        eMomentumZ[i] += beamIndVFromBBImpZ[index] / electronBeamEnergy / pow(rBeta,2);
+        // eMomentumX[i] += beamIndVFromBBImpX[index] / electronBeamEnergy / pow(rBeta,2) * ePositionX[i];
+        // eMomentumY[i] += beamIndVFromBBImpY[index] / electronBeamEnergy / pow(rBeta,2) * ePositionY[i];
+    }
+
+
+    gsl_fft_real_workspace_free (workspace);
+    gsl_fft_real_wavetable_free (wavetable0);
+    gsl_fft_halfcomplex_wavetable_free (wavetable1);
+
+    //test the longitudinal wakefield here. 
+    // ofstream fout("test.dat");
+    // fout<<"SDDS1"<<endl;
+    // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=profile,                              type=float,  &end" <<endl;
+    // fout<<"&column name=indVZ,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVX,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVY,                                type=float,  &end" <<endl;
+    // fout<<"&data mode=ascii, &end"                                               <<endl;
+    // fout<<"! page number " << 1 <<endl;
+    // fout<<nBins<<endl;
+
+    // for(int i=0; i<nBins;i++)
+    // {
+    //     fout<<setw(15)<<left<<boardBandImp.binPosZ[i]
+    //         <<setw(15)<<left<<profileForBunchBBImp[i]
+    //         <<setw(15)<<left<<beamIndVFromBBImpZ[i]
+    //         <<setw(15)<<left<<beamIndVFromBBImpX[i]
+    //         <<setw(15)<<left<<beamIndVFromBBImpY[i]
+    //         <<endl;
+    // }
+    // cout<<"tets"<<endl;
+    // getchar();
+}
+
+
+void MPBunch::GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
+{
+    double zMaxBin =  boardBandImp.zMax;
+    double zMinBin = -boardBandImp.zMax;
+    double dzBin   =  boardBandImp.dz;
+    int    nBins   =  boardBandImp.nBins;   // from 0 to max
+    double rBeta   = inputParameter.ringParBasic->rBeta;
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double rfLen   = inputParameter.ringParBasic->t0 / ringHarmH * CLight;
+    int index; 
+
+    fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
+ 
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        index  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+        profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
+    }
+
+    // for(int i=0;i<profileForBunchBBImp.size();i++)
+    // {
+    //     profileForBunchBBImp[i] = 1.0/sqrt(2*PI)/rmsBunchLength * exp(-pow(boardBandImp.binPosZ[i] - 0,2)/2/pow(rmsBunchLength,2)) 
+    //                             * macroEleCharge * ElectronCharge * CLight * macroEleNumPerBunch; // [C/s]
+    // }
+
+    int indexStart =   ( -rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
+    int indexEnd   =   (  rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
+    int N = indexEnd - indexStart;
+  
+    int K=51;
+    const double alpha[3] = { 10, 3.0, 10.0 };   /* alpha values */
+    gsl_vector *x = gsl_vector_alloc(N);         /* input vector */
+    gsl_vector *y1 = gsl_vector_alloc(N);        /* filtered output vector for alpha1 */
+    gsl_vector *k1 = gsl_vector_alloc(K);        /* Gaussian kernel for alpha1 */
+    gsl_rng *r = gsl_rng_alloc(gsl_rng_default);
+    gsl_filter_gaussian_workspace *gauss_p = gsl_filter_gaussian_alloc(K);
+    double sum = 0.0;
+
+    /* generate input signal */
+    for(int i=0; i<N; i++) gsl_vector_set(x, i, profileForBunchBBImp[i+indexStart]);
+    
+    gsl_filter_gaussian_kernel(alpha[0], 0, 0, k1);    
+    gsl_filter_gaussian(GSL_FILTER_END_PADVALUE, alpha[0], 0, x, y1, gauss_p);
+    
+    double sum0=0.E0; 
+    double sum1=0.E0; 
+
+    for (int i=0; i<N; i++)
+    {
+        double xi  = gsl_vector_get(x,  i);
+        double y1i = gsl_vector_get(y1, i);
+
+        sum0 += xi;
+        sum1 += y1i;  
+        profileForBunchBBImp[i+indexStart] =  y1i; 
+    }
+    sum0 = sum0 / sum1;
+
+    for(int i=0; i<N; i++) profileForBunchBBImp[i+indexStart] *= sum0;
+    
+    gsl_vector_free(x);
+    gsl_vector_free(y1);
+    gsl_vector_free(k1);
+    gsl_rng_free(r);
+    gsl_filter_gaussian_free(gauss_p);
+
+}
+

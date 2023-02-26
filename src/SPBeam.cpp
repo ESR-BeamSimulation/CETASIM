@@ -433,7 +433,6 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     int nTurns                      = inputParameter.ringRun->nTurns;
     int *synRadDampingFlag           = inputParameter.ringRun->synRadDampingFlag;
     int fIRBunchByBunchFeedbackFlag = inputParameter.ringRun->fIRBunchByBunchFeedbackFlag;
-    int impedanceFlag               = inputParameter.ringRun->impedanceFlag;
     int beamIonFlag                 = inputParameter.ringRun->beamIonFlag;
     int lRWakeFlag                  = inputParameter.ringRun->lRWakeFlag;
     int sRWakeFlag                  = inputParameter.ringRun->sRWakeFlag;

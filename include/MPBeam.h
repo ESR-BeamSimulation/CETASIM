@@ -15,6 +15,7 @@
 #include "ReadInputSettings.h"
 #include "WakeFunction.h"
 #include "FIRFeedBack.h"
+#include "BoardBandImp.h"
 #include <fstream>
 #include <vector>
 #include <complex>
@@ -67,6 +68,8 @@ public:
     StrongStrongBunchInfo *strongStrongBunchInfo = new StrongStrongBunchInfo;      
     vector<MPBunch> beamVec;
     vector<vector<double> > bunchZMinZMax; // bunchTMaxTMinTAver[i][0,1] -> [mic,max]
+
+   
 
 
     // for coupled bunch mode or bunch-by-bunch growth rate calculation
@@ -144,7 +147,8 @@ public:
     void BeamTransferPerTurnDueWake();
     //// for long range RW wake function
 	void LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint);  
-    
+    void BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
+
 
       		
 private:

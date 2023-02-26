@@ -37,7 +37,7 @@ ReadInputSettings::~ReadInputSettings()
     delete ringBBFB;
     delete ringLRWake;
     delete ringSRWake;
-    delete ringImpedance;
+    delete ringBBImp;
     delete ringRun;
     delete driveMode; 
     
@@ -648,17 +648,15 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
           ringSRWake->SRWWakePotenWriteTo = strVec[1];       
         }
         
-         
-                                      
+                                         
         // 8) impedance 
-        
         if(strVec[0]=="bbiimpedinput")
         {
-          ringImpedance->impedInput = strVec[1];
+          ringBBImp->impedInput = strVec[1];
         } 
         if(strVec[0]=="bbibunchbinnumberz")
         {
-          ringImpedance->bunchBinNumberZ = stoi(strVec[1]);
+          ringBBImp->bunchBinNumberZ = stoi(strVec[1]);
         } 
         
         // 9) driveMode
@@ -719,7 +717,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
               
         if(strVec[0]=="runbbiflag")
         {
-           ringRun->impedanceFlag = stoi(strVec[1]);
+           ringRun->bBImpFlag = stoi(strVec[1]);
         }          
         if(strVec[0]=="runlongrangewake")
         {
@@ -822,8 +820,8 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
 
     if(ringRun->TBTBunchPrintNum > ringFillPatt->totBunchNumber )
     {
-      cerr<<"wrong settings: Tottal Bunch Number is "<<ringFillPatt->totBunchNumber<<endl;
-      cerr<<ringFillPatt->totBunchNumber <<" bunches are to be printed out"<<endl;
+      cerr<<"wrong settings: Total Bunch Number is "<<ringFillPatt->totBunchNumber<<endl;
+      cerr<<ringRun->TBTBunchPrintNum  <<" bunches are to be printed out"<<endl;
       exit(0);
     }
     else
