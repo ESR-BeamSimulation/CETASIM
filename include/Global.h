@@ -33,6 +33,7 @@ const double ElecClassicRadius      = 2.81794092E-15;             // m
 const double ProtonClassicRadius    = 1.535E-18;                  // m
 const double Boltzmann              = 1.3806505E-23;              // J/K
 const double VaccumZ0				= 120 * PI;
+const double Cq                     = 3.83E-13;                  // m SYL Eq 4.150
 const double FactorGaussSI        = VaccumZ0 * CLight / (4 * PI); //[ohm] [m/s]
 const  complex<double> li(0,1);
 

@@ -577,6 +577,7 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     double fRF         = f0 * ringHarmH;
     int bunchBinNumberZ = inputParameter.ringParRf->rfBunchBinNum;
+     double u0         = inputParameter.ringParBasic->u0;
     GetZMinMax();
     // cut the bunch into  bins and store the particle index
     double dzBin = (zMaxCurrentTurn - zMinCurrentTurn) / bunchBinNumberZ;
@@ -636,6 +637,7 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
                 int index          = histoParIndex[k][i];
                 eMomentumZ[index] += cavVoltage.real() / electronBeamEnergy / pow(rBeta,2);
                 eMomentumZ[index] += vb0.real()/2.0    / electronBeamEnergy / pow(rBeta,2);
+                eMomentumZ[index] -= u0                / electronBeamEnergy / pow(rBeta,2); 
             }
 
             // to get the weighing average of cavvity voltage, beam inuced voltage...
@@ -671,7 +673,6 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
         cavityResonator.resonatorVec[j].vbAccum *=  exp(- deltaL ) * exp (li * cPsi);
     }
 
-    BunchLongiInfoUpdate(inputParameter);
 }
 
 
@@ -686,6 +687,7 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
     double rBeta      = inputParameter.ringParBasic->rBeta;
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     int bunchBinNumberZ = inputParameter.ringParRf->rfBunchBinNum;
+    double u0         = inputParameter.ringParBasic->u0;
     double fRF         = f0 * ringHarmH;
 
     // cut the bunch into  bins and store the particle index
@@ -751,6 +753,7 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
                 int index          = histoParIndex[k][i];
                 eMomentumZ[index] += cavVoltage.real() / electronBeamEnergy / pow(rBeta,2);
                 eMomentumZ[index] += vb0.real()/2.0    / electronBeamEnergy / pow(rBeta,2);
+                eMomentumZ[index] -= u0                / electronBeamEnergy / pow(rBeta,2); 
             }
   
             // to get the weighing average of cavvity voltage, beam inuced voltage...
@@ -795,10 +798,9 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
     }
 
     
-    BunchLongiInfoUpdate(inputParameter);
 }
 
-void MPBunch::BunchLongiInfoUpdate(const ReadInputSettings &inputParameter)
+void MPBunch::BunchLongiMomentumUpdateDuetoRF(const ReadInputSettings &inputParameter)
 {
     double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
     double t0         = inputParameter.ringParBasic->t0;
@@ -808,8 +810,7 @@ void MPBunch::BunchLongiInfoUpdate(const ReadInputSettings &inputParameter)
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
 
     // momentum and position update
-    double rmsEnergySpreadTemp = inputParameter.ringBunchPara-> rmsEnergySpread; // quantum excitation  natural beam energy spread.
-    // rmsEnergySpreadTemp = rmsEnergySpread;
+    double rmsEnergySpreadTemp = inputParameter.ringParBasic-> sdelta0; // quantum excitation  natural beam energy spread.
     std::random_device rd{};
     std::mt19937 gen{rd()};
     std::normal_distribution<> qEpsilon{0,2*rmsEnergySpreadTemp/sqrt(synchRadDampTime[2])};
@@ -822,7 +823,7 @@ void MPBunch::BunchLongiInfoUpdate(const ReadInputSettings &inputParameter)
             eMomentumZ[i] +=  qEpsilon(gen);
             eMomentumZ[i] *= (1.0-2.0/synchRadDampTime[2]);        
         }            
-        ePositionZ[i] -= eta * t0 * CLight  * eMomentumZ[i];
+        // ePositionZ[i] -= eta * t0 * CLight  * eMomentumZ[i];
     }   
 }
 
@@ -952,6 +953,7 @@ void MPBunch::BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &i
                     dpzTemp            = cavVolAmp / electronBeamEnergy  * cos( - 2. * PI * ringHarmH * f0 * resHarm * ePositionZ[index] / ( rBeta * CLight)  +  cavVolArg );
                     eMomentumZ[index] += dpzTemp / pow(rBeta,2);
                     eMomentumZ[index] += vb0.real()/2.0/electronBeamEnergy / pow(rBeta,2);
+                    eMomentumZ[index] -= u0            /electronBeamEnergy / pow(rBeta,2); 
                 }
                 counter++ ;
 
@@ -1043,13 +1045,6 @@ void MPBunch::BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &i
     
     bunchLengthAnalytical = sqrt(bunchLengthAnalytical);
 
-    // momentum and position rotate due to next trun
-    for (int i=0;i<eMomentumZ.size();i++)
-    {
-        eMomentumZ[i]  = eMomentumZ[i] -  u0 / electronBeamEnergy / pow(rBeta,2);
-        eMomentumZ[i]  = eMomentumZ[i] * (1.0-2.0/synchRadDampTime[2]) + qEpsilon(gen) ;
-        ePositionZ[i] -= eta * t0 * CLight * rBeta * eMomentumZ[i];
-    }
 
 }
 

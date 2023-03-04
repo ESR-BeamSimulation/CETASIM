@@ -151,7 +151,15 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         if(strVec[0]=="ringcurrent")
         {
             ringParBasic->ringCurrent = stod(strVec[1]);
-        }  
+        }
+        if(strVec[0]=="ringnaturalemit")
+        {
+            ringParBasic->naturalEmit = stod(strVec[1]);
+        }
+        if(strVec[0]=="ringcoupling")
+        {
+            ringParBasic->couplingfactorXY = stod(strVec[1]);
+        }     
               
         //----------------------------------------------------------------
          
@@ -393,7 +401,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         {
           ringBunchPara->current = stod(strVec[1]);
         }
-        if(strVec[0]=="bunchemittancex")
+        if(strVec[0]=="bunchemittance")
         {
           ringBunchPara->emittanceX = stod(strVec[1]);
         }
@@ -861,7 +869,11 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     
     //4.1) data from ringBunchPara
     double kappa               = ringBunchPara->kappa;
-    double emittanceX          = ringBunchPara->emittanceX;
+    double emittanceX          = ringBunchPara->emittanceX  / (1 + kappa);
+    double emittanceY          = ringBunchPara->emittanceX  / (1 + kappa) * kappa;    
+    ringBunchPara->emittanceY = emittanceY;
+    ringBunchPara->emittanceX = emittanceX;
+
     double emittanceZ          = ringBunchPara->rmsEnergySpread * ringBunchPara->rmsBunchLength;
     ringBunchPara-> emittanceZ = emittanceZ;
  
@@ -895,12 +907,34 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     ringParBasic->betaFunAver[1] = circRing / 2/ PI / ringParBasic->workQy ;
     ringParBasic->betaFunAver[2] = circRing / 2/ PI / ringParBasic->workQz ;
                 
-    double emittanceY = emittanceX * kappa;    
-    ringBunchPara->emittanceY = emittanceY;
+ 
+    //set the damping partition number, natural bunche length here
+      
+    double coupling = ringParBasic->couplingfactorXY;
+  
+    double alpha0 = u0 / (2 * t0 * electronBeamEnergy);
 
-    // ringBunchPara->current = 1.e-3;
-              
-          
+    ringParBasic->dampingPartJ[0] = 2 * electronBeamEnergy / u0 / ringParBasic->synchRadDampTime[0];
+    ringParBasic->dampingPartJ[1] = 1;
+    ringParBasic->dampingPartJ[2] = 3 - ringParBasic->dampingPartJ[0];
+    
+    double alpha[3];
+    for (int i=0;i<3;i++) alpha[i] = ringParBasic->dampingPartJ[i] * alpha0;
+
+
+    ringParBasic->radIntegral[0] = circRing * alphac[0];
+    ringParBasic->radIntegral[1] = circRing * (alpha[0] +     alpha[2]) / (ElecClassicRadius * CLight * pow(rGamma,3));
+    ringParBasic->radIntegral[3] = circRing * (alpha[2] - 2 * alpha[0]) / (ElecClassicRadius * CLight * pow(rGamma,3));
+    ringParBasic->radIntegral[2] = (2 * ringParBasic->radIntegral[1] + ringParBasic->radIntegral[3] ) * pow(sdelta0,2) / (Cq * pow(rGamma,2));
+    ringParBasic->radIntegral[4] = ringParBasic->emitNat[0] *  (ringParBasic->radIntegral[1] - ringParBasic->radIntegral[3] ) / (Cq * pow(rGamma,2));
+
+
+    ringParBasic->naturalBunchLength =  eta * CLight * sdelta0 / (2 * PI * workQz * f0 );
+    ringParBasic->emitNat[0] =  ringParBasic->naturalEmit / (1 + coupling);
+    ringParBasic->emitNat[1] =  ringParBasic->naturalEmit / (1 + coupling) * coupling;
+    ringParBasic->emitNat[2] =  ringParBasic->naturalBunchLength * sdelta0;
+
+
     fin.close();    
 
     return 0;

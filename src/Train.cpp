@@ -39,6 +39,7 @@ void Train::Initial(ReadInputSettings &inputParameter)
 {
 
     int harmonics = inputParameter.ringParBasic->harmonics;
+
     trainNumber   = inputParameter.ringFillPatt->trainNumber; 
     totBunchNum   = inputParameter.ringFillPatt->totBunchNumber;  
 
@@ -77,6 +78,9 @@ void Train::Initial(ReadInputSettings &inputParameter)
         
     if(bunchNumberCheck!=totBunchNum || harmonicCheck != harmonics)
     {
+        cout<< bunchNumberCheck<<endl;
+        cout<< totBunchNum<<endl;
+        cout<< harmonics<<endl;
         cerr<<"mistakes in settings for bunch filling pattern, sum of gaps + totBunchNumber has to be harmonics"<<endl;
         exit(0);
     }

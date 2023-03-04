@@ -41,6 +41,9 @@ public:
         double aDTY[2];
         double aDTXY[2];
         double sdelta0;
+        double couplingfactorXY;
+        double naturalEmit;
+        double naturalBunchLength= 0.E0;
  
         // calculated
         double  rGamma; 
@@ -54,7 +57,13 @@ public:
         double kappa;
         double sigmaT0;
         double ringCurrent;
-        double betaFunAver[3];      // x y z                           
+        double betaFunAver[3];      // x y z
+        double radIntegral[5];
+
+        double emitNat[3];           // x y z
+        double dampingPartJ[3];   // x y z
+
+
     };
     RingParBasic *ringParBasic = new RingParBasic;
    

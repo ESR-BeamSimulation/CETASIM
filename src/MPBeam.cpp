@@ -524,11 +524,13 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         else
         {
             MPBeamRMSCal(latticeInterActionPoint, 0);
-            BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
+            // BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
+            BeamTransferPerTurnDueToLatticeTOneTurnR66(inputParameter,latticeInterActionPoint);
         }
 
         MPBeamRMSCal(latticeInterActionPoint, 0);
-        BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator); 
+        BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator);
+         
 
 
         if(bBImpFlag)
@@ -637,6 +639,15 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     //     cout<<"Haissinski and longitudinal phase space trajectory"<<endl;
     // } 
 
+}
+
+
+void MPBeam::BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
+{
+    for(int i=0;i<beamVec.size();i++)
+    {
+        beamVec[i].BunchTransferDueToLatticeOneTurnT66(inputParameter,latticeInterActionPoint);
+    }
 }
 
 void MPBeam::BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
@@ -1950,9 +1961,7 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
             beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]);              
         }           
     }
-
    
-
     if(inputParameter.ringParRf->methodForVb=="rigid")
     {
         //  HeFei code approaches..    

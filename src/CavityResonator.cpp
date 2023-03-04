@@ -38,6 +38,9 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
     int resNum     = inputParameter.ringParRf->resNum;
     int ringHarmH  = inputParameter.ringParBasic->harmonics;
     double f0      = inputParameter.ringParBasic->f0;
+    double eta     = inputParameter.ringParBasic->eta;
+    double rBeta   = inputParameter.ringParBasic->rBeta;
+    double  electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     
            
     if(resNum==0) 
@@ -117,7 +120,7 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
     if ((tempU0-u0)>1.e5)
         cerr<<"initial settins: \sum resCavVolReq.real() - U0 > 0.1MeV " <<endl;
     
-             
+
     /*
     // assume that the first cavity is active -- change it into cos covention. 
 

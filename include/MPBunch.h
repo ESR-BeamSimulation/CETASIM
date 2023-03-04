@@ -57,12 +57,12 @@ public:
     double GSSlover(const double if0);
     void GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoint, int k);    
     void SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BunchLongiInfoUpdate(const ReadInputSettings &inputParameter);
+    void BunchLongiMomentumUpdateDuetoRF(const ReadInputSettings &inputParameter);
     void BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const LatticeInterActionPoint &latticeInterActionPoint, int turns);
     void GetZMinMax();
     void BBImpBunchInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
     void GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
-
+    
 
     void BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     // BeamInduced Voltage calculated once per bunch. Bunch distance is from center to center.

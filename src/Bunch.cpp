@@ -205,6 +205,8 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     double nuy = inputParameter.ringParBasic->workQy;
     double chromx = inputParameter.ringParBasic->chrom[0];
     double chromy = inputParameter.ringParBasic->chrom[1];
+    double t0         = inputParameter.ringParBasic->t0;
+    double eta        = inputParameter.ringParBasic->eta;
 
     gammax = (1 + pow(alphax,2))/betax;
     gammay = (1 + pow(alphay,2))/betay;
@@ -291,8 +293,8 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         ePositionZ[i]  = gsl_matrix_get(cord1,4,0);
         eMomentumZ[i]  = gsl_matrix_get(cord1,5,0);
         
-        
-        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[0] - pow(alphac[1] * eMomentumZ[0] ,2) + pow(alphac[2] * eMomentumZ[0] ,3) ) ;    
+        // longitudinal pozition updated in one turn -- momentum compactor of the whole ring. 
+        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  - pow(alphac[1] * eMomentumZ[i] ,2) + pow(alphac[2] * eMomentumZ[i] ,3) ) ;    
     }
 
     gsl_matrix_free(ILmatrix);
@@ -339,6 +341,7 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
 }
 
 
+
 void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
 {
 //Note: the SynRadDamping and excitation is follow Yuan ZHang's approaches. The results is not consistent with approaches used in MBtrack.
@@ -352,7 +355,6 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     {
         synchRadDampTime[i] = inputParameter.ringParBasic->synchRadDampTime[i];
     }
-
 
     int k=0;
     //	 set the J2_sympeletic matrix
@@ -436,15 +438,17 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_set(dispMatrixH,5,3,gsl_matrix_get(H32,1,1));
 
 
-
+ 
     //set Teng Marrix R
 
     gsl_matrix * tengMatrixR  = gsl_matrix_alloc (6, 6);
     gsl_matrix_set_identity(tengMatrixR);
 
     gsl_matrix * R2  = gsl_matrix_alloc (2, 2);     //coupling matrix Eq.(6)
-//    gsl_matrix_set_identity(R2);                  // full coupling
+    // gsl_matrix_set_identity(R2);                  // full coupling
     gsl_matrix_set_zero(R2);                        // no coupling at the point in SR calculation
+    // gsl_matrix_set(R2,0,0,1);
+    // gsl_matrix_set(R2,1,1,0.1);
 
     double b = get_det(R2);
     b = sqrt(1-b);
@@ -478,8 +482,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_set(tengMatrixR,3,0,gsl_matrix_get(R21,1,0));
     gsl_matrix_set(tengMatrixR,3,1,gsl_matrix_get(R21,1,1));
 
-
-
+ 
     //set Twiss B Matrix
     gsl_matrix * twissMatrixB = gsl_matrix_alloc (6, 6);
     gsl_matrix_set_zero(twissMatrixB);
@@ -515,6 +518,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_set(twissMatrixB,4,4,a00);
     gsl_matrix_set(twissMatrixB,5,4,a10);
     gsl_matrix_set(twissMatrixB,5,5,a11);
+
 
 
     gsl_matrix * cordTransfer  = gsl_matrix_alloc (6, 6);
@@ -558,22 +562,19 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         lambda[i] = exp(-1.0/synchRadDampTime[i]);
     }
 
-
-
-    coeff[0] = sqrt(1 - pow(lambda[0],2)) * sqrt(emittanceX);
-    coeff[1] = sqrt(1 - pow(lambda[1],2)) * sqrt(emittanceY);
-    coeff[2] = sqrt(1 - pow(lambda[2],4)) * sqrt(emittanceZ);
+    // replace here by natural emittance value from input, also set the synchrontron integration values.
+    coeff[0] = sqrt(1 - pow(lambda[0],2)) * sqrt(inputParameter.ringParBasic->emitNat[0]);
+    coeff[1] = sqrt(1 - pow(lambda[1],2)) * sqrt(inputParameter.ringParBasic->emitNat[1]);
+    coeff[2] = sqrt(1 - pow(lambda[2],4)) * sqrt(inputParameter.ringParBasic->emitNat[2]);
 
     gsl_matrix * vecX   = gsl_matrix_alloc (6, 1);
     gsl_matrix * vecNX  = gsl_matrix_alloc (6, 1);
-
 
     double tempX,tempPX,tempY,tempPY,tempZ,tempPZ;
     double randR[6];
 
     std::random_device rd{};
     std::mt19937 gen{rd()};
-
     std::normal_distribution<> dx{0,1};
 
     for(int i=0;i<macroEleNumPerBunch;i++)
@@ -585,9 +586,10 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         gsl_matrix_set(vecX,3,0,eMomentumY[i]);
         gsl_matrix_set(vecX,4,0,ePositionZ[i]);
         gsl_matrix_set(vecX,5,0,eMomentumZ[i]);
-
+        
 		gsl_matrix_mul(cordTransfer,vecX,vecNX);
 
+   
         tempX  = gsl_matrix_get(vecNX,0,0);
         tempPX = gsl_matrix_get(vecNX,1,0);
         tempY  = gsl_matrix_get(vecNX,2,0);
@@ -602,9 +604,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         tempPX = tempPX * lambda[0] ;
         tempY  = tempY  * lambda[1] ;
         tempPY = tempPY * lambda[1] ;
-        tempZ  = tempZ  			;
-        tempPZ = tempPZ             ;
-        //tempPZ = tempPZ * pow(lambda[2],2) ;
+        tempPZ = tempPZ * pow(lambda[2],2) ;
 
 
         //(1.2) synchron-radiation-excitiation (transverse only and multi-particle case only)
@@ -613,16 +613,15 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         {
             for(int j=0;j<6;j++)
             {
-                randR[j]=Gaussrand(1,0,100.0*j);
+                // randR[j]=Gaussrand(1,0,100.0*j);
+                randR[j]=dx(gen);
             }
 
             tempX  +=  coeff[0] * randR[0];
             tempPX +=  coeff[0] * randR[1];
             tempY  +=  coeff[1] * randR[2];
             tempPY +=  coeff[1] * randR[3];
-            tempZ   =  tempZ ;
-            tempPZ  =  tempPZ;
-            //tempPZ = tempPZ  + coeff[2] * randR[5];
+            tempPZ +=  coeff[2] * randR[5];           
         }
 
 
@@ -633,18 +632,17 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         gsl_matrix_set(vecNX,4,0,tempZ);
         gsl_matrix_set(vecNX,5,0,tempPZ);
 
-
 		//(2) transfer X to x,  Eq(11)
 
         gsl_matrix_mul(invCordTransfer,vecNX,vecX);
 
+  
         ePositionX[i] = gsl_matrix_get(vecX,0,0);
         eMomentumX[i] = gsl_matrix_get(vecX,1,0);
         ePositionY[i] = gsl_matrix_get(vecX,2,0);
         eMomentumY[i] = gsl_matrix_get(vecX,3,0);
         ePositionZ[i] = gsl_matrix_get(vecX,4,0);
         eMomentumZ[i] = gsl_matrix_get(vecX,5,0);
-
     }
 
     gsl_matrix_free (sympleMarixJ);
