@@ -714,8 +714,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         }
         if(strVec[0]=="runsynraddampingflag")
         {
-           ringRun->synRadDampingFlag[0] = stoi(strVec[1]);
-           ringRun->synRadDampingFlag[1] = stoi(strVec[2]);
+           ringRun->synRadDampingFlag = stoi(strVec[1]);
         }
 
         if(strVec[0]=="runfirbunchbybunchfeedbackflag")
@@ -870,9 +869,9 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     //4.1) data from ringBunchPara
     double kappa               = ringBunchPara->kappa;
     double emittanceX          = ringBunchPara->emittanceX  / (1 + kappa);
-    double emittanceY          = ringBunchPara->emittanceX  / (1 + kappa) * kappa;    
-    ringBunchPara->emittanceY = emittanceY;
-    ringBunchPara->emittanceX = emittanceX;
+    double emittanceY          = ringBunchPara->emittanceX  / (1 + kappa) * kappa;   
+    ringBunchPara->emittanceY = emittanceY;           
+    ringBunchPara->emittanceX = emittanceX;    // used to for bunch distribution generation
 
     double emittanceZ          = ringBunchPara->rmsEnergySpread * ringBunchPara->rmsBunchLength;
     ringBunchPara-> emittanceZ = emittanceZ;
@@ -922,17 +921,18 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     for (int i=0;i<3;i++) alpha[i] = ringParBasic->dampingPartJ[i] * alpha0;
 
 
+    ringParBasic->naturalBunchLength =  eta * CLight * sdelta0 / (2 * PI * workQz * f0 );
+    ringParBasic->emitNat[0] =  ringParBasic->naturalEmit / (1 + coupling);
+    ringParBasic->emitNat[1] =  ringParBasic->naturalEmit / (1 + coupling) * coupling;
+    ringParBasic->emitNat[2] =  ringParBasic->naturalBunchLength * sdelta0;
+    // used to for syn damping
+
+
     ringParBasic->radIntegral[0] = circRing * alphac[0];
     ringParBasic->radIntegral[1] = circRing * (alpha[0] +     alpha[2]) / (ElecClassicRadius * CLight * pow(rGamma,3));
     ringParBasic->radIntegral[3] = circRing * (alpha[2] - 2 * alpha[0]) / (ElecClassicRadius * CLight * pow(rGamma,3));
     ringParBasic->radIntegral[2] = (2 * ringParBasic->radIntegral[1] + ringParBasic->radIntegral[3] ) * pow(sdelta0,2) / (Cq * pow(rGamma,2));
     ringParBasic->radIntegral[4] = ringParBasic->emitNat[0] *  (ringParBasic->radIntegral[1] - ringParBasic->radIntegral[3] ) / (Cq * pow(rGamma,2));
-
-
-    ringParBasic->naturalBunchLength =  eta * CLight * sdelta0 / (2 * PI * workQz * f0 );
-    ringParBasic->emitNat[0] =  ringParBasic->naturalEmit / (1 + coupling);
-    ringParBasic->emitNat[1] =  ringParBasic->naturalEmit / (1 + coupling) * coupling;
-    ringParBasic->emitNat[2] =  ringParBasic->naturalBunchLength * sdelta0;
 
 
     fin.close();    

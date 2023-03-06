@@ -398,7 +398,7 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator)
 {
     int nTurns                      = inputParameter.ringRun->nTurns;
-    int *synRadDampingFlag          = inputParameter.ringRun->synRadDampingFlag;
+    int synRadDampingFlag          = inputParameter.ringRun->synRadDampingFlag;
     int fIRBunchByBunchFeedbackFlag = inputParameter.ringRun->fIRBunchByBunchFeedbackFlag;
     int bBImpFlag                   = inputParameter.ringRun->bBImpFlag;
     int beamIonFlag                 = inputParameter.ringRun->beamIonFlag;
@@ -446,6 +446,14 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     // turn by turn data-- average of bunches 
     ofstream fout ("result.sdds",ios::out);
     fout<<"SDDS1"<<endl;
+    fout<<"&parameter name=I1,          units=m,   type=float,  &end"<<endl;
+    fout<<"&parameter name=I2,          units=1/m, type=float,  &end"<<endl;
+    fout<<"&parameter name=I3,          units=1/m^2,   type=float,  &end"<<endl;
+    fout<<"&parameter name=I4,          units=1/m, type=float,  &end"<<endl;
+    fout<<"&parameter name=I5,          units=1/m, type=float,  &end"<<endl;
+    fout<<"&parameter name=Jx,                     type=float,  &end"<<endl;
+    fout<<"&parameter name=Jy,                     type=float,  &end"<<endl;
+    fout<<"&parameter name=Jz,                     type=float,  &end"<<endl;
     fout<<"&column name=Turns,                     type=long,   &end"<<endl;    
     fout<<"&column name=IonCharge,      units=e,   type=float,  &end"<<endl;
     fout<<"&column name=maxAverX,       units=m,   type=float,  &end"<<endl;
@@ -492,6 +500,9 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         fout<<colname<<endl;
     }
     fout<<"&data mode=ascii, &end"<<endl;
+    for(int i=0 ;i<5;i++) fout<<inputParameter.ringParBasic->radIntegral[i]<<endl;
+    for(int i=0 ;i<3;i++) fout<<inputParameter.ringParBasic->dampingPartJ[i]<<endl;
+
     fout<<"! page number "<<1<<endl;
     fout<<nTurns<<endl;
 
@@ -512,8 +523,10 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
                 MPBeamRMSCal(latticeInterActionPoint, k);
                 MPGetBeamInfo();
                 SSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, n, k);
-                BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);             //transverse transfor per interaction point                
+                BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,k);             //transverse transfor per interaction point                
             }
+            BeamTransferDueToLatticeL(inputParameter);
+            MPBeamRMSCal(latticeInterActionPoint,0); 
 
             if(ionInfoPrintInterval && (n%ionInfoPrintInterval==0))
             {
@@ -523,52 +536,30 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         }
         else
         {
-            MPBeamRMSCal(latticeInterActionPoint, 0);
-            // BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
+            // BeamTransferPerTurnDueToLatticeT(inputParameter,latticeInterActionPoint);
             BeamTransferPerTurnDueToLatticeTOneTurnR66(inputParameter,latticeInterActionPoint);
-        }
-
-        MPBeamRMSCal(latticeInterActionPoint, 0);
-        BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator);
-         
-
-
-        if(bBImpFlag)
-        {
             MPBeamRMSCal(latticeInterActionPoint, 0);
-            BBImpBeamInteraction(inputParameter,boardBandImp);
         }
 
-        if(lRWakeFlag)
-        {
-            MPBeamRMSCal(latticeInterActionPoint, 0);
-            LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint);     
-        }
-        
-        if(sRWakeFlag) 
-        {
-            MPBeamRMSCal(latticeInterActionPoint, 0);
-            SRWakeBeamIntaction(inputParameter,sRWakeFunction,latticeInterActionPoint,n);         
-        }
-                
-        if(fIRBunchByBunchFeedbackFlag)
-        {
-            MPBeamRMSCal(latticeInterActionPoint,0);
-            FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
-        }
-        
-        if(synRadDampingFlag[0]==1)  // only in transverse direction
-        {
-            MPBeamRMSCal(latticeInterActionPoint,0);
-            BeamSynRadDamping(inputParameter,latticeInterActionPoint);
-        }
+        BeamMomtumUpdateDueToRF(inputParameter,latticeInterActionPoint,cavityResonator);
 
+        // Subroutine in below only change the momentum 
+        if(bBImpFlag)  BBImpBeamInteraction(inputParameter,boardBandImp);
+
+        if(lRWakeFlag) LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint);
+           
+        if(sRWakeFlag) SRWakeBeamIntaction(inputParameter,sRWakeFunction,latticeInterActionPoint,n);
+             
+        if(fIRBunchByBunchFeedbackFlag) FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
+    
         if((inputParameter.driveMode->driveModeOn!=0) && (inputParameter.driveMode->driveStart <n )  &&  (inputParameter.driveMode->driveEnd >n) )
         {
-            MPBeamRMSCal(latticeInterActionPoint, 0);
             BeamTransferDuetoDriveMode(inputParameter,n);
         }
 
+        // Subroutine in below only change both the momentum and position
+        if(synRadDampingFlag==1) BeamSynRadDamping(inputParameter,latticeInterActionPoint);
+    
         MarkParticleLostInBunch(inputParameter,latticeInterActionPoint);   
 
         MPBeamRMSCal(latticeInterActionPoint, 0);
@@ -620,9 +611,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             {
                 GetCBMGR(n,latticeInterActionPoint,inputParameter);
             }          
-        }
-        
-                                           
+        }                                       
     }
     fout.close();
 
@@ -641,6 +630,11 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
 }
 
+void MPBeam::BeamTransferDueToLatticeL(const ReadInputSettings &inputParameter)
+{
+    for(int i=0;i<beamVec.size();i++) 
+        beamVec[i].BunchTransferDueToLatticeL(inputParameter);
+}
 
 void MPBeam::BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
 {
@@ -654,6 +648,7 @@ void MPBeam::BBImpBeamInteraction(const ReadInputSettings &inputParameter, const
 {
     for(int j=0;j<beamVec.size();j++)
     {
+        if(beamVec[j].macroEleCharge==0) continue;
         beamVec[j].BBImpBunchInteraction(inputParameter,boardBandImp);     
     }
 }
@@ -1887,15 +1882,15 @@ void MPBeam::SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParamete
 
 }
 
-void MPBeam::BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k)
+void MPBeam::BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
     for(int j=0;j<beamVec.size();j++)
     {
-        beamVec[j].BunchTransferDueToLatticeT(latticeInterActionPoint,k);
+        beamVec[j].BunchTransferDueToLatticeT(inputParameter,latticeInterActionPoint,k);
     }
 }
 
-void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator)
+void MPBeam::BeamMomtumUpdateDueToRF(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator)
 {
     
     vector<double> resAmpFBRatioForTotSelfLoss = inputParameter.ringParRf->resAmpFBRatioForTotSelfLoss;
@@ -1969,7 +1964,7 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         {        
             beamVec[0].timeFromCurrnetBunchToNextBunch  =  beamVec[0].bunchGap * tRF + (beamVec[0].zAverLastTurn  - beamVec[0].zAver) / CLight / rBeta;
             beamVec[0].zAverLastTurn                    =  beamVec[0].zAver;                                                   
-            beamVec[0].BunchTransferDueToLatticeLRigid(inputParameter,cavityResonator);    
+            beamVec[0].BunchMomentumUpdateDuetoRFRigid(inputParameter,cavityResonator);    
             beamVec[0].GetMPBunchRMS(latticeInterActionPoint, 0);
         }
         else 
@@ -1985,7 +1980,7 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
                 {
                     beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0  ].zAver) / CLight / rBeta;
                 }
-                beamVec[i].BunchTransferDueToLatticeLRigid(inputParameter,cavityResonator);
+                beamVec[i].BunchMomentumUpdateDuetoRFRigid(inputParameter,cavityResonator);
                 beamVec[i].GetMPBunchRMS(latticeInterActionPoint, 0);
             }        
         }   
@@ -1998,7 +1993,7 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         {        
             beamVec[0].timeFromCurrnetBunchToNextBunch  =  beamVec[0].bunchGap * tRF + (beamVec[0].zMinCurrentTurn - beamVec[0].zMaxCurrentTurn) / CLight / rBeta;
             beamVec[0].zAverLastTurn                    =  beamVec[0].zAver;                                                   
-            beamVec[0].BunchTransferDueToLatticeLBinByBin(inputParameter,cavityResonator);    
+            beamVec[0].BunchMomentumUpdateDuetoRFBinByBin(inputParameter,cavityResonator);    
             beamVec[0].GetMPBunchRMS(latticeInterActionPoint, 0);
         }
         else 
@@ -2021,7 +2016,7 @@ void MPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
                     // beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0  ].zAver) / CLight / rBeta;
                 }
                 
-                beamVec[i].BunchTransferDueToLatticeLBinByBin(inputParameter,cavityResonator);
+                beamVec[i].BunchMomentumUpdateDuetoRFBinByBin(inputParameter,cavityResonator);
                 beamVec[i].GetMPBunchRMS(latticeInterActionPoint, 0);
             }        
         }  
@@ -2108,19 +2103,19 @@ void MPBeam::SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
 
 } 
 
-void MPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
-{
-    BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
-    BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator); 
-}
+// void MPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+// {
+//     BeamTransferPerTurnDueToLatticeT(inputParameter,latticeInterActionPoint);
+//     BeamMomtumUpdateDueToRF(inputParameter,latticeInterActionPoint,cavityResonator); 
+// }
 
-void MPBeam::BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint)
-{
-    for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
-    {
-        BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);
-    }
-}
+// void MPBeam::BeamTransferPerTurnDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
+// {
+//     for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
+//     {
+//         BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,k);
+//     }
+// }
 
 
 

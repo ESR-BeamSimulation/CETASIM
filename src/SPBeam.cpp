@@ -431,7 +431,7 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator)
 {
     int nTurns                      = inputParameter.ringRun->nTurns;
-    int *synRadDampingFlag           = inputParameter.ringRun->synRadDampingFlag;
+    int synRadDampingFlag           = inputParameter.ringRun->synRadDampingFlag;
     int fIRBunchByBunchFeedbackFlag = inputParameter.ringRun->fIRBunchByBunchFeedbackFlag;
     int beamIonFlag                 = inputParameter.ringRun->beamIonFlag;
     int lRWakeFlag                  = inputParameter.ringRun->lRWakeFlag;
@@ -466,6 +466,14 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     // turn by turn data-- average of bunches 
     ofstream fout ("result.sdds",ios::out);
     fout<<"SDDS1"<<endl;
+    fout<<"&parameter name=I1,          units=m,   type=float,  &end"<<endl;
+    fout<<"&parameter name=I2,          units=1/m, type=float,  &end"<<endl;
+    fout<<"&parameter name=I3,          units=1/m^2,   type=float,  &end"<<endl;
+    fout<<"&parameter name=I4,          units=1/m, type=float,  &end"<<endl;
+    fout<<"&parameter name=I5,          units=1/m, type=float,  &end"<<endl;
+    fout<<"&parameter name=Jx,                     type=float,  &end"<<endl;
+    fout<<"&parameter name=Jy,                     type=float,  &end"<<endl;
+    fout<<"&parameter name=Jz,                     type=float,  &end"<<endl;
     fout<<"&column name=Turns,          type=long,              &end"<<endl;
     fout<<"&column name=IonCharge,      units=e,   type=float,  &end"<<endl;
     fout<<"&column name=MaxAverX,       units=m,   type=float,  &end"<<endl;
@@ -501,6 +509,8 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         colname = string("&column name=") + string("pz_")            + to_string(bunchPrinted) + string(", units=rad, type=float,  &end");
         fout<<colname<<endl;
     }
+    for(int i=0 ;i<5;i++) fout<<inputParameter.ringParBasic->radIntegral[i]<<endl;
+    for(int i=0 ;i<3;i++) fout<<inputParameter.ringParBasic->dampingPartJ[i]<<endl;
     fout<<"&data mode=ascii, &end"<<endl;
     fout<<"! page number "<<1<<endl;
     fout<<nTurns<<endl;
@@ -521,8 +531,9 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             {
                 SPBeamRMSCal(latticeInterActionPoint, k);
                 WSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, n, k);
-                BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);             //transverse transfor per interaction point
+                BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,k);             //transverse transfor per interaction point
             }
+            BeamTransferDueToLatticeL(inputParameter); 
 
             if(ionInfoPrintInterval && (n%ionInfoPrintInterval==0))
             {                
@@ -539,8 +550,8 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         
         SPBeamRMSCal(latticeInterActionPoint, 0);
         // here tracking partilce in longitudinal due to the RF filed from cavity
-        // BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator,n); 
-        BeamTransferPerTurnDueToLatticeLTest(inputParameter,latticeInterActionPoint,cavityResonator,n); 
+        // BeamMomentumUpdateDueToRF(inputParameter,latticeInterActionPoint,cavityResonator,n); 
+        BeamMomentumUpdateDueToRFTest(inputParameter,latticeInterActionPoint,cavityResonator,n); 
         
         if(lRWakeFlag)
         {
@@ -554,7 +565,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
         }
 
-        if(synRadDampingFlag[0]==1) // transverse SR effect
+        if(synRadDampingFlag==1) 
         {
             SPBeamRMSCal(latticeInterActionPoint, 0);
             BeamSynRadDamping(inputParameter,latticeInterActionPoint);
@@ -636,6 +647,12 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         }
     }    
     //sddsplot();    
+}
+
+void SPBeam::BeamTransferDueToLatticeL(ReadInputSettings &inputParameter)
+{
+    for(int i=0;i<beamVec.size();i++)
+        beamVec[i].BunchTransferDueToLatticeL(inputParameter);
 }
 
 void SPBeam::BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
@@ -1683,7 +1700,7 @@ void SPBeam::WSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParamete
 
 }
 
-void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator, int turns)
+void SPBeam::BeamMomentumUpdateDueToRF(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator, int turns)
 { 
          
     // vector<double> resAmpFBRatioForTotSelfLoss = inputParameter.ringParRf->resAmpFBRatioForTotSelfLoss;
@@ -1768,9 +1785,9 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
         //get the time distance from current bunch to next bunch - in SP model 
         beamVec[0].timeFromCurrnetBunchToNextBunch  = beamVec[0].bunchGap * tRF + (beamVec[0].zAverLastTurn - beamVec[0].zAver ) / CLight / rBeta;
         beamVec[0].zAverLastTurn                    = beamVec[0].zAver; 
-        // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);            
-        // beamVec[0].BunchTransferDueToLatticeLYamamoto(inputParameter,cavityResonator);
-        beamVec[0].BunchTransferDueToLatticeL(inputParameter,cavityResonator); 
+        // beamVec[i].BunchMomentumUpdateDueToRFMatrix(inputParameter,cavityResonator);            
+        // beamVec[0].BunchMomentumUpdateDueToRFYamamoto(inputParameter,cavityResonator);
+        beamVec[0].BunchMomentumUpdateDueToRF(inputParameter,cavityResonator); 
         beamVec[0].GetSPBunchRMS(latticeInterActionPoint, 0);                 
     }
     else    // when multi-bunches in tracking
@@ -1792,15 +1809,15 @@ void SPBeam::BeamTransferPerTurnDueToLatticeL(ReadInputSettings &inputParameter,
             {
                 beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0].zAver ) / CLight / rBeta;
             }
-            // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);            
-            // beamVec[i].BunchTransferDueToLatticeLYamamoto(inputParameter,cavityResonator);
-             beamVec[i].BunchTransferDueToLatticeL(inputParameter,cavityResonator);      
+            // beamVec[i].BunchMomentumUpdateDueToRFMatrix(inputParameter,cavityResonator);            
+            // beamVec[i].BunchMomentumUpdateDueToRFYamamoto(inputParameter,cavityResonator);
+             beamVec[i].BunchMomentumUpdateDueToRF(inputParameter,cavityResonator);      
             beamVec[i].GetSPBunchRMS(latticeInterActionPoint,0);          
         }
     }       
 }
 
-void SPBeam::BeamTransferPerTurnDueToLatticeLTest(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator, int turns)
+void SPBeam::BeamMomentumUpdateDueToRFTest(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator, int turns)
 { 
          
     // vector<double> resAmpFBRatioForTotSelfLoss = inputParameter.ringParRf->resAmpFBRatioForTotSelfLoss;
@@ -1885,9 +1902,9 @@ void SPBeam::BeamTransferPerTurnDueToLatticeLTest(ReadInputSettings &inputParame
         //get the time distance from current bunch to next bunch - in SP model 
         beamVec[0].timeFromCurrnetBunchToNextBunch  = beamVec[0].bunchGap * tRF + (beamVec[0].zAverLastTurn - beamVec[0].zAver ) / CLight / rBeta;
         beamVec[0].zAverLastTurn                    = beamVec[0].zAver; 
-        // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);            
-        // beamVec[0].BunchTransferDueToLatticeLYamamoto(inputParameter,cavityResonator);
-        beamVec[0].BunchTransferDueToLatticeL(inputParameter,cavityResonator); 
+        // beamVec[i].BunchMomentumUpdateDueToRFMatrix(inputParameter,cavityResonator);            
+        // beamVec[0].BunchMomentumUpdateDueToRFYamamoto(inputParameter,cavityResonator);
+        beamVec[0].BunchMomentumUpdateDueToRF(inputParameter,cavityResonator); 
         beamVec[0].GetSPBunchRMS(latticeInterActionPoint, 0);                 
     }
     else    // when multi-bunches in tracking
@@ -1909,9 +1926,9 @@ void SPBeam::BeamTransferPerTurnDueToLatticeLTest(ReadInputSettings &inputParame
             {
                 beamVec[i].timeFromCurrnetBunchToNextBunch  = beamVec[i].bunchGap * tRF + (beamVec[i].zAver - beamVec[0].zAver ) / CLight / rBeta;
             }
-            // beamVec[i].BunchTransferDueToLatticeLMatarix(inputParameter,cavityResonator);            
-            // beamVec[i].BunchTransferDueToLatticeLYamamoto(inputParameter,cavityResonator);
-            beamVec[i].BunchTransferDueToLatticeL(inputParameter,cavityResonator);      
+            // beamVec[i].BunchMomentumUpdateDueToRFMatrix(inputParameter,cavityResonator);            
+            // beamVec[i].BunchMomentumUpdateDueToRFYamamoto(inputParameter,cavityResonator);
+            beamVec[i].BunchMomentumUpdateDueToRF(inputParameter,cavityResonator);      
             beamVec[i].GetLongiKickDueToCavFB(inputParameter,cavityResonator);            
             beamVec[i].GetSPBunchRMS(latticeInterActionPoint,0);          
 
@@ -2032,27 +2049,27 @@ void SPBeam::WSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
 } 
 
 
-void SPBeam::BeamTransferPerInteractionPointDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint, int k)
+void SPBeam::BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
     for(int j=0;j<beamVec.size();j++)
     {
-        beamVec[j].BunchTransferDueToLatticeT(latticeInterActionPoint,k);
+        beamVec[j].BunchTransferDueToLatticeT(inputParameter,latticeInterActionPoint,k);
     }
 }
 
-void SPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns)
-{
-    BeamTransferPerTurnDueToLatticeT(latticeInterActionPoint);
-    BeamTransferPerTurnDueToLatticeL(inputParameter,latticeInterActionPoint,cavityResonator,turns); 
-}
+// void SPBeam::BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns)
+// {
+//     BeamTransferPerTurnDueToLatticeT(inputParameter,latticeInterActionPoint);
+//     BeamMomentumUpdateDueToRF(inputParameter,latticeInterActionPoint,cavityResonator,turns); 
+// }
 
-void SPBeam::BeamTransferPerTurnDueToLatticeT(LatticeInterActionPoint &latticeInterActionPoint)
-{
-    for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
-    {
-        BeamTransferPerInteractionPointDueToLatticeT(latticeInterActionPoint,k);
-    }
-}
+// void SPBeam::BeamTransferPerTurnDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
+// {
+//     for(int k=0;k<latticeInterActionPoint.numberOfInteraction;k++)
+//     {
+//         BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,k);
+//     }
+// }
 
 
 

@@ -232,8 +232,9 @@ void SPBunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionP
 
 }
 
+    
 
-void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+void SPBunch::BunchMomentumUpdateDueToRF(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     // Ref. bunch.h that ePositionZ = - ePositionT * c. head pariticles: deltaT<0, ePositionZ[i]>0.
     // During the tracking, from head to tail means ePositionZMin from [+,-]; 
@@ -332,10 +333,12 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
     }
        
     eMomentumZ[0] -= u0 / electronBeamEnergy / pow(rBeta,2);
-    if(inputParameter.ringRun->synRadDampingFlag[1]==1)
-    {
-        eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
-    }
+
+
+    // if(inputParameter.ringRun->synRadDampingFlag[1]==1)
+    // {
+    //     eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
+    // }
     // ePositionZ[0]  -= eta * t0  * CLight * rBeta  * eMomentumZ[0] ;    // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight * rBeta;  
 }
 
@@ -343,7 +346,7 @@ void SPBunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter
 
 
 // for this one , it is used for coupled bunch and single bunch growth rate calculaiton, the stastic potential well term is removed 
-void SPBunch:: BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+void SPBunch:: BunchMomentumUpdateDueToRFMatrix(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     // in the longitudinal tracking, the (z,pz) rotate in phase with anti-colckwise
     double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
@@ -441,7 +444,7 @@ void SPBunch:: BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputP
 
 // retate reference to the n*trf frame, in which the generator voltate always rotate n*2*pi.  
 // In simulation it is not a right frame  for simulation 
-void SPBunch::BunchTransferDueToLatticeLYamamoto(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+void SPBunch::BunchMomentumUpdateDueToRFYamamoto(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     // in the longitudinal tracking, the (z,pz) rotate in phase with anti-colckwise
     double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
@@ -505,11 +508,13 @@ void SPBunch::BunchTransferDueToLatticeLYamamoto(const ReadInputSettings &inputP
     }
     
     eMomentumZ[0] -= u0 / electronBeamEnergy / pow(rBeta,2);
-    if(inputParameter.ringRun->synRadDampingFlag[1]==1)
-    {
-        eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
-    }
-    ePositionZ[0]  -= eta * t0  * CLight * rBeta * eMomentumZ[0];             // deltaZ = - deltaT * CLight = - eta * T0 * deltaPOverP * CLight 
+    
+    
+    // if(inputParameter.ringRun->synRadDampingFlag[1]==1)
+    // {
+    //     eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
+    // }
+    // ePositionZ[0]  -= eta * t0  * CLight * rBeta * eMomentumZ[0];             // deltaZ = - deltaT * CLight = - eta * T0 * deltaPOverP * CLight 
    
 }
 

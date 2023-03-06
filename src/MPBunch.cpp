@@ -315,8 +315,23 @@ void MPBunch::GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
     xAver =0.E0;
     yAver =0.E0;
     zAver =0.E0;
-
     macroEleNumSurivePerBunch = 0;
+
+    double etax   = latticeInterActionPoint.twissDispX[0];
+    double etaxp  = latticeInterActionPoint.twissDispPX[0];  // \frac{disP}{ds} 
+    double etay   = latticeInterActionPoint.twissDispY[0];
+    double etayp  = latticeInterActionPoint.twissDispPY[0];  // \frac{disP}{ds} 
+
+    // substracut the orbit shift due to the dispersion // Ref. Elegant ILMatrix Eq(56)
+    // for(int i=0;i<macroEleNumPerBunch;i++)
+    // {
+    //     ePositionX[i]  -=  etax  * eMomentumZ[i];   // [m] 
+    //     ePositionY[i]  -=  etay  * eMomentumZ[i];   // [m]
+    //     eMomentumX[i]  -=  etaxp * eMomentumZ[i];   // [rad]
+    //     eMomentumY[i]  -=  etayp * eMomentumZ[i];   // [rad]
+    // }
+
+
 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
@@ -442,6 +457,15 @@ void MPBunch::GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
     rmsBunchLength  = sqrt(z2Aver) ;
     rmsEnergySpread = sqrt(pz2Aver);
 
+    // // add the orbit shift due to the dispersion // Ref. Elegant ILMatrix Eq(56)
+    // for(int i=0;i<macroEleNumPerBunch;i++)
+    // {
+    //     ePositionX[i]  +=  etax  * eMomentumZ[i];   // [m] 
+    //     ePositionY[i]  +=  etay  * eMomentumZ[i];   // [m]
+    //     eMomentumX[i]  +=  etaxp * eMomentumZ[i];   // [rad]
+    //     eMomentumY[i]  +=  etayp * eMomentumZ[i];   // [rad]
+    // }
+
     GetZMinMax();
 
 }
@@ -566,7 +590,7 @@ void MPBunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionP
 
 
 
-void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+void MPBunch::BunchMomentumUpdateDuetoRFRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     // Ref. bunch.h that ePositionZ = - ePositionT * c. head pariticles: deltaT<0, ePositionZ[i]>0.
 
@@ -637,7 +661,7 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
                 int index          = histoParIndex[k][i];
                 eMomentumZ[index] += cavVoltage.real() / electronBeamEnergy / pow(rBeta,2);
                 eMomentumZ[index] += vb0.real()/2.0    / electronBeamEnergy / pow(rBeta,2);
-                eMomentumZ[index] -= u0                / electronBeamEnergy / pow(rBeta,2); 
+                if(j==0) eMomentumZ[index] -= u0                / electronBeamEnergy / pow(rBeta,2); 
             }
 
             // to get the weighing average of cavvity voltage, beam inuced voltage...
@@ -676,7 +700,7 @@ void MPBunch::BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputPara
 }
 
 
-void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+void MPBunch:: BunchMomentumUpdateDuetoRFBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     // Ref. bunch.h that ePositionZ = - ePositionT * c. head pariticles: deltaT<0, ePositionZ[i]>0.
     double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
@@ -753,7 +777,7 @@ void MPBunch:: BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &input
                 int index          = histoParIndex[k][i];
                 eMomentumZ[index] += cavVoltage.real() / electronBeamEnergy / pow(rBeta,2);
                 eMomentumZ[index] += vb0.real()/2.0    / electronBeamEnergy / pow(rBeta,2);
-                eMomentumZ[index] -= u0                / electronBeamEnergy / pow(rBeta,2); 
+                if(j==0) eMomentumZ[index] -= u0       / electronBeamEnergy / pow(rBeta,2); 
             }
   
             // to get the weighing average of cavvity voltage, beam inuced voltage...
@@ -818,12 +842,12 @@ void MPBunch::BunchLongiMomentumUpdateDuetoRF(const ReadInputSettings &inputPara
     for (int i=0;i<eMomentumZ.size();i++)
     {
         eMomentumZ[i]  -= u0 / electronBeamEnergy / pow(rBeta,2); 
-        if(inputParameter.ringRun->synRadDampingFlag[1]==1)
+        if(inputParameter.ringRun->synRadDampingFlag==1)
         {
             eMomentumZ[i] +=  qEpsilon(gen);
             eMomentumZ[i] *= (1.0-2.0/synchRadDampTime[2]);        
         }            
-        // ePositionZ[i] -= eta * t0 * CLight  * eMomentumZ[i];
+        ePositionZ[i] -= eta * t0 * CLight  * eMomentumZ[i];
     }   
 }
 
@@ -953,7 +977,7 @@ void MPBunch::BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &i
                     dpzTemp            = cavVolAmp / electronBeamEnergy  * cos( - 2. * PI * ringHarmH * f0 * resHarm * ePositionZ[index] / ( rBeta * CLight)  +  cavVolArg );
                     eMomentumZ[index] += dpzTemp / pow(rBeta,2);
                     eMomentumZ[index] += vb0.real()/2.0/electronBeamEnergy / pow(rBeta,2);
-                    eMomentumZ[index] -= u0            /electronBeamEnergy / pow(rBeta,2); 
+                    if(j==0)  eMomentumZ[index] -= u0            /electronBeamEnergy / pow(rBeta,2); 
                 }
                 counter++ ;
 

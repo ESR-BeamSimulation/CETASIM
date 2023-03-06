@@ -2,19 +2,19 @@
 
 &ring
 ringCircRing = 2304.E0
-ringWorkQ                  = 135.18E0  86.27E0  0.00481143E0
+ringWorkQ                  = 135.1793E0  86.26997E0  0.00481143E0
 ringSynchRadDampTime       = 2310       2879      1642       // in the unit of turns [x,y,z]
-ringPipeAperatureX         = 1.0E-2                          // [m]
-ringPipeAperatureY         = 1.0E-2                          // [m]
-ringPipeAperatureR         = 1.0E-2                          // [m]   not used in code
+ringPipeAperatureX         = 1.0E-1                          // [m]
+ringPipeAperatureY         = 1.0E-1                          // [m]
+ringPipeAperatureR         = 1.0E-1                          // [m]   not used in code
 ringElectronBeamEnergy     = 6.0E+9
-ringSdelta0                = 8.970e-4                       // natural energy spread
+ringSdelta0                = 8.969490e-4                       // natural energy spread
 ringNaturalEmit            = 20e-12                       // natural emittance
 ringCoupling               = 0.1
 ringU0                     = 4.166343E+6
 ringCurrent                = 0.002
 ringChrom                  = 0 0
-ringAlphac                 = 3.328808e-5  0  0              // up to the second order
+ringAlphac                 = 3.33022e-5  0  0               // up to the second order
 ringADTX                   = 0 0                            // up to the second order
 ringADTY                   = 0 0                            // up to the second order
 ringADTXY                  = 0 0                            // up to the second order
@@ -25,13 +25,13 @@ ringADTXY                  = 0 0                            // up to the second 
 // If what to simulate idea cavity, just set Rs=0 and detunfre=0 
 &rfset
 rfRingHarm        = 3840                          // harmonics number of the ring
-rfResNum          = 1                             // passive HC can also be treated as RLC impedance--long range wake in time domain treatment 
+rfResNum          = 2                             // passive HC can also be treated as RLC impedance--long range wake in time domain treatment 
 rfResHarm         = 1  3                          // harm number of the cavity (normalized by ringHarm). 
 rfResType         = 1  1                          // active=1, passive=0. Main cavity is always active
 rfResVol          = 8.0E+6  2.222906e+6            // cavity voltage [V],   target value to be maintained.  
-!rfResPhase        = 0.944817  -1.80728            // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
+rfResPhase        = 0.944817  -1.80728            // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
                                                   // if only with 1 cavity, the ideal value will be set as default  
-rfResPhase        = 1.02302  -1.5707                                                  
+!rfResPhase        = 1.02302  -1.5707                                                  
                                                   
 !rfResShuntImpRs   = 81.6E+6 36.E+6                // [ohm]
 !rfResShuntImpRs   = 40.8E+6  1.8E+6             // [ohm]
@@ -135,11 +135,11 @@ fpsetBunchCharge = 1
 bunchEmittance      = 40.E-12                                                    // emittance of bunched beam to be generated
 bunchKappa           = 0.1                                                       // emittance of bunched beam to be generated with this coupling factor
 bunchRmsBunchLength  = 2.3E-3
-bunchRmsEnergySpread = 9.277e-4                                                   // particles are generated according to this value. x y z, px py pz ->The same as ring energy spread
+bunchRmsEnergySpread = 8.969490e-4                                                   // particles are generated according to this value. x y z, px py pz ->The same as ring energy spread
 bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
 bunchInitialDynamicOffSet   = 0.E-4 0.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 3000
+bunchMacroEleNumPerBunch = 10000
 &end
 
 
@@ -195,10 +195,10 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 &run
 runcalSetting = 2                                          // 1: SP 2:MP 
-runNTurns = 10000
-runGrowthRateFittingStart=9900
-runGrowthRateFittingEnd=10000
-runBunchInfoPrintInterval = 1000                            // settings to print out the TBT data
+runNTurns = 2
+runGrowthRateFittingStart=1
+runGrowthRateFittingEnd=2
+runBunchInfoPrintInterval = 2                            // settings to print out the TBT data
 
 //set the bunch to be printed out, result.sdds, runTBTBunchAverData, runTBTBunchHaissinski,runTBTBunchLongTraj, and runTBTBunchDisData
 runTBTBunchPrintNum = 21                                       
@@ -210,17 +210,17 @@ runTBTBunchDisDataBunchIndex = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
 runTBTBunchAverData = TBTBunchAverData
 runTBTBunchDisData  = TBTBunchDisData                         // only works in strong model that calsetting=2
 runTBTBunchCavVolData = TBTBunchCavVolData                    // only works in strong model that calsetting=2
-!runTBTBunchHaissinski = TBTBunchHaissinski                     
+runTBTBunchHaissinski = TBTBunchHaissinski                     
 !runTBTBunchLongTraj   = longPariTraj                          
 
 !runCBMGR = coupledBunchedModeGrowthRate
 
-runSynRadDampingFlag = 1  1                                    //tranverse SR, longitudianl SR and quandum excitation                      
+runSynRadDampingFlag = 1                   
 runBeamIonFlag = 0
 runFIRBunchByBunchFeedbackFlag = 0 
 runLongRangeWake = 0
 runShortRangeWake = 0                                           
-runBBIFlag = 0                                                 // borad band impedance data read from files--frequency domain approaches. solver is not applied to code yet.  
+runBBIFlag = 1                                                // borad band impedance data read from files--frequency domain approaches. solver is not applied to code yet.  
 &end
 
 
@@ -235,11 +235,11 @@ tip: in the setting of exciting-damping simulation, excitation strength need to 
 2022--08-12 think about how to apply the quadrupole wake into the trackking. Ref. "simulation of transverse multi-bunch instability of proton beams in LHC-Eq.(2.42)" 
             Eq. (3.75 ~ 3.76) also show how to include the chromaticity in simulation.     
 2022--08-19 PRAB 2002.511001 quadrupole wake field in the short and long range wake field--- not done yet. 
-2023--03-01 1 emittance stastics excludes the dispersion. 
-            // do not need to deal longitudinal separately -- modify the code to make it compact. Even no need to distingusih the damping in tranvese and longitduianl direction.
-            // soon can give what Yong-Chul need. 
-            // then do the benchmrk or the transverse direction---with chromaticity effect      
-            // however, have to finish the benchmark with beam-impedance interaction with eleggatn-- with HC or with HC-- longitudinal directin. 
+2023--03-01 // then do the benchmrk or the transverse direction---with chromaticity effect      
+            //have to finish the benchmark with beam-impedance interaction with eleggatn-- with HC or with HC-- longitudinal directin. 
+            //code is very slow in impedacen calculation, trying paralized it with MPI or GPU. 
+            //read again the SYL book on ligth source
+            
  
 
 

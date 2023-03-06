@@ -220,7 +220,7 @@ public:
     struct RingRun
     {
         int calSetting;
-        int synRadDampingFlag[2];
+        int synRadDampingFlag;
         int fIRBunchByBunchFeedbackFlag;
         int beamIonFlag;
         int nTurns;

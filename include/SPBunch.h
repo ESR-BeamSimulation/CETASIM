@@ -39,14 +39,13 @@ public:
     void WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k);
     // beam loading simulation, the same approaches as elegant.
     // have to benchmark with cases when there exist instabilites.....(single and double cavities.....)
-    void BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
-    
+    void BunchMomentumUpdateDueToRF(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     
     // beam loading simulation, yamamoto's paper, it is not 100% correct approaches. 
     // For certain partilce, Vg exp(li * phi_p) + Vb = Vc, phi_p is particle phase refer to generator. 
-    void BunchTransferDueToLatticeLYamamoto(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
+    void BunchMomentumUpdateDueToRFYamamoto(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
     // beam loading simulation, used to benckmark the coupled bunch instablity growth rate as idea cases
-    void BunchTransferDueToLatticeLMatarix(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void BunchMomentumUpdateDueToRFMatrix(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     
 private:
 

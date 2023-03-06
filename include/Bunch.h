@@ -137,8 +137,9 @@ public:
     void BassettiErskine1(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
     void GaussianField(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
     void BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterActionPoint, int k);
-    void BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInterActionPoint, int k);
+    void BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
+    void BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter);
     void SetBunchPosHistoryDataWithinWindow();
     void MarkLostParticle(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);

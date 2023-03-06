@@ -228,15 +228,14 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     // generate the transfer matrix for each particle in bunch 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
-        // only the first order is kept
-        xPosN  = ePositionX[i] - etax  * eMomentumZ[i];   // [m] 
-        yPosN  = ePositionY[i] - etay  * eMomentumZ[i];   // [m]
-        xMomN  = eMomentumX[i] - etaxp * eMomentumZ[i];   // [rad]
-        yMomN  = eMomentumY[i] - etayp * eMomentumZ[i];   // [rad]
+        // elegant ILMATRIX Eq(56), only keeo the first order here. -- notice the unit of \frac{d eta}/{d delta}
+        ePositionX[i]  -=  etax  * eMomentumZ[i];   // [m] 
+        ePositionY[i]  -=  etay  * eMomentumZ[i];   // [m]
+        eMomentumX[i]  -=  etaxp * eMomentumZ[i];   // [rad]
+        eMomentumY[i]  -=  etayp * eMomentumZ[i];   // [rad]
 
-
-        ampX   = ( pow(xPosN,2) + pow( alphax * xPosN + betax * xMomN,2) ) / betax;  //[m]
-        ampY   = ( pow(yPosN,2) + pow( alphay * yPosN + betay * yMomN,2) ) / betay;  //[m]
+        ampX   = ( pow(ePositionX[i],2) + pow( alphax * ePositionX[i] + betax * eMomentumX[i],2) ) / betax;  //[m]
+        ampY   = ( pow(ePositionY[i],2) + pow( alphay * ePositionY[i] + betay * eMomentumY[i],2) ) / betay;  //[m]
 
         nuxtmp = nux + chromx * eMomentumZ[i] +  aDTX[0] * ampX + aDTX[1] * pow(ampX,2) / 2 + aDTXY[0] * ampX * ampY;  //[]
         nuytmp = nuy + chromy * eMomentumZ[i] +  aDTY[0] * ampY + aDTY[1] * pow(ampY,2) / 2 + aDTXY[1] * ampX * ampY;  //[]
@@ -272,10 +271,6 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
 
         // set the right particle coordinate (x_{beta} ) for one turn transfer. Kick the particle position here, but not in rf cavity subroutine.
         // also make the R56 kick extra due to high order momentum compact factor, ampllidude depended length...    
-        ePositionX[i] = xPosN; 
-        ePositionY[i] = yPosN;
-        eMomentumX[i] = xMomN;
-        eMomentumY[i] = yMomN;
         
         gsl_matrix_set(cord0,0,0,ePositionX[i]);
         gsl_matrix_set(cord0,1,0,eMomentumX[i]);
@@ -303,9 +298,22 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
 
 }
 
-
-void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInterActionPoint, int k)
+void Bunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter)
 {
+    double circRing = inputParameter.ringParBasic->circRing;
+    double *alphac = inputParameter.ringParBasic->alphac;
+    
+    for(int i=0;i<macroEleNumPerBunch;i++)
+        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  - pow(alphac[1] * eMomentumZ[i] ,2) + pow(alphac[2] * eMomentumZ[i] ,3) ) ;  
+}
+
+void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k)
+{
+
+    double circRing = inputParameter.ringParBasic->circRing;
+    double *alphac = inputParameter.ringParBasic->alphac;
+
+
     double xtemp=0.E0;
     double ytemp=0.E0;
     double xPtemp=0.E0;
@@ -338,15 +346,14 @@ void Bunch::BunchTransferDueToLatticeT(const LatticeInterActionPoint &latticeInt
         if(lossTemp >1) eSurive[i] = 1;   // loss in transverse
     }
     
+    
 }
 
 
 
 void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
 {
-//Note: the SynRadDamping and excitation is follow Yuan ZHang's approaches. The results is not consistent with approaches used in MBtrack.
-//This section is only used for transverse direction. The longitudinla is dealt with in longitudinal tracking
-//Bunch::BunchTransferDueToLatticeL() -- 2021-12-30
+    //Note: the SynRadDamping and excitation is follow Yuan ZHang's approaches. The results is not consistent with approaches used in MBtrack.
 
     // in the unit of number of truns for synchRadDampTime setting.
     vector<double> synchRadDampTime;

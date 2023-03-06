@@ -64,11 +64,11 @@ public:
     void GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
     
 
-    void BunchTransferDueToLatticeLRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void BunchMomentumUpdateDuetoRFRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     // BeamInduced Voltage calculated once per bunch. Bunch distance is from center to center.
     // beaminduced voltage rotate and decay once per bunch
 
-    void BunchTransferDueToLatticeLBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
+    void BunchMomentumUpdateDuetoRFBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     // BeamInduced Voltage calculated bin-by-bin per bunch. Bunch distance is from zMax of ith bunch to zMin of (i+1)th bunch.
     
     void BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
