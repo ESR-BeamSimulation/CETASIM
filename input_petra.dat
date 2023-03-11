@@ -12,7 +12,7 @@ ringSdelta0                = 8.969490e-4                       // natural energy
 ringNaturalEmit            = 20e-12                       // natural emittance
 ringCoupling               = 0.1
 ringU0                     = 4.166343E+6
-ringCurrent                = 0.002
+ringCurrent                = 0.001
 ringChrom                  = 0 0
 ringAlphac                 = 3.33022e-5  0  0               // up to the second order
 ringADTX                   = 0 0                            // up to the second order
@@ -139,7 +139,7 @@ bunchRmsEnergySpread = 8.969490e-4                                              
 bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
 bunchInitialDynamicOffSet   = 0.E-4 0.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 10000
+bunchMacroEleNumPerBunch = 30000
 &end
 
 
@@ -195,10 +195,10 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 &run
 runcalSetting = 2                                          // 1: SP 2:MP 
-runNTurns = 2
-runGrowthRateFittingStart=1
-runGrowthRateFittingEnd=2
-runBunchInfoPrintInterval = 2                            // settings to print out the TBT data
+runNTurns = 10
+runGrowthRateFittingStart=9
+runGrowthRateFittingEnd=10
+runBunchInfoPrintInterval = 10                            // settings to print out the TBT data
 
 //set the bunch to be printed out, result.sdds, runTBTBunchAverData, runTBTBunchHaissinski,runTBTBunchLongTraj, and runTBTBunchDisData
 runTBTBunchPrintNum = 21                                       
@@ -220,7 +220,7 @@ runBeamIonFlag = 0
 runFIRBunchByBunchFeedbackFlag = 0 
 runLongRangeWake = 0
 runShortRangeWake = 0                                           
-runBBIFlag = 1                                                // borad band impedance data read from files--frequency domain approaches. solver is not applied to code yet.  
+runBBIFlag = 1                                               // borad band impedance data read from files--frequency domain approaches. solver is not applied to code yet.  
 &end
 
 
@@ -238,7 +238,7 @@ tip: in the setting of exciting-damping simulation, excitation strength need to 
 2023--03-01 // then do the benchmrk or the transverse direction---with chromaticity effect      
             //have to finish the benchmark with beam-impedance interaction with eleggatn-- with HC or with HC-- longitudinal directin. 
             //code is very slow in impedacen calculation, trying paralized it with MPI or GPU. 
-            //read again the SYL book on ligth source
+            //matrix Mulitplication in gsl perfor good enough
             
  
 

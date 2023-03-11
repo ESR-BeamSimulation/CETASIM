@@ -1,25 +1,24 @@
-CXX :=g++ -std=c++11 
-CXXFLAGS:= -g -O2 -pg  #-fopenmp -W -Wall  
-LIBFLAGS:= -lgsl -lgslcblas -lm /software/gsl/2.7.1/lib/libgsl.a            #-lfftw3_omp  -lfftw3
-INCFLAG:= -I ./include  -I/software/gsl/2.7.1/include/  -I/usr/include -L/usr/local/lib
-OBJDIR = obj
-VPATH  = %.cpp src
-source = $(wildcard *.cpp) $(notdir $(wildcard src/*.cpp))  
-objs = $(source:%.cpp=$(OBJDIR)/%.o)
 
-run: $(objs)  
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBFLAGS)
+CXX :=nvcc  -std=c++11  -w
+INCFLAG:= -I /usr/local/cuda-10.1/targets/x86_64-linux/include  -I/usr/include -I ./include -I/software/gsl/2.7.1/include   
+LIBFLAGS:= -lgsl -lgslcblas -lm  -lcuda -lcufft  -lm -lfftw3 -lfftw -lcufftw  #/software/gsl/2.7.1/lib/libgsl.a   #-lfftw3_omp  -lfftw3
+#CXXFLAGS:= -arch=sm_30 
+#CXXFLAGS:=  -arch=sm_30 -std=gnu++11
+source = src/*.cpp src/*.cu 
+
+
+run: $(source)  
+	$(CXX) $(CXXFLAGS) $(INCFLAG) -o $@ $^ $(LIBFLAGS)
 	@echo Make done
-	
-$(objs): $(OBJDIR)/%.o : %.cpp
-	@mkdir -p $(OBJDIR)  
-	$(CXX) $(CXXFLAGS) $(INCFLAG) -w -c $< -o $@ $(LIBFLAGS)
+
 
 .PHONY: clean
 clean:
-	-rm -f obj/*.o
+	-rm -f obj/*.o *.o run
 
 .PHONY: re
 re:
 	make clean
 	make
+
+
