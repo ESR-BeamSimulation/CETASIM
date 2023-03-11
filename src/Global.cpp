@@ -31,6 +31,13 @@ double TrackingTime=0.E0;
 //int         Harmonics;     
 
 
+double cpuSecond()
+{
+    struct timeval tp;
+    gettimeofday(&tp,NULL);
+    return((double) tp.tv_sec + (double) tp.tv_usec*1e-6 );
+}
+
 void sddsplot()
 {
     //string command ="sddsplot -col=Turns,\'\(averAllBunchY,averAllBunchX\)\' result.sdds -graph=l,v -leg";

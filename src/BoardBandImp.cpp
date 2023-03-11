@@ -99,13 +99,13 @@ void BoardBandImp::ReadInImp(const  ReadInputSettings &inputParameter)
 
     double rBeta        = inputParameter.ringParBasic->rBeta;
 
-    nBins   = freq.size();                  // symmetric, always a odd number for 0,...,fmax
+    nBins   = freq.size();                 
     freqMax = freq.back();
-    dt      = 1.0 / (2 * freqMax)  ;
+    dt      = 1.0 / (2 * freqMax);
     tMax    = dt * (nBins - 1) ; 
     dz      = dt * CLight * rBeta;      
     zMax    = dz * (nBins - 1);
-    
+
     binPosZ.resize(2*nBins-1,0.E0);
 
     for(int i=0;i<binPosZ.size();i++ )

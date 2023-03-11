@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <sys/time.h>
 #include <complex>
 #include <omp.h>
 #include "Global.h"
@@ -48,7 +49,11 @@ int main(int argc,char *argv[])
     }
     getchar();
     */
-        
+
+
+    struct timeval t0;
+    gettimeofday(&t0, NULL); 
+
     ReadInputSettings inputParameter;
     inputParameter.ParamRead(argc, argv);
  
@@ -82,6 +87,12 @@ int main(int argc,char *argv[])
         exit(0);
     }
     
+
+    struct timeval t1;
+    gettimeofday(&t1, NULL); 
+ 
+    long int ms = (t1.tv_sec - t0.tv_sec) * 1000 + (t1.tv_usec -t0.tv_usec) / 1000;
+    cout<<ms/1000.00<<" seconds"<<endl;
 
 
 //    MPI_Finalize();

@@ -34,6 +34,8 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
 #include <memory.h>
+#include <fftw3.h>
+#include <complex.h>
 
 
 MPBunch::MPBunch()
@@ -1246,73 +1248,64 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
     double dzBin   =  boardBandImp.dz;
     
     GetBunchProfileForBeamBBImpEffect(inputParameter,boardBandImp);
-    int nBins = profileForBunchBBImp.size();
+    int nBins = profileForBunchBBImp.size(); // bins for bunch profile, that is 2*boardBandImp.zZImp.size() - 1
+      
+    double bunchSpectrum[nBins]; 
+    double temp[nBins];
+    for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
+  
+    fftw_complex *out  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
+    fftw_complex *out1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
+    fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, out, FFTW_MEASURE);   
+    fftw_execute(p);
 
-    gsl_fft_real_workspace          *workspace  = gsl_fft_real_workspace_alloc (nBins);
-    gsl_fft_real_wavetable          *wavetable0 = gsl_fft_real_wavetable_alloc (nBins); 
-    gsl_fft_halfcomplex_wavetable   *wavetable1 = gsl_fft_halfcomplex_wavetable_alloc (nBins);
-   
-	double temp[nBins];                     
-    double bunchSpectrum[nBins];        // bunch spectrum only in the positive frequency side
-	for(int i=0;i<nBins;i++)
-	{
-		temp[i] = profileForBunchBBImp[i];              //  [C/s]
-    }
-    gsl_fft_real_transform (temp,1, nBins, wavetable0, workspace);  //  rho(\tau) -> rho(f) [C/s] -> [C/s]  // refer to (2.69)   
-    for(int i=0;i<nBins;i++) bunchSpectrum[i] = temp[i];
-
-    // (0) z longitudial kick s	
-    temp[0] = 0;  // in longitudial, DC term impedance is zZ(0) = (0 + 0I)    
-    for(int i=1;i<boardBandImp.zZImp.size();i++)
+    // specturm * impedance
+    for(int i=0;i<boardBandImp.zZImp.size();i++)
     {
-        complex<double> indVF = complex<double> (temp[2*i-1], temp[2*i] ) * boardBandImp.zZImp[i];
-        temp[2*i-1] = indVF.real();
-        temp[2*i  ] = indVF.imag();                                       // [C/s] * [Ohm] = [V]                          
+        complex<double> indVF = complex<double> (out[i][0], out[i][1] ) * boardBandImp.zZImp[i];
+        out1[i][0] = indVF.real();
+        out1[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
     }
-    gsl_fft_halfcomplex_inverse (temp, 1, nBins, wavetable1, workspace);  // [V] -> [V]
-    for(int i=0;i<nBins;i++) beamIndVFromBBImpZ[i] = - temp[i];           // Eq. (3.7)  
-
-    //-------------------------------------------------------------------------------    
-    // (1) x kick 
-    // for(int i=0;i<nBins;i++) temp[i] = bunchSpectrum[i]; 
-    // temp[0] = - bunchSpectrum[0] * boardBandImp.zDxImp[0].imag();     // in x DC term impedance is zX(0) = (0 + I * Im);  
+    p = fftw_plan_dft_c2r_1d(nBins, out1, temp, FFTW_MEASURE);
+    fftw_execute(p);   
+    for(int i=0;i<nBins;i++)  beamIndVFromBBImpZ[i] = temp[i] / nBins;
+    
+    // // (1) x kick 
     // for(int i=1;i<boardBandImp.zDxImp.size();i++)
     // {
-    //     complex<double> indVF = complex<double> (temp[2*i-1], temp[2*i] ) * boardBandImp.zDxImp[i] * li;  
-    //     temp[2*i-1] = indVF.real();
-    //     temp[2*i  ] = indVF.imag();                                       // [C/s] * [Ohm/m] = [V/m]                          
+    //     complex<double> indVF = complex<double> (out[i][0], out[i][1]) * boardBandImp.zDxImp[i] * li;  
+    //     out1[i][0] = indVF.real();
+    //     out1[i][1] = indVF.imag();                                      // [C/s] * [Ohm/m] = [V/m]                          
     // }
-    // gsl_fft_halfcomplex_inverse (temp, 1, nBins, wavetable1, workspace);  // [V/m] -> [V/m]
-    // for(int i=0;i<nBins;i++) beamIndVFromBBImpX[i] = temp[i];             // Eq. (3.51)   
-    //---------------------------------------------------------------------------------------------------
+    // p = fftw_plan_dft_c2r_1d(nBins, out1, temp, FFTW_ESTIMATE);
+    // fftw_execute(p); 
+    // for(int i=0;i<nBins;i++)  beamIndVFromBBImpX[i] = temp[i] / nBins;
 
-    // (2) y kick 
-    // for(int i=0;i<nBins;i++) temp[i] = bunchSpectrum[i];
-    // temp[0] = - bunchSpectrum[0] * boardBandImp.zDyImp[0].imag();     
+    // // // (2) y kick 
     // for(int i=1;i<boardBandImp.zDyImp.size();i++)
     // {
-    //     complex<double> indVF = complex<double> (temp[2*i-1], temp[2*i] ) * boardBandImp.zDyImp[i] * li;  
-    //     temp[2*i-1] = indVF.real();
-    //     temp[2*i  ] = indVF.imag();                                       // [C/s] * [Ohm/m] = [V/m]                          
+    //     complex<double> indVF = complex<double> (out[i][0], out[i][1] ) * boardBandImp.zDyImp[i] * li;  
+    //     out1[i][0] = indVF.real();
+    //     out1[i][1] = indVF.imag();                                        // [C/s] * [Ohm/m] = [V/m]                          
     // }
-    // gsl_fft_halfcomplex_inverse (temp, 1, nBins, wavetable1, workspace);  // [V/m] -> [V/m]
-    // for(int i=0;i<nBins;i++) beamIndVFromBBImpY[i] = temp[i];             // Eq. (3.51)  
-    //---------------------------------------------------------------------------------------------------
+    // p = fftw_plan_dft_c2r_1d(nBins, out1, temp, FFTW_ESTIMATE);
+    // fftw_execute(p); 
+    // for(int i=0;i<nBins;i++)  beamIndVFromBBImpY[i] = temp[i] / nBins;
+
+
+    fftw_destroy_plan(p);
+    fftw_free(out);
+    fftw_free(out1);
 
     // kick particles in bunch
     int index;
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
         index  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
-        eMomentumZ[i] += beamIndVFromBBImpZ[index] / electronBeamEnergy / pow(rBeta,2);
+        eMomentumZ[i] -= beamIndVFromBBImpZ[index] / electronBeamEnergy / pow(rBeta,2);
         // eMomentumX[i] += beamIndVFromBBImpX[index] / electronBeamEnergy / pow(rBeta,2) * ePositionX[i];
         // eMomentumY[i] += beamIndVFromBBImpY[index] / electronBeamEnergy / pow(rBeta,2) * ePositionY[i];
     }
-
-
-    gsl_fft_real_workspace_free (workspace);
-    gsl_fft_real_wavetable_free (wavetable0);
-    gsl_fft_halfcomplex_wavetable_free (wavetable1);
 
     //test the longitudinal wakefield here. 
     // ofstream fout("test.dat");
@@ -1335,7 +1328,8 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
     //         <<setw(15)<<left<<beamIndVFromBBImpY[i]
     //         <<endl;
     // }
-    // cout<<"tets"<<endl;
+    // cout<<"wrie file"<<endl;
+    // fout.close();
     // getchar();
 }
 
@@ -1365,46 +1359,46 @@ void MPBunch::GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputPa
     //                             * macroEleCharge * ElectronCharge * CLight * macroEleNumPerBunch; // [C/s]
     // }
 
-    int indexStart =   ( -rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
-    int indexEnd   =   (  rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
-    int N = indexEnd - indexStart;
+    // int indexStart =   ( -rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
+    // int indexEnd   =   (  rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
+    // int N = indexEnd - indexStart;
   
-    int K=51;
-    const double alpha[3] = { 10, 3.0, 10.0 };   /* alpha values */
-    gsl_vector *x = gsl_vector_alloc(N);         /* input vector */
-    gsl_vector *y1 = gsl_vector_alloc(N);        /* filtered output vector for alpha1 */
-    gsl_vector *k1 = gsl_vector_alloc(K);        /* Gaussian kernel for alpha1 */
-    gsl_rng *r = gsl_rng_alloc(gsl_rng_default);
-    gsl_filter_gaussian_workspace *gauss_p = gsl_filter_gaussian_alloc(K);
-    double sum = 0.0;
+    // int K=51;
+    // const double alpha[3] = { 10, 3.0, 10.0 };   /* alpha values */
+    // gsl_vector *x = gsl_vector_alloc(N);         /* input vector */
+    // gsl_vector *y1 = gsl_vector_alloc(N);        /* filtered output vector for alpha1 */
+    // gsl_vector *k1 = gsl_vector_alloc(K);        /* Gaussian kernel for alpha1 */
+    // gsl_rng *r = gsl_rng_alloc(gsl_rng_default);
+    // gsl_filter_gaussian_workspace *gauss_p = gsl_filter_gaussian_alloc(K);
+    // double sum = 0.0;
 
-    /* generate input signal */
-    for(int i=0; i<N; i++) gsl_vector_set(x, i, profileForBunchBBImp[i+indexStart]);
+    // /* generate input signal */
+    // for(int i=0; i<N; i++) gsl_vector_set(x, i, profileForBunchBBImp[i+indexStart]);
     
-    gsl_filter_gaussian_kernel(alpha[0], 0, 0, k1);    
-    gsl_filter_gaussian(GSL_FILTER_END_PADVALUE, alpha[0], 0, x, y1, gauss_p);
+    // gsl_filter_gaussian_kernel(alpha[0], 0, 0, k1);    
+    // gsl_filter_gaussian(GSL_FILTER_END_PADVALUE, alpha[0], 0, x, y1, gauss_p);
     
-    double sum0=0.E0; 
-    double sum1=0.E0; 
+    // double sum0=0.E0; 
+    // double sum1=0.E0; 
 
-    for (int i=0; i<N; i++)
-    {
-        double xi  = gsl_vector_get(x,  i);
-        double y1i = gsl_vector_get(y1, i);
+    // for (int i=0; i<N; i++)
+    // {
+    //     double xi  = gsl_vector_get(x,  i);
+    //     double y1i = gsl_vector_get(y1, i);
 
-        sum0 += xi;
-        sum1 += y1i;  
-        profileForBunchBBImp[i+indexStart] =  y1i; 
-    }
-    sum0 = sum0 / sum1;
+    //     sum0 += xi;
+    //     sum1 += y1i;  
+    //     profileForBunchBBImp[i+indexStart] =  y1i; 
+    // }
+    // sum0 = sum0 / sum1;
 
-    for(int i=0; i<N; i++) profileForBunchBBImp[i+indexStart] *= sum0;
+    // for(int i=0; i<N; i++) profileForBunchBBImp[i+indexStart] *= sum0;
     
-    gsl_vector_free(x);
-    gsl_vector_free(y1);
-    gsl_vector_free(k1);
-    gsl_rng_free(r);
-    gsl_filter_gaussian_free(gauss_p);
+    // gsl_vector_free(x);
+    // gsl_vector_free(y1);
+    // gsl_vector_free(k1);
+    // gsl_rng_free(r);
+    // gsl_filter_gaussian_free(gauss_p);
 
 }
 

@@ -25,6 +25,10 @@
 #include <algorithm>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_histogram.h>
+#include <cuda_runtime.h>
+#include <cufftXt.h>
+#include <cufft.h>
+#include "CUDAFunction.cuh"
 
 
 Bunch::Bunch()
@@ -181,6 +185,145 @@ void Bunch::BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterAct
     }
 }
 
+
+
+void Bunch::BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
+{
+    double alphax,betax,alphay,betay,gammax,gammay,etax,etaxp,etay,etayp;
+    alphax = latticeInterActionPoint.twissAlphaX[0];
+    alphay = latticeInterActionPoint.twissAlphaY[0];
+    betax  = latticeInterActionPoint.twissBetaX[0];
+    betay  = latticeInterActionPoint.twissBetaY[0];
+    
+    etax   = latticeInterActionPoint.twissDispX[0];
+    etaxp  = latticeInterActionPoint.twissDispPX[0];  // \frac{disP}{ds} 
+    etay   = latticeInterActionPoint.twissDispY[0];
+    etayp  = latticeInterActionPoint.twissDispPY[0];  // \frac{disP}{ds} 
+
+    double *alphac = inputParameter.ringParBasic->alphac;
+    double *aDTX  = inputParameter.ringParBasic->aDTX;
+    double *aDTY  = inputParameter.ringParBasic->aDTY;
+    double *aDTXY = inputParameter.ringParBasic->aDTXY;
+    
+    double circRing = inputParameter.ringParBasic->circRing;
+    double nux = inputParameter.ringParBasic->workQx;
+    double nuy = inputParameter.ringParBasic->workQy;
+    double chromx = inputParameter.ringParBasic->chrom[0];
+    double chromy = inputParameter.ringParBasic->chrom[1];
+    double t0         = inputParameter.ringParBasic->t0;
+    double eta        = inputParameter.ringParBasic->eta;
+
+    gammax = (1 + pow(alphax,2))/betax;
+    gammay = (1 + pow(alphay,2))/betay;
+
+    //ref. Elegant ILMatrix element
+    double xPosN,yPosN,xMomN,yMomN;
+    double ampX,ampY;
+    double nuxtmp,nuytmp,tmp;
+
+    double oneTurnMap[36]={0};  // 6*i +j give the ith jth element
+
+    // prepare the data to munted to GPU 
+    int dimPart6 = macroEleNumPerBunch *6;   
+    double partCord[dimPart6];
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        partCord[6*i+1] =  ePositionX[i];
+        partCord[6*i+2] =  ePositionY[i];
+        partCord[6*i+3] =  ePositionZ[i];
+        partCord[6*i+4] =  eMomentumX[i];
+        partCord[6*i+5] =  eMomentumY[i];
+        partCord[6*i+6] =  eMomentumZ[i];
+    }
+
+    double phix = 2 * PI * nux; double phiy = 2 * PI * nuy;
+
+    oneTurnMap[0] = cos(phix) + alphax * sin(phix);
+    oneTurnMap[1] =             betay  * sin(phiy);
+    oneTurnMap[6] =           - gammax * sin(phix);
+    oneTurnMap[7] = cos(phix) - alphax * sin(phix);
+
+    oneTurnMap[14] = cos(phiy) + alphay * sin(phiy);
+    oneTurnMap[15] =             betay  * sin(phiy);
+    oneTurnMap[20] =           - gammay * sin(phiy);
+    oneTurnMap[21] = cos(phiy) - alphay * sin(phiy);
+
+    oneTurnMap[28] = 1;
+    oneTurnMap[35] = 1;
+
+    GPU_PartiOneTurnTransfer(partCord,oneTurnMap,dimPart6);
+
+    
+
+
+    // generate the transfer matrix for each particle in bunch 
+    // for(int i=0;i<macroEleNumPerBunch;i++)
+    // {
+    //     // elegant ILMATRIX Eq(56), only keeo the first order here. -- notice the unit of \frac{d eta}/{d delta}
+    //     ePositionX[i]  -=  etax  * eMomentumZ[i];   // [m] 
+    //     ePositionY[i]  -=  etay  * eMomentumZ[i];   // [m]
+    //     eMomentumX[i]  -=  etaxp * eMomentumZ[i];   // [rad]
+    //     eMomentumY[i]  -=  etayp * eMomentumZ[i];   // [rad]
+
+    //     ampX   = ( pow(ePositionX[i],2) + pow( alphax * ePositionX[i] + betax * eMomentumX[i],2) ) / betax;  //[m]
+    //     ampY   = ( pow(ePositionY[i],2) + pow( alphay * ePositionY[i] + betay * eMomentumY[i],2) ) / betay;  //[m]
+
+    //     nuxtmp = nux + chromx * eMomentumZ[i] +  aDTX[0] * ampX + aDTX[1] * pow(ampX,2) / 2 + aDTXY[0] * ampX * ampY;  //[]
+    //     nuytmp = nuy + chromy * eMomentumZ[i] +  aDTY[0] * ampY + aDTY[1] * pow(ampY,2) / 2 + aDTXY[1] * ampX * ampY;  //[]
+
+    //     phix = 2 * PI * nuxtmp ;
+    //     phiy = 2 * PI * nuytmp ;
+
+    //     tmp = cos(phix) + alphax * sin(phix);   oneTurnMap[0][0] = tmp;   //R11
+    //     tmp =             betax  * sin(phix);   oneTurnMap[0][1] = tmp;   //R12
+    //     tmp =           - gammax * sin(phix);   oneTurnMap[1][0] = tmp;   //R21
+    //     tmp = cos(phix) - alphax * sin(phix);   oneTurnMap[1][1] = tmp;   //R22
+
+    //     tmp = cos(phiy) + alphay * sin(phiy);   oneTurnMap[2][2] = tmp;   //R33
+    //     tmp =             betay  * sin(phiy);   oneTurnMap[2][3] = tmp;   //R34
+    //     tmp =           - gammay * sin(phiy);   oneTurnMap[3][2] = tmp;   //R43
+    //     tmp = cos(phiy) - alphay * sin(phiy);   oneTurnMap[3][3] = tmp;   //R44
+
+    //     tmp = etax  - etax  * cos(phix) - (alphax * etax + betax * etaxp) *  sin(phix);                                    oneTurnMap[0][5] = tmp ; //R16
+    //     tmp = etay  - etay  * cos(phiy) - (alphay * etay + betay * etayp) *  sin(phiy);                                    oneTurnMap[2][5] = tmp;  //R36  
+    //     tmp = etaxp - etaxp * cos(phix)  + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; oneTurnMap[1][5] = tmp;; //R26    
+    //     tmp = etayp - etayp * cos(phiy)  + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; oneTurnMap[3][5] = tmp;  //R46
+
+    //     tmp = -etaxp + etaxp * cos(phix) + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; oneTurnMap[4][0] = tmp; //R51
+    //     tmp = -etayp + etayp * cos(phiy) + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; oneTurnMap[4][2] = tmp; //R53 
+    //     tmp =  etax  - etax  * cos(phix) + ( alphax * etax +  betax * etaxp) * sin(phix);                                  oneTurnMap[4][1] = tmp; //R52 
+    //     tmp =  etay  - etay  * cos(phiy) + ( alphay * etay +  betay * etayp) * sin(phiy);                                  oneTurnMap[4][3] = tmp; //R54  
+  
+    //     oneTurnMap[4][4] = 1;
+    //     oneTurnMap[5][5] = 1;
+       
+    //     vecX[0] = ePositionX[i];
+    //     vecX[1] = eMomentumX[i];
+    //     vecX[2] = ePositionY[i];
+    //     vecX[3] = eMomentumY[i];
+    //     vecX[4] = ePositionZ[i];
+    //     vecX[5] = eMomentumZ[i];
+
+    //     for(int j=0;j<6;j++)
+    //     {
+    //         for(int k=0;k<6;k++)
+    //         {
+    //             vecY[j] += oneTurnMap[j][k] * vecX[k];
+    //         }
+    //     }
+
+    //     ePositionX[i]  =  vecY[0];
+    //     eMomentumX[i]  =  vecY[1];
+    //     ePositionY[i]  =  vecY[2];
+    //     eMomentumY[i]  =  vecY[3];
+    //     ePositionZ[i]  =  vecY[4];
+    //     eMomentumZ[i]  =  vecY[5];
+           
+    //     // longitudinal pozition updated in one turn -- momentum compactor of the whole ring. 
+    //     ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  - pow(alphac[1] * eMomentumZ[i] ,2) + pow(alphac[2] * eMomentumZ[i] ,3) ) ;    
+    // }
+
+}
 void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
 {
     // get the twiss parameters of from lattice
@@ -225,6 +368,7 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     double ampX,ampY;
     double nuxtmp,nuytmp,tmp;
     double phix,phiy;
+
     // generate the transfer matrix for each particle in bunch 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
@@ -253,32 +397,27 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         tmp =           - gammay * sin(phiy);   gsl_matrix_set(ILmatrix,3,2,tmp);   //R43
         tmp = cos(phiy) - alphay * sin(phiy);   gsl_matrix_set(ILmatrix,3,3,tmp);   //R44
 
-        tmp = etax  - etax  * cos(phix) - (alphax * etax + betax * etaxp) *  sin(phix);                                    gsl_matrix_set(ILmatrix,0,5,tmp);  //R16
-        tmp = etay  - etay  * cos(phiy) - (alphay * etay + betay * etayp) *  sin(phiy);                                    gsl_matrix_set(ILmatrix,2,5,tmp);  //R36  
-
+        tmp = etax  - etax  * cos(phix) - (alphax * etax + betax * etaxp) *  sin(phix);                                    gsl_matrix_set(ILmatrix,0,5,tmp); //R16
+        tmp = etay  - etay  * cos(phiy) - (alphay * etay + betay * etayp) *  sin(phiy);                                    gsl_matrix_set(ILmatrix,2,5,tmp); //R36  
         tmp = etaxp - etaxp * cos(phix)  + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; gsl_matrix_set(ILmatrix,1,5,tmp); //R26    
         tmp = etayp - etayp * cos(phiy)  + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,3,5,tmp); //R46
-
         tmp = -etaxp + etaxp * cos(phix) + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; gsl_matrix_set(ILmatrix,4,0,tmp); //R51
         tmp = -etayp + etayp * cos(phiy) + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,4,2,tmp); //R53 
-
         tmp =  etax  - etax  * cos(phix) + ( alphax * etax +  betax * etaxp) * sin(phix);                                  gsl_matrix_set(ILmatrix,4,1,tmp); //R52 
         tmp =  etay  - etay  * cos(phiy) + ( alphay * etay +  betay * etayp) * sin(phiy);                                  gsl_matrix_set(ILmatrix,4,3,tmp); //R54  
-
         // how to set R55, R56, R65, R66. checked it with yong-chul recently.
         gsl_matrix_set(ILmatrix,4,4,1); //R55
         gsl_matrix_set(ILmatrix,5,5,1); //R66
 
-        // set the right particle coordinate (x_{beta} ) for one turn transfer. Kick the particle position here, but not in rf cavity subroutine.
+        // set the right particle coordinate (x_{beta} ) for one turn transfer. 
         // also make the R56 kick extra due to high order momentum compact factor, ampllidude depended length...    
-        
+        // gsl matrix multi give almost the same perfromance in simulation speed
         gsl_matrix_set(cord0,0,0,ePositionX[i]);
         gsl_matrix_set(cord0,1,0,eMomentumX[i]);
         gsl_matrix_set(cord0,2,0,ePositionY[i]);
         gsl_matrix_set(cord0,3,0,eMomentumY[i]);
         gsl_matrix_set(cord0,4,0,ePositionZ[i]);
         gsl_matrix_set(cord0,5,0,eMomentumZ[i]);
-
 
         gsl_matrix_mul(ILmatrix,cord0,cord1);
         ePositionX[i]  = gsl_matrix_get(cord1,0,0);
@@ -287,7 +426,8 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         eMomentumY[i]  = gsl_matrix_get(cord1,3,0);
         ePositionZ[i]  = gsl_matrix_get(cord1,4,0);
         eMomentumZ[i]  = gsl_matrix_get(cord1,5,0);
-        
+
+            
         // longitudinal pozition updated in one turn -- momentum compactor of the whole ring. 
         ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  - pow(alphac[1] * eMomentumZ[i] ,2) + pow(alphac[2] * eMomentumZ[i] ,3) ) ;    
     }

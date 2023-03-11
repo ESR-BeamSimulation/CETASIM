@@ -70,8 +70,6 @@ public:
     vector<vector<double> > bunchZMinZMax; // bunchTMaxTMinTAver[i][0,1] -> [mic,max]
 
    
-
-
     // for coupled bunch mode or bunch-by-bunch growth rate calculation
     // nominal method to get the coupled bunch grwothe rate
     vector<vector<double> > coupledBunchModeAmpX;

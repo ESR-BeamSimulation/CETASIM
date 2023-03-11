@@ -15,6 +15,8 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <sys/time.h>
+
 
 using std::complex;
 using std::vector;
@@ -42,7 +44,7 @@ extern int      numProcess;
 extern int      myRank;
 
 
-
+double cpuSecond();
 double Gaussrand(double rms, double aver,double randomIndex);
 void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c);
 void gsl_matrix_inv(gsl_matrix *a);

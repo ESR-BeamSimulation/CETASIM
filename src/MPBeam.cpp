@@ -511,7 +511,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     // run loop starts, for nTrns and each trun for k interaction-points
     for(int n=0;n<nTurns;n++)
     {
-        if(n%10==0) cout<<n<<"  turns"<<endl;
+        if(n%100==0) cout<<n<<"  turns"<<endl;
 
         MPBeamRMSCal(latticeInterActionPoint, 0);
         MPGetBeamInfo();
@@ -640,7 +640,7 @@ void MPBeam::BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings 
 {
     for(int i=0;i<beamVec.size();i++)
     {
-        beamVec[i].BunchTransferDueToLatticeOneTurnT66(inputParameter,latticeInterActionPoint);
+        beamVec[i].BunchTransferDueToLatticeOneTurnT66GPU(inputParameter,latticeInterActionPoint);
     }
 }
 
