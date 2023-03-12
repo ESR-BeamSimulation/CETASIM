@@ -14,6 +14,7 @@
 #include "Faddeeva.h"
 #include "WakeFunction.h"
 #include "BoardBandImp.h"
+#include "CUDAFunction.cuh"
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -559,6 +560,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
         // Subroutine in below only change both the momentum and position
         if(synRadDampingFlag==1) BeamSynRadDamping(inputParameter,latticeInterActionPoint);
+        
     
         MarkParticleLostInBunch(inputParameter,latticeInterActionPoint);   
 
@@ -638,10 +640,101 @@ void MPBeam::BeamTransferDueToLatticeL(const ReadInputSettings &inputParameter)
 
 void MPBeam::BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
 {
+    // for(int i=0;i<beamVec.size();i++)
+    // {
+    //      beamVec[i].BunchTransferDueToLatticeOneTurnT66GPU(inputParameter,latticeInterActionPoint);
+    //      beamVec[i].BunchTransferDueToLatticeOneTurnT66(inputParameter,latticeInterActionPoint);
+    // }
+
+
+    // GPU beam transfer one turn ----------------------------
+    double alphax,betax,alphay,betay,gammax,gammay,etax,etaxp,etay,etayp;
+    alphax = latticeInterActionPoint.twissAlphaX[0];
+    alphay = latticeInterActionPoint.twissAlphaY[0];
+    betax  = latticeInterActionPoint.twissBetaX[0];
+    betay  = latticeInterActionPoint.twissBetaY[0];
+    
+    etax   = latticeInterActionPoint.twissDispX[0];
+    etaxp  = latticeInterActionPoint.twissDispPX[0];  // \frac{disP}{ds} 
+    etay   = latticeInterActionPoint.twissDispY[0];
+    etayp  = latticeInterActionPoint.twissDispPY[0];  // \frac{disP}{ds} 
+
+    double *alphac = inputParameter.ringParBasic->alphac;
+    double *aDTX  = inputParameter.ringParBasic->aDTX;
+    double *aDTY  = inputParameter.ringParBasic->aDTY;
+    double *aDTXY = inputParameter.ringParBasic->aDTXY;
+    
+    double circRing = inputParameter.ringParBasic->circRing;
+    double nux = inputParameter.ringParBasic->workQx;
+    double nuy = inputParameter.ringParBasic->workQy;
+    double chromx = inputParameter.ringParBasic->chrom[0];
+    double chromy = inputParameter.ringParBasic->chrom[1];
+    double t0         = inputParameter.ringParBasic->t0;
+    double eta        = inputParameter.ringParBasic->eta;
+
+
+    // prepare the data twiss array
+    double twiss[22] ={0};
+    twiss[0] = alphax;  twiss[1] = alphay;
+    twiss[2] = betax ;  twiss[3] = betay ;
+    twiss[4] = nux;     twiss[5] = nuy;
+    twiss[6] = chromx;  twiss[7] = chromy;
+    twiss[8] = etax;    twiss[9] = etay;
+    twiss[10]= etaxp;   twiss[11]= etayp;
+    twiss[12]= aDTX[0]; twiss[13]= aDTX[1];
+    twiss[14]= aDTY[0]; twiss[15]= aDTY[1];
+    twiss[16]= aDTXY[0]; twiss[17]= aDTXY[1];
+    twiss[18]= alphac[0]; twiss[19]= alphac[1]; twiss[20]= alphac[2];
+    twiss[21]= circRing;
+
+    // prepare the data to munted to GPU 
+    int totalPartiNum=0;
     for(int i=0;i<beamVec.size();i++)
     {
-        beamVec[i].BunchTransferDueToLatticeOneTurnT66GPU(inputParameter,latticeInterActionPoint);
+        totalPartiNum += beamVec[i].macroEleNumPerBunch;
     }
+
+    int dimPart6 = totalPartiNum * 6;   
+    double partCord[dimPart6];
+
+    int indStart = 0;
+    for(int i=0;i<beamVec.size();i++)
+    {
+        for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+        {
+            partCord[indStart + 6*j  ] =  beamVec[i].ePositionX[j];
+            partCord[indStart + 6*j+1] =  beamVec[i].eMomentumX[j];
+            partCord[indStart + 6*j+2] =  beamVec[i].ePositionY[j];
+            partCord[indStart + 6*j+3] =  beamVec[i].eMomentumY[j];
+            partCord[indStart + 6*j+4] =  beamVec[i].ePositionZ[j];
+            partCord[indStart + 6*j+5] =  beamVec[i].eMomentumZ[j];        
+        }
+        indStart += 6 * beamVec[i].macroEleNumPerBunch; 
+    }
+
+
+   GPU_PartiOneTurnTransfer(totalPartiNum,partCord,sizeof(twiss)/sizeof(twiss[0]),twiss);
+    
+   
+    indStart = 0;
+    for(int i=0;i<beamVec.size();i++)
+    {
+        for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+        {
+            beamVec[i].ePositionX[j] = partCord[indStart + 6*j  ] ;
+            beamVec[i].eMomentumX[j] = partCord[indStart + 6*j+1] ;
+            beamVec[i].ePositionY[j] = partCord[indStart + 6*j+2] ;
+            beamVec[i].eMomentumY[j] = partCord[indStart + 6*j+3] ;
+            beamVec[i].ePositionZ[j] = partCord[indStart + 6*j+4] ;
+            beamVec[i].eMomentumZ[j] = partCord[indStart + 6*j+5] ;        
+        }
+        indStart += 6 * beamVec[i].macroEleNumPerBunch; 
+    }
+    
+  
+
+
+
 }
 
 void MPBeam::BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
@@ -649,7 +742,8 @@ void MPBeam::BBImpBeamInteraction(const ReadInputSettings &inputParameter, const
     for(int j=0;j<beamVec.size();j++)
     {
         if(beamVec[j].macroEleCharge==0) continue;
-        beamVec[j].BBImpBunchInteraction(inputParameter,boardBandImp);     
+        beamVec[j].BBImpBunchInteraction(inputParameter,boardBandImp); 
+          
     }
 }
 

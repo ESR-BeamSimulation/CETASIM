@@ -7,7 +7,8 @@
 //*************************************************************************
 #pragma once                                                             
 
-
+#include "ReadInputSettings.h"
+#include "LatticeInterActionPoint.h"
 #include <vector>
 #include <complex>
 #include <iostream>
@@ -25,7 +26,7 @@ using std::complex;
 
 
 
-void GPU_PartiOneTurnTransfer(double *partCord,double *oneTurnMap,const int dim);
+void GPU_PartiOneTurnTransfer(int macroEleNumPerBunch, double *partCord, int paraNum, double *ringPara);
 
 
 

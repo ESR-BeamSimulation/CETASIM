@@ -189,6 +189,7 @@ void Bunch::BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterAct
 
 void Bunch::BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
 {
+        
     double alphax,betax,alphay,betay,gammax,gammay,etax,etaxp,etay,etayp;
     alphax = latticeInterActionPoint.twissAlphaX[0];
     alphay = latticeInterActionPoint.twissAlphaY[0];
@@ -213,47 +214,48 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inpu
     double t0         = inputParameter.ringParBasic->t0;
     double eta        = inputParameter.ringParBasic->eta;
 
-    gammax = (1 + pow(alphax,2))/betax;
-    gammay = (1 + pow(alphay,2))/betay;
 
-    //ref. Elegant ILMatrix element
-    double xPosN,yPosN,xMomN,yMomN;
-    double ampX,ampY;
-    double nuxtmp,nuytmp,tmp;
+    // prepare the data twiss array
+    double twiss[22] ={0};
+    twiss[0] = alphax;  twiss[1] = alphay;
+    twiss[2] = betax ;  twiss[3] = betay ;
+    twiss[4] = nux;     twiss[5] = nuy;
+    twiss[6] = chromx;  twiss[7] = chromy;
+    twiss[8] = etax;    twiss[9] = etay;
+    twiss[10]= etaxp;   twiss[11]= etayp;
+    twiss[12]= aDTX[0]; twiss[13]= aDTX[1];
+    twiss[14]= aDTY[0]; twiss[15]= aDTY[1];
+    twiss[16]= aDTXY[0]; twiss[17]= aDTXY[1];
+    twiss[18]= alphac[0]; twiss[19]= alphac[1]; twiss[20]= alphac[2];
+    twiss[21]= circRing;
 
-    double oneTurnMap[36]={0};  // 6*i +j give the ith jth element
 
     // prepare the data to munted to GPU 
-    int dimPart6 = macroEleNumPerBunch *6;   
+    int dimPart6 = macroEleNumPerBunch * 6;   
     double partCord[dimPart6];
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
-        partCord[6*i+1] =  ePositionX[i];
+        partCord[6*i  ] =  ePositionX[i];
+        partCord[6*i+1] =  eMomentumX[i];
         partCord[6*i+2] =  ePositionY[i];
-        partCord[6*i+3] =  ePositionZ[i];
-        partCord[6*i+4] =  eMomentumX[i];
-        partCord[6*i+5] =  eMomentumY[i];
-        partCord[6*i+6] =  eMomentumZ[i];
+        partCord[6*i+3] =  eMomentumY[i];
+        partCord[6*i+4] =  ePositionZ[i];
+        partCord[6*i+5] =  eMomentumZ[i];        
+    }
+  
+ 
+    GPU_PartiOneTurnTransfer(macroEleNumPerBunch,partCord,sizeof(twiss)/sizeof(twiss[0]),twiss);
+    
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        ePositionX[i]   = partCord[6*i  ];
+        eMomentumX[i]   = partCord[6*i+1]  ;
+        ePositionY[i]   = partCord[6*i+2]  ;
+        eMomentumY[i]   = partCord[6*i+3]  ;
+        ePositionZ[i]   = partCord[6*i+4]  ;
+        eMomentumZ[i]   = partCord[6*i+5]  ;        
     }
 
-    double phix = 2 * PI * nux; double phiy = 2 * PI * nuy;
-
-    oneTurnMap[0] = cos(phix) + alphax * sin(phix);
-    oneTurnMap[1] =             betay  * sin(phiy);
-    oneTurnMap[6] =           - gammax * sin(phix);
-    oneTurnMap[7] = cos(phix) - alphax * sin(phix);
-
-    oneTurnMap[14] = cos(phiy) + alphay * sin(phiy);
-    oneTurnMap[15] =             betay  * sin(phiy);
-    oneTurnMap[20] =           - gammay * sin(phiy);
-    oneTurnMap[21] = cos(phiy) - alphay * sin(phiy);
-
-    oneTurnMap[28] = 1;
-    oneTurnMap[35] = 1;
-
-    GPU_PartiOneTurnTransfer(partCord,oneTurnMap,dimPart6);
-
-    
 
 
     // generate the transfer matrix for each particle in bunch 
@@ -397,10 +399,11 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         tmp =           - gammay * sin(phiy);   gsl_matrix_set(ILmatrix,3,2,tmp);   //R43
         tmp = cos(phiy) - alphay * sin(phiy);   gsl_matrix_set(ILmatrix,3,3,tmp);   //R44
 
-        tmp = etax  - etax  * cos(phix) - (alphax * etax + betax * etaxp) *  sin(phix);                                    gsl_matrix_set(ILmatrix,0,5,tmp); //R16
-        tmp = etay  - etay  * cos(phiy) - (alphay * etay + betay * etayp) *  sin(phiy);                                    gsl_matrix_set(ILmatrix,2,5,tmp); //R36  
-        tmp = etaxp - etaxp * cos(phix)  + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; gsl_matrix_set(ILmatrix,1,5,tmp); //R26    
-        tmp = etayp - etayp * cos(phiy)  + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,3,5,tmp); //R46
+        tmp = etax  - etax   * cos(phix) - (alphax * etax + betax * etaxp) *  sin(phix);                                   gsl_matrix_set(ILmatrix,0,5,tmp); //R16
+        tmp = etay  - etay   * cos(phiy) - (alphay * etay + betay * etayp) *  sin(phiy);                                   gsl_matrix_set(ILmatrix,2,5,tmp); //R36  
+        tmp = etaxp - etaxp  * cos(phix) + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; gsl_matrix_set(ILmatrix,1,5,tmp); //R26    
+        tmp = etayp - etayp  * cos(phiy) + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,3,5,tmp); //R46
+        
         tmp = -etaxp + etaxp * cos(phix) + ( etax  + pow(alphax,2) * etax +  alphax * betax * etaxp) *  sin(phix) / betax; gsl_matrix_set(ILmatrix,4,0,tmp); //R51
         tmp = -etayp + etayp * cos(phiy) + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,4,2,tmp); //R53 
         tmp =  etax  - etax  * cos(phix) + ( alphax * etax +  betax * etaxp) * sin(phix);                                  gsl_matrix_set(ILmatrix,4,1,tmp); //R52 
@@ -429,12 +432,14 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
 
             
         // longitudinal pozition updated in one turn -- momentum compactor of the whole ring. 
-        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  - pow(alphac[1] * eMomentumZ[i] ,2) + pow(alphac[2] * eMomentumZ[i] ,3) ) ;    
+        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  + alphac[1] * pow( eMomentumZ[i] ,2) + alphac[2] * pow( eMomentumZ[i], 3) ) ;    
     }
 
     gsl_matrix_free(ILmatrix);
     gsl_matrix_free (cord0);
     gsl_matrix_free (cord1);
+
+
 
 }
 
@@ -503,6 +508,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         synchRadDampTime[i] = inputParameter.ringParBasic->synchRadDampTime[i];
     }
 
+
     int k=0;
     //	 set the J2_sympeletic matrix
     gsl_matrix * sympleMarixJ = gsl_matrix_alloc (2, 2);
@@ -551,7 +557,6 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_transpose(dispMatrixHX);
 
 
-
     //	// get H32 sub_matrix;
     gsl_matrix_transpose(dispMatrixHY);
 
@@ -561,6 +566,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
 
     gsl_matrix_memcpy (H32, tempMatrix2);
     gsl_matrix_transpose(dispMatrixHY);
+
 
 
     //	// set H Marix
@@ -585,6 +591,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_set(dispMatrixH,5,3,gsl_matrix_get(H32,1,1));
 
 
+
  
     //set Teng Marrix R
 
@@ -597,9 +604,9 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     // gsl_matrix_set(R2,0,0,1);
     // gsl_matrix_set(R2,1,1,0.1);
 
-    double b = get_det(R2);
-    b = sqrt(1-b);
-
+    double b = sqrt(1 - gsl_matrix_get(R2,0,0) * gsl_matrix_get(R2,1,1) - gsl_matrix_get(R2,1,0) * gsl_matrix_get(R2,0,1) );
+    // double b = sqrt(1 - get_det(R2))
+   
     gsl_matrix * R12  = gsl_matrix_alloc (2, 2);
     gsl_matrix * R21  = gsl_matrix_alloc (2, 2);
 
@@ -629,7 +636,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_set(tengMatrixR,3,0,gsl_matrix_get(R21,1,0));
     gsl_matrix_set(tengMatrixR,3,1,gsl_matrix_get(R21,1,1));
 
- 
+
     //set Twiss B Matrix
     gsl_matrix * twissMatrixB = gsl_matrix_alloc (6, 6);
     gsl_matrix_set_zero(twissMatrixB);
@@ -667,6 +674,16 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     gsl_matrix_set(twissMatrixB,5,5,a11);
 
 
+
+    // for(int i=0;i<6;i++)
+    // {
+    //     for(int j=0;j<6;j++)
+    //     {
+    //         cout<<setw(15)<<left<<gsl_matrix_get(twissMatrixB,i,j);
+    //     }
+    //     cout<<endl;
+    // }
+    // getchar();
 
     gsl_matrix * cordTransfer  = gsl_matrix_alloc (6, 6);
     gsl_matrix * invCordTransfer  = gsl_matrix_alloc (6, 6);
@@ -735,8 +752,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         gsl_matrix_set(vecX,5,0,eMomentumZ[i]);
         
 		gsl_matrix_mul(cordTransfer,vecX,vecNX);
-
-   
+      
         tempX  = gsl_matrix_get(vecNX,0,0);
         tempPX = gsl_matrix_get(vecNX,1,0);
         tempY  = gsl_matrix_get(vecNX,2,0);
