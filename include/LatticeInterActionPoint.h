@@ -101,6 +101,10 @@ public:
     double totIonCharge;
     
     double ionLossBoundary;
+    double latticeParaForOneTurnMap[22];
+    double latticeSynRadBRH[72];
+    double latticeSynRadCoff[6];  //Ref ZhangYuan -- used in GPU
+ 
 
     void Initial(const ReadInputSettings &inputParameter);
     void InitialLattice(const ReadInputSettings &inputParameter);
@@ -111,7 +115,9 @@ public:
     void IonTransferDueToBunch(int bunchGap, int k, double bunchSizeXMax, double bunchSizeYMax);    // ion loss certeria done at here. 
     void GetTotIonCharge();
     void GetIonNumberPerInterAction(double electronNumPerBunch, int k);
-    
+    void SetLatticeParaForOneTurnMap(const ReadInputSettings &inputParameter);
+    void SetLatticeBRHForSynRad(const ReadInputSettings &inputParameter);  //Hirata 1997 paper
+
     
 private:
 

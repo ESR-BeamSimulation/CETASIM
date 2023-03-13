@@ -69,6 +69,9 @@ public:
     vector<MPBunch> beamVec;
     vector<vector<double> > bunchZMinZMax; // bunchTMaxTMinTAver[i][0,1] -> [mic,max]
 
+    // for GPU, all particle cord 
+    // double  *partCord; 
+    //
    
     // for coupled bunch mode or bunch-by-bunch growth rate calculation
     // nominal method to get the coupled bunch grwothe rate
@@ -130,6 +133,7 @@ public:
     // void BeamTransferPerTurnDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void BeamTransferDueToLatticeL(const ReadInputSettings &inputParameter); 
     void BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
+    void BeamTransferPerTurnR66AndSynRadGPU(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);  
     void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
     void GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
@@ -142,13 +146,14 @@ public:
     //void SetBeamPosHistoryDataWithinWindow();
                   
                                	                       
-    void BeamSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
+    void BeamSynRadDamping(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint);
     void FIRBunchByBunchFeedback(const ReadInputSettings &inputParameter,FIRFeedBack &firFeedBack,int nTurns);
     void BeamTransferPerTurnDueWake();
     //// for long range RW wake function
 	void LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint);  
     void BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
-
+    void CopyPartCordToGPU(double *partCord, int totalPartiNum);
+    void CopyPartCordFromGPU(double *partCord);
 
       		
 private:

@@ -27,6 +27,7 @@ using std::complex;
 
 
 void GPU_PartiOneTurnTransfer(int macroEleNumPerBunch, double *partCord, int paraNum, double *ringPara);
-
+void GPU_PartiSynRad(int totalPartiNum,double *partCord,int paraNum, double *radMatrix,double *coeff);
+void GPU_PartiOneTurnTransferAndSynRad(int totalPartiNum, double *partCord, int oneTurnMatrixParaNum, double *ringPara, double *radMatrixBRH, double *synRadCoff);
 
 
