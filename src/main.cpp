@@ -62,7 +62,6 @@ int main(int argc,char *argv[])
     latticeInterActionPoint.SetLatticeParaForOneTurnMap(inputParameter);
     latticeInterActionPoint.SetLatticeBRHForSynRad(inputParameter);
 
-
     Train train;
     train.Initial(inputParameter);
 

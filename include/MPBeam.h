@@ -69,6 +69,17 @@ public:
     vector<MPBunch> beamVec;
     vector<vector<double> > bunchZMinZMax; // bunchTMaxTMinTAver[i][0,1] -> [mic,max]
 
+    struct QuasiWakePoten{
+        double bunchLength;
+        vector<double> wz;              // V/C
+        vector<double> wDx;             // V/C/m
+        vector<double> wDy;             // V/C/m
+        vector<double> wQx;             // V/C/m    
+        vector<double> wQy;             // V/C/m
+        vector<double> binPosZ;
+    };
+    QuasiWakePoten *quasiWakePoten = new QuasiWakePoten;
+
     // for GPU, all particle cord 
     // double  *partCord; 
     //
@@ -122,7 +133,9 @@ public:
     void SRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint,int turns);    
     void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);
     void GetBunchMinZMaxZ();
-
+    void GetQuasiWakePoten(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp);
+    void GetQuasiWakePoten(const ReadInputSettings &inputParameter);
+    void LongWakePotenBenchmark(const ReadInputSettings &inputParameter,const BoardBandImp &boardBandImp);
 
     //// shared funcitons by MP and SP--just copy of each other.         
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
@@ -151,7 +164,7 @@ public:
     void BeamTransferPerTurnDueWake();
     //// for long range RW wake function
 	void LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint);  
-    void BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
+    void BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp,const LatticeInterActionPoint &latticeInterActionPoint );
     void CopyPartCordToGPU(double *partCord, int totalPartiNum);
     void CopyPartCordFromGPU(double *partCord);
 

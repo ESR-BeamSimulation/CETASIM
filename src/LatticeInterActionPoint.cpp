@@ -488,7 +488,7 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         twissBetaZ[i]  = inputParameter.ringParBasic->naturalBunchLength / inputParameter.ringParBasic->sdelta0;   //ref. Zhang Yuan's paper, have to equibrium value.  
         twissAlphaZ[i] = 0.0;
         zPhaseAdv[i]   = interactionLength[i] * 2 * PI * workQz;   
-            
+   
         xAperture>pipeAperatureX[i] ? (pipeAperatureX[i]=pipeAperatureX[i]) : (pipeAperatureX[i]=xAperture);
         yAperture>pipeAperatureY[i] ? (pipeAperatureY[i]=pipeAperatureY[i]) : (pipeAperatureY[i]=yAperture);
 

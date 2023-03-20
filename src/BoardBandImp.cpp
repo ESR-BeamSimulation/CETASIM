@@ -57,14 +57,17 @@ void BoardBandImp::ReadInImp(const  ReadInputSettings &inputParameter)
             lineNumber++;
             continue;
         }
-            getline(fin,str);
-            if(str.length()==0)  continue;
-            StringSplit2(str,strVec);
-            // change to Alex Chao' notation
-            freq.push_back(stod(strVec[0]));
-            zZImp.push_back ( complex<double>( stod(strVec[1]),  -stod(strVec[6])) );
-            zDxImp.push_back( complex<double>(-stod(strVec[7]),  -stod(strVec[2])) );
-            zDyImp.push_back( complex<double>(-stod(strVec[8]),  -stod(strVec[3])) );
+        getline(fin,str);
+        if(str.length()==0)  continue;
+        StringSplit2(str,strVec);
+        // change to Alex Chao' notation
+        freq.push_back(stod(strVec[0]));
+        zZImp.push_back ( complex<double>( stod(strVec[1]),  -stod(strVec[6])) );
+        zDxImp.push_back( complex<double>(-stod(strVec[7]),  -stod(strVec[2])) );
+        zDyImp.push_back( complex<double>(-stod(strVec[8]),  -stod(strVec[3])) );
+        
+        zQxImp.push_back( complex<double>(-stod(strVec[9]),  -stod(strVec[4])) );
+        zQyImp.push_back( complex<double>(-stod(strVec[10]),  -stod(strVec[5])) );
     }
 
     // vector<double> freq0   = freq ;

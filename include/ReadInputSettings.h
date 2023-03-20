@@ -198,7 +198,11 @@ public:
     struct RingImpedance
     {
         int bunchBinNumberZ=100;
+        double quasiWakeBunchLen=0.E0;
         string impedInput;
+        string wakeInput;
+        int timeDomain = 1;            // tracking in time domain, if not, tracking in freqeuncy domain 
+        int impedSimFlag[5]={1,1,1,1,1};
     };    
     RingImpedance *ringBBImp =  new RingImpedance;    
     

@@ -44,7 +44,6 @@ public:
     vector<double> binPosZ;
 
     void ReadInImp(const ReadInputSettings &inputParameter);
-
 private:
 
 };

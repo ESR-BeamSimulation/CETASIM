@@ -52,6 +52,7 @@ public:
     double pzAver=0.E0;
     double zAverLastTurn=0.E0;
     double pzAverLastTurn=0.E0;
+    double transmission=1.E0;
 
     // for beam loading to get the time distance between bunches
     double zMinCurrentTurn =0.E0;

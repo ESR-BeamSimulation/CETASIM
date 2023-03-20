@@ -44,7 +44,7 @@ MPBunch::MPBunch()
 
 MPBunch::~MPBunch()
 {
-           
+    delete wakePotenFromBBI;          
 }
 
 
@@ -343,8 +343,6 @@ void MPBunch::GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
     //     eMomentumY[i]  -=  etayp * eMomentumZ[i];   // [rad]
     // }
 
-
-
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
         if(eSurive[i]!=0) continue;
@@ -355,7 +353,6 @@ void MPBunch::GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
         pxAver  +=  eMomentumX[i];
         pyAver  +=  eMomentumY[i];
         pzAver  +=  eMomentumZ[i];
-
         macroEleNumSurivePerBunch++;
     }
 
@@ -410,10 +407,8 @@ void MPBunch::GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
     rmsEffectiveRingEmitY = sqrt(y2Aver * py2Aver - pow(ypyAver,2));
     rmsEffectiveRingEmitZ = sqrt(z2Aver * pz2Aver - pow(zpzAver,2));
 
-
     rmsEffectiveRx = sqrt(rmsEffectiveRingEmitX * latticeInterActionPoint.twissBetaX[k]);
     rmsEffectiveRy = sqrt(rmsEffectiveRingEmitY * latticeInterActionPoint.twissBetaY[k]);
-
 
 
 // The below section is used to calculate the  rms emittance
@@ -1250,85 +1245,323 @@ void MPBunch::BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter,
 }
 
 
-void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
+void MPBunch::BBImpBunchInteractionTD(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp,const LatticeInterActionPoint &latticeInterActionPoint,
+                                      vector<vector<double>> wakePoten)
+{
+    double rBeta              = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    int ringHarmH             = inputParameter.ringParRf->ringHarm;
+    double rfLen              = inputParameter.ringParBasic->t0 / ringHarmH * CLight; 
+    double dzBin              = wakePoten[0][1] - wakePoten[0][0];
+
+    double zMinBin            = - 1 * rfLen / 2;
+    
+    int nBinWake = wakePoten[0].size();
+    int nBinBunchDen = int(1 * rfLen / dzBin);    // bunch density profile -- from [-rfLen/2,rfLen/2]
+    
+    double temp[5]; // wake force in wz wdx wdy wqx, wqy
+    
+    double densityProfile[nBinBunchDen];
+    for(int i=0;i<nBinBunchDen;i++)densityProfile[i]=0;
+    
+    vector<vector<int>> histoParIndex;
+    histoParIndex.resize(nBinBunchDen);
+    for(int i=0;i<ePositionZ.size();i++)
+    {
+        int index = int( (ePositionZ[i] - zMinBin ) / dzBin );          // head particle index stores in histoParIndex[i]. Smaller i represents head particle.  
+        histoParIndex[index].push_back(i);
+        densityProfile[index] +=  macroEleCharge * ElectronCharge ;  // [C]
+    } 
+    GetSmoothedBunchProfileGassionFilter(densityProfile,nBinBunchDen);
+
+    vector<double> averXAlongBunch(nBinBunchDen,0);
+    vector<double> averYAlongBunch(nBinBunchDen,0);
+    
+    for(int i=0;i<nBinBunchDen;i++)
+    {
+        for(int j=0;j<histoParIndex[i].size();j++)
+        {
+            int partID = histoParIndex[i][j];
+            if(eSurive[partID]!=0) continue;
+           
+            averXAlongBunch[i] += ePositionX[partID]; 
+            averYAlongBunch[i] += ePositionY[partID]; 
+        }
+
+        if (histoParIndex[i].size()==0)
+        {
+            averXAlongBunch[i]=0;
+            averYAlongBunch[i]=0;    
+        }
+        else
+        {
+            averXAlongBunch[i] /= histoParIndex[i].size();
+            averYAlongBunch[i] /= histoParIndex[i].size();
+        }
+    }
+
+    // ofstream fout("wakePotenTimeDomainFlipped_23mm.dat");
+    // fout<<"SDDS1"<<endl;
+    // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=indVZ,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVDX,                               type=float,  &end" <<endl;
+    // fout<<"&column name=indVDY,                               type=float,  &end" <<endl;
+    // fout<<"&column name=indVQX,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVQY,                                type=float,  &end" <<endl;
+    // fout<<"&data mode=ascii, &end"                                               <<endl;
+    // fout<<"! page number " << 1 <<endl;
+    // fout<<nBinBunchDen<<endl;
+
+    int partID, tij;
+    for(int i=0;i<nBinBunchDen;i++) // ith bins in front of jth bins. how ith bin affect jth bin
+    {    
+        for(int j=0;j<5;j++)temp[j] = 0.E0;
+                
+        for(int j=i;j<nBinBunchDen;j++)          // bins in front of the ith bin
+        {
+            tij = j - i;
+            if(tij>nBinWake) break;
+            if(inputParameter.ringBBImp->impedSimFlag[0]==1) temp[0] -= wakePoten[1][tij] * densityProfile[j];                      //[V/C] * [C] = V
+            if(inputParameter.ringBBImp->impedSimFlag[1]==1) temp[1] -= wakePoten[2][tij] * densityProfile[j] * averXAlongBunch[j]; //[V/C] * [C] * [m] = [V m]
+            if(inputParameter.ringBBImp->impedSimFlag[2]==1) temp[2] -= wakePoten[3][tij] * densityProfile[j] * averYAlongBunch[j];
+            if(inputParameter.ringBBImp->impedSimFlag[3]==1) temp[3] -= wakePoten[4][tij] * densityProfile[j] ; //[V/C] * [C]  = [V]
+            if(inputParameter.ringBBImp->impedSimFlag[4]==1) temp[4] -= wakePoten[5][tij] * densityProfile[j] ;
+        }
+
+        for(int k=0;k<histoParIndex[i].size();k++) // Eq3.7 and Eq3.49 
+        {                    
+            partID = histoParIndex[i][k];
+            if(inputParameter.ringBBImp->impedSimFlag[0]==1) eMomentumZ[partID] += temp[0] / electronBeamEnergy / pow(rBeta,2);
+            if(inputParameter.ringBBImp->impedSimFlag[1]==1) eMomentumX[partID] += temp[1] / electronBeamEnergy / pow(rBeta,2) / latticeInterActionPoint.twissBetaX[0];
+            if(inputParameter.ringBBImp->impedSimFlag[2]==1) eMomentumY[partID] += temp[2] / electronBeamEnergy / pow(rBeta,2) / latticeInterActionPoint.twissBetaY[0];
+            if(inputParameter.ringBBImp->impedSimFlag[3]==1) eMomentumX[partID] += temp[3] / electronBeamEnergy / pow(rBeta,2) / latticeInterActionPoint.twissBetaX[0] * ePositionX[partID];
+            if(inputParameter.ringBBImp->impedSimFlag[4]==1) eMomentumY[partID] += temp[4] / electronBeamEnergy / pow(rBeta,2) / latticeInterActionPoint.twissBetaY[0] * ePositionY[partID];
+        }
+    
+        
+        // fout<<setw(15)<<left<<i * dzBin + zMinBin
+        //     <<setw(15)<<left<<temp[0]
+        //     <<setw(15)<<left<<temp[1]
+        //     <<setw(15)<<left<<temp[2]
+        //     <<setw(15)<<left<<temp[3]
+        //     <<setw(15)<<left<<temp[4]
+        //     <<endl;
+          
+    }
+
+   
+    // fout.close();
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+
+}
+
+
+void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp,const LatticeInterActionPoint &latticeInterActionPoint)
 {
     double rBeta      = inputParameter.ringParBasic->rBeta;
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     double zMinBin = -boardBandImp.zMax;
     double dzBin   =  boardBandImp.dz;
-    
+    int   nBins    =  profileForBunchBBImp.size(); // bins for bunch profile, that is 2*boardBandImp.zZImp.size() - 1
+   
 
+    fftw_complex *r2cout  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size() // bunch specturm
+    fftw_complex *c2rin   = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
 
-    GetBunchProfileForBeamBBImpEffect(inputParameter,boardBandImp);
-    int nBins = profileForBunchBBImp.size(); // bins for bunch profile, that is 2*boardBandImp.zZImp.size() - 1
-      
-    double bunchSpectrum[nBins]; 
     double temp[nBins];
-
-    for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
-
+    int    partBinIndex[macroEleNumPerBunch];
     
-    fftw_complex *out  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
-    fftw_complex *out1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
-    fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, out, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
-    fftw_execute(p);
-
-    // specturm * impedance
-    for(int i=0;i<boardBandImp.zZImp.size();i++)
-    {
-        complex<double> indVF = complex<double> (out[i][0], out[i][1] ) * boardBandImp.zZImp[i];
-        out1[i][0] = indVF.real();
-        out1[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
-    }
-    p = fftw_plan_dft_c2r_1d(nBins, out1, temp, FFTW_ESTIMATE);
-    fftw_execute(p);   
-    for(int i=0;i<nBins;i++)  beamIndVFromBBImpZ[i] = temp[i] / nBins;
     
-    // // (1) x kick 
-    // for(int i=1;i<boardBandImp.zDxImp.size();i++)
-    // {
-    //     complex<double> indVF = complex<double> (out[i][0], out[i][1]) * boardBandImp.zDxImp[i] * li;  
-    //     out1[i][0] = indVF.real();
-    //     out1[i][1] = indVF.imag();                                      // [C/s] * [Ohm/m] = [V/m]                          
-    // }
-    // p = fftw_plan_dft_c2r_1d(nBins, out1, temp, FFTW_ESTIMATE);
-    // fftw_execute(p); 
-    // for(int i=0;i<nBins;i++)  beamIndVFromBBImpX[i] = temp[i] / nBins;
-
-    // // // (2) y kick 
-    // for(int i=1;i<boardBandImp.zDyImp.size();i++)
-    // {
-    //     complex<double> indVF = complex<double> (out[i][0], out[i][1] ) * boardBandImp.zDyImp[i] * li;  
-    //     out1[i][0] = indVF.real();
-    //     out1[i][1] = indVF.imag();                                        // [C/s] * [Ohm/m] = [V/m]                          
-    // }
-    // p = fftw_plan_dft_c2r_1d(nBins, out1, temp, FFTW_ESTIMATE);
-    // fftw_execute(p); 
-    // for(int i=0;i<nBins;i++)  beamIndVFromBBImpY[i] = temp[i] / nBins;
-
-
-    fftw_destroy_plan(p);
-    fftw_free(out);
-    fftw_free(out1);
-
-    // kick particles in bunch
-    int index;
-    for(int i=0;i<macroEleNumPerBunch;i++)
+    // (0) in zz  directoin --------------------------------------------------- Eq3.10 
+    if(inputParameter.ringBBImp->impedSimFlag[0]==1)  // beam longitudianl impedance interactoin
     {
-        index  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
-        eMomentumZ[i] -= beamIndVFromBBImpZ[index] / electronBeamEnergy / pow(rBeta,2);
-        // eMomentumX[i] += beamIndVFromBBImpX[index] / electronBeamEnergy / pow(rBeta,2) * ePositionX[i];
-        // eMomentumY[i] += beamIndVFromBBImpY[index] / electronBeamEnergy / pow(rBeta,2) * ePositionY[i];
+        // get the longi-ddisu-profile 
+        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
+
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+            int index = partBinIndex[i];
+            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
+        }
+        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
+        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
+
+        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+        fftw_execute(p);
+        for(int i=0;i<boardBandImp.zZImp.size();i++)
+        {
+            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zZImp[i];
+            c2rin[i][0] = indVF.real();
+            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        }
+        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
+        fftw_execute(p);   
+        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenZ[i] = - temp[i] / nBins;
+        
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            int index  = partBinIndex[i] ; 
+            eMomentumZ[i] += wakePotenFromBBI->wakePotenZ[index] / electronBeamEnergy / pow(rBeta,2);
+        }
+        fftw_destroy_plan(p);
+    }
+    
+
+    // (1) in zDx  directoin --------------------------------------------------- //Alex Chao Eq 3.51
+    if(inputParameter.ringBBImp->impedSimFlag[1]==1)   // beam with ZDx
+    {
+        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
+
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+            int index        = partBinIndex[i];
+            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight * ePositionX[i];  // [C/s]  
+        }
+        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
+        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
+
+        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+        fftw_execute(p);
+        for(int i=0;i<boardBandImp.zZImp.size();i++)
+        {
+            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zDxImp[i] * li;
+            c2rin[i][0] = indVF.real();
+            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        }
+        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
+        fftw_execute(p);   
+        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenDx[i] = temp[i] / nBins;           
+            
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            int index      = partBinIndex[i] ; 
+            eMomentumX[i] += wakePotenFromBBI->wakePotenDx[index] / electronBeamEnergy / pow(rBeta,2) / latticeInterActionPoint.twissBetaX[0];
+        }
+    }
+     
+     
+     // (2) in zDy  directoin --------------------------------------------------- 
+    if(inputParameter.ringBBImp->impedSimFlag[2]==1)   // beam beam with ZDy
+    {
+        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
+
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+            int index        = partBinIndex[i];
+            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight * ePositionY[i];  // [C/s]  
+        }
+        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
+        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
+
+        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+        fftw_execute(p);
+        for(int i=0;i<boardBandImp.zZImp.size();i++)
+        {
+            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zDyImp[i] * li;
+            c2rin[i][0] = indVF.real();
+            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        }
+        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
+        fftw_execute(p);   
+        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenDy[i] = temp[i] / nBins;
+            
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            int index      = partBinIndex[i] ; 
+            eMomentumY[i] += wakePotenFromBBI->wakePotenDy[index] / electronBeamEnergy / pow(rBeta,2) / latticeInterActionPoint.twissBetaY[0];
+        }
+        fftw_destroy_plan(p);
     }
 
-    //test the longitudinal wakefield here. 
-    // ofstream fout("test.dat");
+    // (3) in zQx  directoin --------------------------------------------------- 
+    if(inputParameter.ringBBImp->impedSimFlag[3]==1)  // beam ZQx interactoin
+    {
+        // get the longi-ddisu-profile 
+        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
+
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+            int index = partBinIndex[i];
+            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
+        }
+        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
+        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
+
+        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+        fftw_execute(p);
+        for(int i=0;i<boardBandImp.zZImp.size();i++)
+        {
+            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQxImp[i] * li;
+            c2rin[i][0] = indVF.real();
+            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        }
+        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
+        fftw_execute(p);   
+        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenQx[i] = temp[i] / nBins;
+        
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            int index  = partBinIndex[i] ; 
+            eMomentumX[i] += wakePotenFromBBI->wakePotenQx[index] / electronBeamEnergy / pow(rBeta,2) *  ePositionX[i] / latticeInterActionPoint.twissBetaX[0];
+        }
+        fftw_destroy_plan(p);
+    }
+
+
+    // (4) in zQy  directoin --------------------------------------------------- 
+    if(inputParameter.ringBBImp->impedSimFlag[4]==1)  // beam ZQx interactoin
+    {
+        // get the longi-ddisu-profile 
+        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
+
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+            int index = partBinIndex[i];
+            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
+        }
+        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
+        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
+
+        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+        fftw_execute(p);
+        for(int i=0;i<boardBandImp.zZImp.size();i++)
+        {
+            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQyImp[i] * li;
+            c2rin[i][0] = indVF.real();
+            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        }
+        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
+        fftw_execute(p);   
+        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenQy[i] = temp[i] / nBins;
+        
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            int index  = partBinIndex[i] ; 
+            eMomentumY[i] += wakePotenFromBBI->wakePotenQy[index] / electronBeamEnergy / pow(rBeta,2) *  ePositionY[i] / latticeInterActionPoint.twissBetaY[0];
+        }
+        fftw_destroy_plan(p);
+    }
+
+    fftw_free(r2cout);
+    fftw_free(c2rin);
+
+
+    // test the wakefield her. 
+    // ofstream fout("wakePotenFreqDomain_23mm.dat");
     // fout<<"SDDS1"<<endl;
     // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
     // fout<<"&column name=profile,                              type=float,  &end" <<endl;
     // fout<<"&column name=indVZ,                                type=float,  &end" <<endl;
-    // fout<<"&column name=indVX,                                type=float,  &end" <<endl;
-    // fout<<"&column name=indVY,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVDX,                               type=float,  &end" <<endl;
+    // fout<<"&column name=indVDY,                               type=float,  &end" <<endl;
+    // fout<<"&column name=indVQX,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVQY,                                type=float,  &end" <<endl;
     // fout<<"&data mode=ascii, &end"                                               <<endl;
     // fout<<"! page number " << 1 <<endl;
     // fout<<nBins<<endl;
@@ -1337,9 +1570,11 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
     // {
     //     fout<<setw(15)<<left<<boardBandImp.binPosZ[i]
     //         <<setw(15)<<left<<profileForBunchBBImp[i]
-    //         <<setw(15)<<left<<beamIndVFromBBImpZ[i]
-    //         <<setw(15)<<left<<beamIndVFromBBImpX[i]
-    //         <<setw(15)<<left<<beamIndVFromBBImpY[i]
+    //         <<setw(15)<<left<<wakePotenFromBBI->wakePotenZ[i]
+    //         <<setw(15)<<left<<wakePotenFromBBI->wakePotenDx[i]
+    //         <<setw(15)<<left<<wakePotenFromBBI->wakePotenDy[i]
+    //         <<setw(15)<<left<<wakePotenFromBBI->wakePotenQx[i]
+    //         <<setw(15)<<left<<wakePotenFromBBI->wakePotenQy[i]
     //         <<endl;
     // }
     // cout<<"wrie file"<<endl;
@@ -1348,7 +1583,7 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
 }
 
 
-void MPBunch::GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
+void MPBunch::GetSmoothedBunchProfileGassionFilter(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
 {
     double zMaxBin =  boardBandImp.zMax;
     double zMinBin = -boardBandImp.zMax;
@@ -1358,25 +1593,24 @@ void MPBunch::GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputPa
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
     double rfLen   = inputParameter.ringParBasic->t0 / ringHarmH * CLight;
     int index; 
-
-    fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
- 
-    for(int i=0;i<macroEleNumPerBunch;i++)
-    {
-        index  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
-        profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
-    }
-
-    // for(int i=0;i<profileForBunchBBImp.size();i++)
-    // {
-    //     profileForBunchBBImp[i] = 1.0/sqrt(2*PI)/rmsBunchLength * exp(-pow(boardBandImp.binPosZ[i] - 0,2)/2/pow(rmsBunchLength,2)) 
-    //                             * macroEleCharge * ElectronCharge * CLight * macroEleNumPerBunch; // [C/s]
-    // }
-
+   
     int indexStart =   ( -rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
     int indexEnd   =   (  rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin;
     int N = indexEnd - indexStart;
   
+
+    double tempProfile[N];
+    for(int i=0;i<N;i++) tempProfile[i] = profileForBunchBBImp[i+indexStart];  
+
+    GetSmoothedBunchProfileGassionFilter(tempProfile,N);
+
+    for(int i=0;i<N;i++) profileForBunchBBImp[i+indexStart] = tempProfile[i];
+
+}
+
+void MPBunch::GetSmoothedBunchProfileGassionFilter(double *profile,int N)
+{
+     
     int K=51;
     const double alpha[3] = { 10, 3.0, 10.0 };   /* alpha values */
     gsl_vector *x = gsl_vector_alloc(N);         /* input vector */
@@ -1386,8 +1620,8 @@ void MPBunch::GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputPa
     gsl_filter_gaussian_workspace *gauss_p = gsl_filter_gaussian_alloc(K);
     double sum = 0.0;
 
-    /* generate input signal */
-    for(int i=0; i<N; i++) gsl_vector_set(x, i, profileForBunchBBImp[i+indexStart]);
+    // /* generate input signal */
+    for(int i=0; i<N; i++) gsl_vector_set(x, i, profile[i]);
     
     gsl_filter_gaussian_kernel(alpha[0], 0, 0, k1);    
     gsl_filter_gaussian(GSL_FILTER_END_PADVALUE, alpha[0], 0, x, y1, gauss_p);
@@ -1402,17 +1636,15 @@ void MPBunch::GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputPa
 
         sum0 += xi;
         sum1 += y1i;  
-        profileForBunchBBImp[i+indexStart] =  y1i; 
+        profile[i] =  y1i; 
     }
     sum0 = sum0 / sum1;
 
-    for(int i=0; i<N; i++) profileForBunchBBImp[i+indexStart] *= sum0;
+    for(int i=0; i<N; i++) profile[i] *= sum0;
     
     gsl_vector_free(x);
     gsl_vector_free(y1);
     gsl_vector_free(k1);
     gsl_rng_free(r);
     gsl_filter_gaussian_free(gauss_p);
-
 }
-

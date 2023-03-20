@@ -23,6 +23,9 @@ using namespace std;
 using std::vector;
 using std::complex;
 
+
+
+
 class MPBunch : public Bunch
 {
 
@@ -46,10 +49,22 @@ public:
     double zAverAnalytical;
     double bunchLengthAnalytical;
     vector<vector<double>> srWakePoten;
+    
+
+    // the wakepoten here decleared for solver in frequecy domain
+    struct WakePotenFromBBI
+    {
+        vector<double> wakePotenZ;
+        vector<double> wakePotenDx;
+        vector<double> wakePotenDy;
+        vector<double> wakePotenQx;
+        vector<double> wakePotenQy;     
+    };    
+    WakePotenFromBBI *wakePotenFromBBI =  new WakePotenFromBBI;
+    
+    
     vector<double> profileForBunchBBImp;
-    vector<double> beamIndVFromBBImpZ;
-    vector<double> beamIndVFromBBImpX;
-    vector<double> beamIndVFromBBImpY;
+    
 
          
     void InitialMPBunch(const ReadInputSettings &inputParameter);        
@@ -60,9 +75,12 @@ public:
     void BunchLongiMomentumUpdateDuetoRF(const ReadInputSettings &inputParameter);
     void BunchTransferDueToSRWake(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const LatticeInterActionPoint &latticeInterActionPoint, int turns);
     void GetZMinMax();
-    void BBImpBunchInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
-    void GetBunchProfileForBeamBBImpEffect(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
+    void BBImpBunchInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp, const LatticeInterActionPoint &latticeInterActionPoint);
+    void BBImpBunchInteractionTD(const ReadInputSettings &inputParameter,const BoardBandImp &boardBandImp,const LatticeInterActionPoint &latticeInterActionPoint,vector<vector<double>> wakePoten);
+    void GetSmoothedBunchProfileGassionFilter(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
+    void GetSmoothedBunchProfileGassionFilter(double *profile,int nBins);
     
+
 
     void BunchMomentumUpdateDuetoRFRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
     // BeamInduced Voltage calculated once per bunch. Bunch distance is from center to center.

@@ -480,8 +480,6 @@ vector<double> WakeFunction::GetBBRWakeFun1(double tau)
         wakeFun[1] += wakeFunTemp[1];
         wakeFun[2] += wakeFunTemp[2];
     }
-
-
     return wakeFun;
 }
 

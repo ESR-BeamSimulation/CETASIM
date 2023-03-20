@@ -665,8 +665,24 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         if(strVec[0]=="bbibunchbinnumberz")
         {
           ringBBImp->bunchBinNumberZ = stoi(strVec[1]);
-        } 
-        
+        }
+        if(strVec[0]=="bbiimpedsimlandtflag")
+        {
+          for(int i=0;i<5;i++) ringBBImp->impedSimFlag[i] = stoi(strVec[i+1]);
+        }
+        if(strVec[0]=="bbiimpedsimquasigreenbunchlength")
+        {
+          ringBBImp->quasiWakeBunchLen = stod(strVec[1]);
+        }
+        if(strVec[0]=="bbiimpedsimtimeorfreflag")
+        {
+          ringBBImp->timeDomain = stoi(strVec[1]);
+        }
+        if(strVec[0]=="bbiwakeinput")
+        {
+          ringBBImp->wakeInput = strVec[1];
+        }
+         
         // 9) driveMode
         if(strVec[0]=="drivemodeon")
         {

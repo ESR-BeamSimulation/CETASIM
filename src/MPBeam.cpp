@@ -32,6 +32,8 @@
 #include <complex>
 #include <iomanip>
 #include <cstring>
+#include <fftw3.h>
+#include <complex.h>
 
 
 
@@ -48,6 +50,7 @@ MPBeam::MPBeam()
 MPBeam::~MPBeam()
 {
       delete strongStrongBunchInfo;
+      delete quasiWakePoten;
     //   delete partCord;
 }
 
@@ -400,6 +403,348 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
     fout.close();       
 }
+void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter,const BoardBandImp &boardBandImp)
+{
+    double rBeta              = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double zMinBin = -boardBandImp.zMax;
+    double dzBin   =  boardBandImp.dz;
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double rfLen   = inputParameter.ringParBasic->t0 / ringHarmH * CLight;
+    int    nBins   =  boardBandImp.binPosZ.size(); // bins for bunch profile, that is 2*boardBandImp.zZImp.size() - 1
+    double rmsBunchLength = inputParameter.ringBBImp->quasiWakeBunchLen;
+    quasiWakePoten->bunchLength = rmsBunchLength;
+
+    int indexStart =  int ( ( -rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin);
+    int indexEnd   =  int ( (  rfLen / 2. - zMinBin + dzBin / 2 ) / dzBin);
+    int N = indexEnd - indexStart;
+    double wz[N],wDx[N],wDy[N],wQx[N],wQy[N];
+
+
+    double temp[nBins];
+    double wakePoten[nBins];
+    for(int i=0;i<nBins;i++)
+    {
+        temp[i] = 1.0/sqrt(2*PI)/rmsBunchLength * exp(-pow(boardBandImp.binPosZ[i],2)/2/pow(rmsBunchLength,2)) * CLight ;   // [1/s] 
+    }
+    
+    fftw_complex *r2cout  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size() // bunch specturm
+    fftw_complex *c2rin   = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
+
+    fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+    fftw_execute(p);
+
+    // (0) - get longitudianl quasi-wake-poten r2cout stores the pspectrum info     
+    for(int i=0;i<boardBandImp.zZImp.size();i++)
+    {
+        complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zZImp[i];
+        c2rin[i][0] = indVF.real();
+        c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+    }
+    p = fftw_plan_dft_c2r_1d(nBins, c2rin, wakePoten, FFTW_ESTIMATE);
+    fftw_execute(p);
+    for(int i=0;i<N;i++)   wz[i] = wakePoten[i+indexStart] / nBins;
+
+    //(1) transverse dipole x 
+    for(int i=0;i<boardBandImp.zZImp.size();i++)
+    {
+        complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zDxImp[i] * li;
+        c2rin[i][0] = indVF.real();
+        c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+    }
+    p = fftw_plan_dft_c2r_1d(nBins, c2rin, wakePoten, FFTW_ESTIMATE);
+    fftw_execute(p); 
+    for(int i=0;i<N;i++)  wDx[i] = wakePoten[i+indexStart] / nBins;
+
+
+    //(2) transverse dipole y 
+    for(int i=0;i<boardBandImp.zZImp.size();i++)
+    {
+        complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zDyImp[i] * li;
+        c2rin[i][0] = indVF.real();
+        c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+    }
+    p = fftw_plan_dft_c2r_1d(nBins, c2rin, wakePoten, FFTW_ESTIMATE);
+    fftw_execute(p); 
+    for(int i=0;i<N;i++)  wDy[i] = wakePoten[i+indexStart] / nBins;
+
+    //(3) transverse quad x 
+    for(int i=0;i<boardBandImp.zZImp.size();i++)
+    {
+        complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQxImp[i] * li;
+        c2rin[i][0] = indVF.real();
+        c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+    }
+    p = fftw_plan_dft_c2r_1d(nBins, c2rin, wakePoten, FFTW_ESTIMATE);
+    fftw_execute(p); 
+    for(int i=0;i<N;i++)  wQx[i] = wakePoten[i+indexStart] / nBins;
+
+    //(4) transverse quad y 
+    for(int i=0;i<boardBandImp.zZImp.size();i++)
+    {
+        complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQyImp[i] * li;
+        c2rin[i][0] = indVF.real();
+        c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+    }
+    p = fftw_plan_dft_c2r_1d(nBins, c2rin, wakePoten, FFTW_ESTIMATE);
+    fftw_execute(p); 
+    for(int i=0;i<N;i++)  wQy[i] = wakePoten[i+indexStart] / nBins;
+
+
+    
+    // re-generate a quasi-wake from impedance here --- stop here 
+    double poszHead =   6 * rmsBunchLength; // wake starts starts point at poz=-6 rms bunch length. 
+    int indexTail   =   0; 
+    int indexHead   =   int ( ( poszHead  + rfLen / 2  ) / dzBin);
+    int indexCen    =   int ( ( 0.0       + rfLen / 2  ) / dzBin);
+    int flipNum     =   indexHead - indexCen;  
+    int dim         =   indexHead - indexTail;
+    
+
+    quasiWakePoten->wz.resize(dim);
+    quasiWakePoten->wDx.resize(dim);
+    quasiWakePoten->wDy.resize(dim);
+    quasiWakePoten->wQx.resize(dim);
+    quasiWakePoten->wQy.resize(dim);
+    quasiWakePoten->binPosZ.resize(dim);
+
+    for(int i=0;i<dim;i++)
+    {
+        quasiWakePoten->binPosZ[i]  = i * dzBin - dim * dzBin;
+        quasiWakePoten->wz[i]  = wz[i];
+        quasiWakePoten->wDx[i] = wDx[i];
+        quasiWakePoten->wDy[i] = wDy[i];
+        quasiWakePoten->wQx[i] = wQx[i];
+        quasiWakePoten->wQy[i] = wQy[i];
+    }
+   
+    // flip the longitudianl wake poten
+    // for(int i= 0; i< indexCen - flipNum ;i++ )
+    // {
+    //     quasiWakePoten->wz[i]  = wz[i];
+    // }
+    // for(int i= 0; i< flipNum ;i++ )
+    // {
+    //     quasiWakePoten->wz [i + indexCen - flipNum] = wz[i + indexCen - flipNum] + wz[indexCen + flipNum - i];
+    // }
+    // quasiWakePoten->wz[indexCen] = wz[indexCen];
+    // flip end 
+
+
+    reverse(quasiWakePoten->wz.begin(),quasiWakePoten->wz.end());
+    reverse(quasiWakePoten->wDx.begin(),quasiWakePoten->wDx.end());
+    reverse(quasiWakePoten->wDy.begin(),quasiWakePoten->wDy.end());
+    reverse(quasiWakePoten->wQx.begin(),quasiWakePoten->wQx.end());
+    reverse(quasiWakePoten->wDy.begin(),quasiWakePoten->wQx.end());
+    
+    // reverse here ensure that  
+    // quasiWakePoten->wz ad quasiWakePoten->wDx... alin from head to tail as show in Fig.2.6
+
+
+    // get wakepoten from wakes
+    // benckmark test of wake poten of differetn approach
+
+    // int nBinBunchDen = rfLen / dzBin;
+    // int nBinWake = quasiWakePoten->wz.size();
+    
+    // ofstream fout("wakePotenL_fliped.dat");
+    // fout<<"SDDS1"<<endl;
+    // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=profile,        units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=indVZ,                                type=float,  &end" <<endl;
+    // fout<<"&data mode=ascii, &end"                                               <<endl;
+
+    // double densityProfile[nBinBunchDen];
+    // for(int i=0;i<nBinBunchDen;i++) densityProfile[i]=0.E0;
+    
+    // for(int k=0;k<10;k++)
+    // {
+    //     fout<<"! page number "<<k + 1<<endl;
+    //     fout<<nBinBunchDen<<endl;
+
+    //     rmsBunchLength = (k+1) * 1.0E-3;
+    //     for(int i=0;i<nBinBunchDen;i++)
+    //     {
+    //         double x          = i * dzBin - rfLen / 2.0;
+    //         densityProfile[i] = 1.0/sqrt(2*PI)/rmsBunchLength * exp(-pow(x,2)/2/pow(rmsBunchLength,2)) ;   // [C/m] 
+    //     }
+
+    //     double wakePotenL = 0;
+
+    //     for(int i=0;i<nBinBunchDen;i++)
+    //     {               
+    //         wakePotenL = 0;
+    //         for(int j=i;j<nBinBunchDen;j++)    
+    //         {
+    //             int tij = j - i;
+    //             if(tij>nBinWake) break;
+    //             wakePotenL -= quasiWakePoten->wz[tij] * densityProfile[j] * dzBin;   //[v/c]*[c/m] * dz
+    //         }
+            
+    //         fout<<setw(15)<<left<<i*dzBin-rfLen/ 2.0 
+    //             <<setw(15)<<left<<densityProfile[i]
+    //             <<setw(15)<<left<<wakePotenL
+    //             <<endl;
+    //     }
+    // }
+
+    // fout.close();
+
+
+    // // get wakepoten from impedacen
+    // ofstream fout1("wakePotenFre.dat");
+    // fout1<<"SDDS1"<<endl;
+    // fout1<<"&column name=z,              units=m,              type=float,  &end" <<endl;
+    // fout1<<"&column name=profile,        units=m,              type=float,  &end" <<endl;
+    // fout1<<"&column name=indVZ,                                type=float,  &end" <<endl;
+    // fout1<<"&data mode=ascii, &end"                                               <<endl;
+
+    // for(int k=0;k<10;k++)
+    // {
+    //     fout1<<"! page number "<<k + 1<<endl;
+    //     fout1<<N<<endl;
+
+    //     rmsBunchLength = (k+1) * 1.0E-3;
+    //     for(int i=0;i<nBins;i++)
+    //     {
+    //         temp[i] = 1.0/sqrt(2*PI)/rmsBunchLength * exp(-pow(boardBandImp.binPosZ[i],2)/2/pow(rmsBunchLength,2)) * CLight ;   // [1/s] 
+    //     }
+        
+    //     fftw_complex *r2cout  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size() // bunch specturm
+    //     fftw_complex *c2rin   = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
+
+    //     fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+    //     fftw_execute(p);
+
+    //     // (0) - get longitudianl quasi-wake-poten r2cout stores the pspectrum info     
+    //     for(int i=0;i<boardBandImp.zZImp.size();i++)
+    //     {
+    //         complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zZImp[i];
+    //         c2rin[i][0] = indVF.real();
+    //         c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+    //     }
+    //     p = fftw_plan_dft_c2r_1d(nBins, c2rin, wakePoten, FFTW_ESTIMATE);
+    //     fftw_execute(p);
+    //     for(int i=0;i<N;i++)   wz[i] = wakePoten[i+indexStart] / nBins;
+
+    //     for(int i=0;i<N;i++)
+    //     {
+    //         fout1<<setw(15)<<left<<boardBandImp.binPosZ[i+indexStart]
+    //             <<setw(15)<<left<<temp[i+indexStart]
+    //             <<setw(15)<<left<<-wz[i]
+    //             <<endl;
+    //     }
+    // }
+    // fout1.close();
+
+    fftw_destroy_plan(p);
+    fftw_free(r2cout);
+    fftw_free(c2rin);
+
+    // for(int i=0;i<N;i++) quasiWakePoten->binPosZ[i] = -rfLen / 2 + i * dzBin;
+
+    // ofstream fout("wakePotenFreqDomain_23mm.dat");
+    // fout<<"SDDS1"<<endl;
+    // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=profile,        units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=indVZ,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVDX,                               type=float,  &end" <<endl;
+    // fout<<"&column name=indVDY,                               type=float,  &end" <<endl;
+    // fout<<"&column name=indVQX,                                type=float,  &end" <<endl;
+    // fout<<"&column name=indVQY,                                type=float,  &end" <<endl;
+    // fout<<"&data mode=ascii, &end"                                               <<endl;
+    // fout<<"! page number " << 1 <<endl;
+    // fout<<N<<endl;
+
+    // for(int i=0;i<dim;i++) 
+    // {
+    //     fout<<setw(15)<<left<<boardBandImp.binPosZ[i+indexStart]
+    //         <<setw(15)<<left<<temp[i+indexStart]
+    //         <<setw(15)<<left<<quasiWakePoten->wz[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wDx[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wDy[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wQx[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wQy[i]
+    //         <<endl;
+    // }
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+}
+void MPBeam::LongWakePotenBenchmark(const ReadInputSettings &inputParameter,const BoardBandImp &boardBandImp)
+{
+
+}
+
+
+void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter)
+{
+    string fileName = inputParameter.ringBBImp->wakeInput;
+
+    int lineNumber = 0;
+    string str;
+    vector<string> strVec;
+    int index = 0;
+    int cenIndex=0;
+
+    // file is from sddsprintout command and impedance is with ele
+    ifstream fin(fileName);
+    while (!fin.eof())
+    {
+        if(lineNumber<5)
+        {
+            getline(fin,str);		 
+            lineNumber++;
+            continue;
+        }
+        getline(fin,str);
+        if(str.length()==0)  continue;
+        StringSplit2(str,strVec);
+        
+        quasiWakePoten->binPosZ.push_back(stod(strVec[0]));
+        quasiWakePoten->wz.push_back( -1*stod(strVec[1]));   // -1 change to Alex Chao definition
+        quasiWakePoten->wDx.push_back(-1*stod(strVec[2]));
+        quasiWakePoten->wDy.push_back(-1*stod(strVec[3]));
+        quasiWakePoten->wQx.push_back(-1*stod(strVec[4]));
+        quasiWakePoten->wQy.push_back(-1*stod(strVec[5]));
+        if(stod(strVec[0])==0) cenIndex = index;
+        index ++;
+    }
+    
+    double z0 = quasiWakePoten->binPosZ[0];
+    for(int i=0 ;i<quasiWakePoten->binPosZ.size(); i++) quasiWakePoten->binPosZ[i] -= z0; 
+
+    // flip the longitudinal wakes
+    // int wakeBins = quasiWakePoten->binPosZ.size();
+    // vector<double> temp(index,0.E0);
+    // for(int i=0;i<temp.size();i++)  temp[i] = quasiWakePoten->wz[i];
+    // quasiWakePoten->wz[0] = temp[cenIndex] ; 
+    // for(int i=1;i<cenIndex;i++)                    quasiWakePoten->wz[i] = temp[cenIndex + i] + temp[cenIndex - i];
+    // for(int i=cenIndex;i<wakeBins - cenIndex;i++)  quasiWakePoten->wz[i] = temp[cenIndex + i];
+    // for(int i=wakeBins - cenIndex ;i<wakeBins;i++) quasiWakePoten->wz[i] =  0.E0;
+    // end of flips
+
+    
+    // quasiWakePoten->wz ad quasiWakePoten->wDx... alin from head to tail as show in Fig.2.6
+    // quasiWakePoten->wz[0] is the head particle. 
+
+
+    // ofstream fout("test.dat");
+    // for(int i=0;i<quasiWakePoten->wz.size();i++)
+    // {
+    //     fout<<setw(15)<<left<<quasiWakePoten->binPosZ[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wz[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wDx[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wDy[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wQx[i]
+    //         <<setw(15)<<left<<quasiWakePoten->wQy[i]    
+    //         <<endl;
+    // }
+
+    // fout.close();
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+}
+
 
 void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator)
 {
@@ -426,15 +771,26 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     BoardBandImp boardBandImp;
     if(bBImpFlag)
     {
-        boardBandImp.ReadInImp(inputParameter);
-        for(int i=0;i<beamVec.size();i++)
+        if(inputParameter.ringBBImp->timeDomain==0)
         {
-            beamVec[i].profileForBunchBBImp.resize(boardBandImp.nBins*2-1,0E0);
-            beamVec[i].beamIndVFromBBImpZ.resize(boardBandImp.nBins*2-1,0E0);
-            beamVec[i].beamIndVFromBBImpX.resize(boardBandImp.nBins*2-1,0E0);
-            beamVec[i].beamIndVFromBBImpY.resize(boardBandImp.nBins*2-1,0E0);
+            boardBandImp.ReadInImp(inputParameter);
+            for(int i=0;i<beamVec.size();i++)
+            {
+                beamVec[i].profileForBunchBBImp.resize(boardBandImp.nBins*2-1,0E0);
+                beamVec[i].wakePotenFromBBI->wakePotenZ.resize(boardBandImp.nBins*2-1,0E0);
+                beamVec[i].wakePotenFromBBI->wakePotenDx.resize(boardBandImp.nBins*2-1,0E0);
+                beamVec[i].wakePotenFromBBI->wakePotenDy.resize(boardBandImp.nBins*2-1,0E0);
+                beamVec[i].wakePotenFromBBI->wakePotenQx.resize(boardBandImp.nBins*2-1,0E0);
+                beamVec[i].wakePotenFromBBI->wakePotenQy.resize(boardBandImp.nBins*2-1,0E0);         
+            }
         }
-    }
+        else
+        {
+            // GetQuasiWakePoten(inputParameter,boardBandImp);
+            GetQuasiWakePoten(inputParameter);
+            
+        }      
+    }   
 
     // -----------------longRange wake function ---------------    
     WakeFunction lRWakeFunction;
@@ -504,6 +860,8 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         fout<<colname<<endl;
         colname = string("&column name=") + string("rmsEmity_")      + to_string(j) + string(", units=m*rad,   type=float,  &end");            
         fout<<colname<<endl;
+        colname = string("&column name=") + string("transmission_")  + to_string(j) + string(",                type=float,  &end");            
+        fout<<colname<<endl;
     }
     fout<<"&data mode=ascii, &end"<<endl;
     for(int i=0 ;i<5;i++) fout<<inputParameter.ringParBasic->radIntegral[i]<<endl;
@@ -517,7 +875,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     // run loop starts, for nTrns and each trun for k interaction-points
     for(int n=0;n<nTurns;n++)
     {
-        if(n%100==0) cout<<n<<"  turns"<<endl;
+        if(n%10==0) cout<<n<<"  turns, bunch_0 transmission: "<<beamVec[0].transmission <<endl;
 
         MPBeamRMSCal(latticeInterActionPoint, 0);
         MPGetBeamInfo();
@@ -550,9 +908,9 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
 
         BeamMomtumUpdateDueToRF(inputParameter,latticeInterActionPoint,cavityResonator);
-
+        
         // Subroutine in below only change the momentum 
-        if(bBImpFlag)  BBImpBeamInteraction(inputParameter,boardBandImp);
+        if(bBImpFlag)  BBImpBeamInteraction(inputParameter,boardBandImp,latticeInterActionPoint);
 
         if(lRWakeFlag) LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint);
            
@@ -571,6 +929,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
         MPBeamRMSCal(latticeInterActionPoint, 0);
         MPGetBeamInfo();
+
 
         fout<<setw(15)<<left<<n
             <<setw(15)<<left<< latticeInterActionPoint.totIonCharge
@@ -603,7 +962,8 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
                 <<setw(15)<<left<<beamVec[index].rmsRx
                 <<setw(15)<<left<<beamVec[index].rmsRy
                 <<setw(15)<<left<<beamVec[index].emittanceX
-                <<setw(15)<<left<<beamVec[index].emittanceY;
+                <<setw(15)<<left<<beamVec[index].emittanceY
+                <<setw(15)<<left<<beamVec[index].transmission;
         }
         fout<<endl;        
         
@@ -646,24 +1006,24 @@ void MPBeam::BeamTransferDueToLatticeL(const ReadInputSettings &inputParameter)
 
 void MPBeam::BeamSynRadDamping(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint)
 {
-    // for(int j=0;j<beamVec.size();j++)
-    // {
-    //     beamVec[j].BunchSynRadDamping(inputParameter,latticeInterActionPoint);
-    // }
+    for(int j=0;j<beamVec.size();j++)
+    {
+        beamVec[j].BunchSynRadDamping(inputParameter,latticeInterActionPoint);
+    }
 
     // GPU version of synRadDamping simulation
-    int totalPartiNum=0;
-    for(int i=0;i<beamVec.size();i++)
-    {
-        totalPartiNum += beamVec[i].macroEleNumPerBunch;
-    }
-    double partCord[6*totalPartiNum];
+    // int totalPartiNum=0;
+    // for(int i=0;i<beamVec.size();i++)
+    // {
+    //     totalPartiNum += beamVec[i].macroEleNumPerBunch;
+    // }
+    // double partCord[6*totalPartiNum];
     
-    int  paraNum = sizeof(latticeInterActionPoint.latticeSynRadBRH)/sizeof(latticeInterActionPoint.latticeSynRadBRH[0]);
+    // int  paraNum = sizeof(latticeInterActionPoint.latticeSynRadBRH)/sizeof(latticeInterActionPoint.latticeSynRadBRH[0]);
 
-    CopyPartCordToGPU(partCord,totalPartiNum); 
-    GPU_PartiSynRad(totalPartiNum,partCord,paraNum,latticeInterActionPoint.latticeSynRadBRH,latticeInterActionPoint.latticeSynRadCoff);
-    CopyPartCordFromGPU(partCord);
+    // CopyPartCordToGPU(partCord,totalPartiNum); 
+    // GPU_PartiSynRad(totalPartiNum,partCord,paraNum,latticeInterActionPoint.latticeSynRadBRH,latticeInterActionPoint.latticeSynRadCoff);
+    // CopyPartCordFromGPU(partCord);
 }
 
 
@@ -687,24 +1047,24 @@ void MPBeam::BeamTransferPerTurnR66AndSynRadGPU(const ReadInputSettings &inputPa
 
 void MPBeam::BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint)
 {
-    // for(int i=0;i<beamVec.size();i++)
-    // {
-        //  beamVec[i].BunchTransferDueToLatticeOneTurnT66GPU(inputParameter,latticeInterActionPoint);
-        // beamVec[i].BunchTransferDueToLatticeOneTurnT66(inputParameter,latticeInterActionPoint);
-    // }
-
-    // GPU version of the beam transfer
-    int totalPartiNum=0;
     for(int i=0;i<beamVec.size();i++)
     {
-        totalPartiNum += beamVec[i].macroEleNumPerBunch;
+        //  beamVec[i].BunchTransferDueToLatticeOneTurnT66GPU(inputParameter,latticeInterActionPoint);
+        beamVec[i].BunchTransferDueToLatticeOneTurnT66(inputParameter,latticeInterActionPoint);
     }
-    double partCord[6*totalPartiNum];
-    int  paraNum = sizeof(latticeInterActionPoint.latticeParaForOneTurnMap)/sizeof(latticeInterActionPoint.latticeParaForOneTurnMap[0]);
+
+    // GPU version of the beam transfer
+    // int totalPartiNum=0;
+    // for(int i=0;i<beamVec.size();i++)
+    // {
+    //     totalPartiNum += beamVec[i].macroEleNumPerBunch;
+    // }
+    // double partCord[6*totalPartiNum];
+    // int  paraNum = sizeof(latticeInterActionPoint.latticeParaForOneTurnMap)/sizeof(latticeInterActionPoint.latticeParaForOneTurnMap[0]);
     
-    CopyPartCordToGPU(partCord,totalPartiNum);
-    GPU_PartiOneTurnTransfer(totalPartiNum,partCord,paraNum,latticeInterActionPoint.latticeParaForOneTurnMap);
-    CopyPartCordFromGPU(partCord);
+    // CopyPartCordToGPU(partCord,totalPartiNum);
+    // GPU_PartiOneTurnTransfer(totalPartiNum,partCord,paraNum,latticeInterActionPoint.latticeParaForOneTurnMap);
+    // CopyPartCordFromGPU(partCord);
    
     
 }
@@ -746,14 +1106,33 @@ void MPBeam::CopyPartCordToGPU(double *partCord, int totalPartiNum)
     
 }
 
-void MPBeam::BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp )
+void MPBeam::BBImpBeamInteraction(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp, const LatticeInterActionPoint &latticeInterActionPoint)
 {
+    
+    int wakeBins = quasiWakePoten->wz.size();
+    vector<vector<double>> wakePoten(6,vector<double>(wakeBins,0));
+    wakePoten[1] = quasiWakePoten->wz;
+    wakePoten[2] = quasiWakePoten->wDx;
+    wakePoten[3] = quasiWakePoten->wDy;
+    wakePoten[4] = quasiWakePoten->wQx;
+    wakePoten[5] = quasiWakePoten->wQy;
+    wakePoten[0] = quasiWakePoten->binPosZ;
+
+
     for(int j=0;j<beamVec.size();j++)
     {
         if(beamVec[j].macroEleCharge==0) continue;
-        beamVec[j].BBImpBunchInteraction(inputParameter,boardBandImp); 
-          
+        if(inputParameter.ringBBImp->timeDomain==1)
+        {
+            beamVec[j].BBImpBunchInteractionTD(inputParameter,boardBandImp,latticeInterActionPoint,wakePoten);
+        }
+        else if(inputParameter.ringBBImp->timeDomain==0)
+        {
+            beamVec[j].BBImpBunchInteraction(inputParameter,boardBandImp,latticeInterActionPoint);
+        }
+        else cerr<<"wrong setting in BoardBandImpedance namelist"<<endl;    
     }
+
 }
 
 void MPBeam::BeamTransferDuetoDriveMode(const ReadInputSettings &inputParameter, const int n)

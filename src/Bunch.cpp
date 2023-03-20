@@ -159,16 +159,35 @@ void Bunch::MarkLostParticle(const ReadInputSettings &inputParameter,const Latti
 {
     int ringHarm        = inputParameter.ringParRf->ringHarm;
     double t0           = inputParameter.ringParBasic->t0;
-
+    int count           = 0;
+    int k = 0;
     for(int i=0;i<macroEleNumPerBunch;i++)
     {    
-        if( abs(ePositionZ[i]) > t0 * CLight / ringHarm ) eSurive[i] = 2;   // loss in longitudianl
+        if( abs(ePositionZ[i]) > t0 * CLight / ringHarm / 2 ) 
+        {
+            eSurive[i] = 2;   // loss in longitudianl
+            count++;
+        }
+        
+        double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2) ; 
+        if(lossTemp >1) 
+        {   
+            eSurive[i] = 1;                                     // loss in transverse
+            count++;
+        }
+    }
+    transmission = (macroEleNumPerBunch - count) / double(macroEleNumPerBunch);
+    if(transmission<0.5)
+    {
+        cout<<"bunch at harmoinc "<<bunchHarmNum<<", more than 50% particles are lost"<<endl;
+        exit(0);
     }
 
 }
 
 void Bunch::GaussianField(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy)
 {
+
     double r2 = pow(posx,2) + pow(posy,2);
     double sigma  = rmsRxTemp;
     double sigma2 = sigma * sigma;
@@ -266,6 +285,7 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     // generate the transfer matrix for each particle in bunch 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
+        if(eSurive[i]!=0) continue;
         // elegant ILMATRIX Eq(56), only keeo the first order here. -- notice the unit of \frac{d eta}/{d delta}
         ePositionX[i]  -=  etax  * eMomentumZ[i];   // [m] 
         ePositionY[i]  -=  etay  * eMomentumZ[i];   // [m]
@@ -313,7 +333,8 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         gsl_matrix_set(cord0,3,0,eMomentumY[i]);
         gsl_matrix_set(cord0,4,0,ePositionZ[i]);
         gsl_matrix_set(cord0,5,0,eMomentumZ[i]);
-
+       
+        
         // gsl_matrix_mul(ILmatrix,cord0,cord1);
         gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,ILmatrix,cord0,0.0,cord1); 
         ePositionX[i]  = gsl_matrix_get(cord1,0,0);
@@ -323,7 +344,17 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         ePositionZ[i]  = gsl_matrix_get(cord1,4,0);
         eMomentumZ[i]  = gsl_matrix_get(cord1,5,0);
 
+        // for(int j=0;j<6;j++)
+        // {
+        //     for(int k=0;k<6;k++) printf("%15.7f\t",ILmatrix->data[j * ILmatrix->tda+k]);
+        //     cout<<endl;       
+        // }
+        // for(int j=0;j<6;j++) printf("%15.10f\t", cord0->data[j * cord0->tda]);
+        // cout<<endl;
+        // for(int j=0;j<6;j++) printf("%15.10f\t", cord1->data[j * cord1->tda]);
+        // cout<<endl;
             
+        // getchar();
         // longitudinal pozition updated in one turn -- momentum compactor of the whole ring. 
         ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  + alphac[1] * pow( eMomentumZ[i] ,2) + alphac[2] * pow( eMomentumZ[i], 3) ) ;    
     }
@@ -363,6 +394,7 @@ void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,c
    
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
+        if(eSurive[i]!=0) continue;
         // refers to SY. Lee Eq. 2.67
 
         xtemp  = latticeInterActionPoint.xTransferMatrix[k][0] * ePositionX[i]
@@ -441,7 +473,8 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
 
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
-      
+        if(eSurive[i]!=0) continue;
+        
         vecX->data[0 * vecX->tda] = ePositionX[i];
         vecX->data[1 * vecX->tda] = eMomentumX[i];
         vecX->data[2 * vecX->tda] = ePositionY[i];
@@ -1075,9 +1108,7 @@ void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPara
                 <<setw(15)<<left<<longiTrajZeta[i][k][0]
                 <<setw(15)<<left<<longiTrajZeta[i][k][1]
                 <<endl;
-        }
-    
-        
+        }      
     }
     
     fout.close();        
