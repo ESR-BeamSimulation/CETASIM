@@ -86,10 +86,12 @@ public:
     double rmsEnergySpread;
     double rmsRx;
     double rmsRy;
-    double emittanceX;      // rms emittance
+    double emittanceX;      // rms emittance projected
     double emittanceY;      // rms emittance
     double emittanceZ;
     double totIonCharge;
+    double eigenEmitX,eigenEmitY;
+    double emitXY4D=0;
 
     struct BunchRFModeInfo{
         vector<complex<double> > induceVolBunchCen;

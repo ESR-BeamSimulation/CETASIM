@@ -33,6 +33,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
+#include <gsl/gsl_linalg.h>
 #include <memory.h>
 #include <fftw3.h>
 #include <complex.h>
@@ -474,8 +475,131 @@ void MPBunch::GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
     // }
 
     GetZMinMax();
-
+    GetEigenEmit(latticeInterActionPoint);
 }
+void MPBunch::GetEigenEmit(const LatticeInterActionPoint &latticeInterActionPoint)
+{
+    double etax   = latticeInterActionPoint.twissDispX[0];
+    double etaxp  = latticeInterActionPoint.twissDispPX[0];  // \frac{disP}{ds} 
+    double etay   = latticeInterActionPoint.twissDispY[0];
+    double etayp  = latticeInterActionPoint.twissDispPY[0];  // \frac{disP}{ds} 
+
+    vector<double> x  = ePositionX;
+    vector<double> y  = ePositionY;
+    vector<double> xp = eMomentumX;
+    vector<double> yp = eMomentumY;
+    vector<double> zp = eMomentumZ;
+
+    // substracut the orbit shift due to the dispersion // Ref. Elegant ILMatrix Eq(56)
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        x[i]   -=  etax  * zp[i];   // [m] 
+        y[i]   -=  etay  * zp[i];   // [m]
+        xp[i]  -=  etaxp * zp[i];   // [rad]
+        yp[i]  -=  etayp * zp[i];   // [rad]
+    }
+
+    double averX  = std::accumulate(x.begin(),  x.end(),  0);
+    double averY  = std::accumulate(y.begin(),  y.end(),  0);
+    double averXP = std::accumulate(xp.begin(), xp.end(), 0);
+    double averYP = std::accumulate(yp.begin(), yp.end(), 0);
+
+    double aver2[10] = {0};  // x_x, x_xp, x_y,x_yp/ Ref. Lars, PRAB,16,044201 
+    
+
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        x[i]   -=  averX;   
+        y[i]   -=  averY;   // [m]
+        xp[i]  -=  averXP;   // [rad]
+        yp[i]  -=  averYP;   // [rad]
+
+        aver2[0] +=  x[i] *   x[i];
+        aver2[1] +=  x[i] *  xp[i];
+        aver2[2] +=  x[i] *   y[i];
+        aver2[3] +=  x[i] *  yp[i];
+        aver2[4] += xp[i] *  xp[i];
+        aver2[5] += xp[i] *   y[i];
+        aver2[6] += xp[i] *  yp[i];
+        aver2[7] +=  y[i] *   y[i];
+        aver2[8] +=  y[i] *  yp[i];
+        aver2[9] += yp[i] *  yp[i]; 
+    }
+
+    for(int i=0;i<10;i++) aver2[i] /= macroEleNumPerBunch;
+
+    // aver2[0] = 8.57;
+    // aver2[1] = -4.34;
+    // aver2[2] = -3.83;
+    // aver2[3] = -1.15;
+    // aver2[4] = 3.35;
+    // aver2[5] = -0.54;
+    // aver2[6] = 1.52;
+    // aver2[7] = 11.2;
+    // aver2[8] = -3.05;
+    // aver2[9] = 1.87;
+
+    gsl_matrix *sympleMarixJ4 = gsl_matrix_alloc (4, 4);
+    gsl_matrix_set_zero(sympleMarixJ4);
+    gsl_matrix_set(sympleMarixJ4,0,1,1);
+    gsl_matrix_set(sympleMarixJ4,1,0,-1);
+    gsl_matrix_set(sympleMarixJ4,2,3,1);
+    gsl_matrix_set(sympleMarixJ4,3,2,-1);
+
+
+    gsl_matrix *simgMatrix    = gsl_matrix_alloc (4, 4);
+ 
+    gsl_matrix_set(simgMatrix,0,0,aver2[0]);
+    gsl_matrix_set(simgMatrix,0,1,aver2[1]);
+    gsl_matrix_set(simgMatrix,0,2,aver2[2]);
+    gsl_matrix_set(simgMatrix,0,3,aver2[3]);
+
+    gsl_matrix_set(simgMatrix,1,0,aver2[1]);
+    gsl_matrix_set(simgMatrix,1,1,aver2[4]);
+    gsl_matrix_set(simgMatrix,1,2,aver2[5]);
+    gsl_matrix_set(simgMatrix,1,3,aver2[6]);    
+
+    gsl_matrix_set(simgMatrix,2,0,aver2[2]);
+    gsl_matrix_set(simgMatrix,2,1,aver2[5]);
+    gsl_matrix_set(simgMatrix,2,2,aver2[7]);
+    gsl_matrix_set(simgMatrix,2,3,aver2[8]);  
+
+    gsl_matrix_set(simgMatrix,3,0,aver2[3]);
+    gsl_matrix_set(simgMatrix,3,1,aver2[6]);
+    gsl_matrix_set(simgMatrix,3,2,aver2[8]);
+    gsl_matrix_set(simgMatrix,3,3,aver2[9]);  
+
+  
+
+    gsl_matrix *matrixCJ  = gsl_matrix_alloc (4, 4);
+    gsl_matrix *matrixCJ2 = gsl_matrix_alloc (4, 4);
+    gsl_matrix_set_zero(matrixCJ);
+    gsl_matrix_set_zero(matrixCJ2);
+
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,simgMatrix,sympleMarixJ4,0.0,matrixCJ); 
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matrixCJ,  matrixCJ,     0.0,matrixCJ2); 
+
+    
+    double trCJ2=0;
+    for(int i=0;i<4;i++) trCJ2 += gsl_matrix_get(matrixCJ2,i,i);
+    
+    double  det = get_det(simgMatrix);
+
+    eigenEmitX = sqrt(- trCJ2 + sqrt( trCJ2 * trCJ2 -  16 * det ) )/2;
+    eigenEmitY = sqrt(- trCJ2 - sqrt( trCJ2 * trCJ2 -  16 * det ) )/2; 
+
+    emitXY4D = sqrt(sqrt(det));
+
+    gsl_matrix_free(matrixCJ);
+    gsl_matrix_free(matrixCJ2);
+    gsl_matrix_free(simgMatrix);
+    gsl_matrix_free(sympleMarixJ4);
+
+
+ 
+}
+
+
 
 void MPBunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
@@ -1252,7 +1376,7 @@ void MPBunch::BBImpBunchInteractionTD(const ReadInputSettings &inputParameter, c
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
     int ringHarmH             = inputParameter.ringParRf->ringHarm;
     double rfLen              = inputParameter.ringParBasic->t0 / ringHarmH * CLight; 
-    double dzBin              = wakePoten[0][1] - wakePoten[0][0];
+    double dzBin              = abs(wakePoten[0][1] - wakePoten[0][0]);
 
     double zMinBin            = - 1 * rfLen / 2;
     
@@ -1300,9 +1424,10 @@ void MPBunch::BBImpBunchInteractionTD(const ReadInputSettings &inputParameter, c
         }
     }
 
-    // ofstream fout("wakePotenTimeDomainFlipped_23mm.dat");
+    // ofstream fout("wakePotenTimeDomain_fromGreenFun.dat");
     // fout<<"SDDS1"<<endl;
     // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=profile,        units=m,              type=float,  &end" <<endl;
     // fout<<"&column name=indVZ,                                type=float,  &end" <<endl;
     // fout<<"&column name=indVDX,                               type=float,  &end" <<endl;
     // fout<<"&column name=indVDY,                               type=float,  &end" <<endl;
@@ -1340,6 +1465,7 @@ void MPBunch::BBImpBunchInteractionTD(const ReadInputSettings &inputParameter, c
     
         
         // fout<<setw(15)<<left<<i * dzBin + zMinBin
+        //     <<setw(15)<<left<<-densityProfile[i]
         //     <<setw(15)<<left<<temp[0]
         //     <<setw(15)<<left<<temp[1]
         //     <<setw(15)<<left<<temp[2]

@@ -179,6 +179,7 @@ void LatticeInterActionPoint::SetLatticeBRHForSynRad(const ReadInputSettings &in
     latticeSynRadCoff[4] = sqrt(1 - pow(latticeSynRadCoff[1],2)) * sqrt(inputParameter.ringParBasic->emitNat[1]);
     latticeSynRadCoff[5] = sqrt(1 - pow(latticeSynRadCoff[2],2)) * sqrt(inputParameter.ringParBasic->emitNat[2]);
 
+
     int k=0;
     //	 set the J2_sympeletic matrix
     gsl_matrix * sympleMarixJ = gsl_matrix_alloc (2, 2);
@@ -215,26 +216,20 @@ void LatticeInterActionPoint::SetLatticeBRHForSynRad(const ReadInputSettings &in
 
     //	// get H31 sub_matrix;
     gsl_matrix_transpose(dispMatrixHX);
-
     gsl_matrix_mul(dispMatrixHX,sympleMarixJ,tempMatrix1);
     gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
     gsl_matrix_scale (tempMatrix2, -1);
     gsl_matrix_memcpy (H31, tempMatrix2);
-
     gsl_matrix_transpose(dispMatrixHX);
 
 
     //	// get H32 sub_matrix;
     gsl_matrix_transpose(dispMatrixHY);
-
     gsl_matrix_mul(dispMatrixHY,sympleMarixJ,tempMatrix1);
     gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
     gsl_matrix_scale (tempMatrix2, -1);
-
     gsl_matrix_memcpy (H32, tempMatrix2);
     gsl_matrix_transpose(dispMatrixHY);
-
-
 
     //	// set H Marix
     gsl_matrix_set(dispMatrixH,0,4,-gsl_matrix_get(dispMatrixHX,0,0));
@@ -265,17 +260,14 @@ void LatticeInterActionPoint::SetLatticeBRHForSynRad(const ReadInputSettings &in
     gsl_matrix * R2  = gsl_matrix_alloc (2, 2);     //coupling matrix Eq.(6)
     // gsl_matrix_set_identity(R2);                  // full coupling
     gsl_matrix_set_zero(R2);                        // no coupling at the point in SR calculation
-    // gsl_matrix_set(R2,0,0,1);
-    // gsl_matrix_set(R2,1,1,0.1);
-
-    double b = sqrt(1 - gsl_matrix_get(R2,0,0) * gsl_matrix_get(R2,1,1) - gsl_matrix_get(R2,1,0) * gsl_matrix_get(R2,0,1) );
-    // double b = sqrt(1 - get_det(R2))
-   
+    // gsl_matrix_set(R2,1,0,inputParameter.ringParBasic->tengR21);
+    double det = gsl_matrix_get(R2,0,0) * gsl_matrix_get(R2,1,1) - gsl_matrix_get(R2,1,0) * gsl_matrix_get(R2,0,1);
+    double b = sqrt(1 - det);
+    
     gsl_matrix * R12  = gsl_matrix_alloc (2, 2);
     gsl_matrix * R21  = gsl_matrix_alloc (2, 2);
 
-
-    //	//set R12
+    // set R12
     gsl_matrix_transpose(R2);
     gsl_matrix_mul(R2,sympleMarixJ,tempMatrix1);
     gsl_matrix_mul(sympleMarixJ,tempMatrix1,tempMatrix2);
@@ -336,9 +328,12 @@ void LatticeInterActionPoint::SetLatticeBRHForSynRad(const ReadInputSettings &in
     gsl_matrix_set(twissMatrixB,5,4,a10);
     gsl_matrix_set(twissMatrixB,5,5,a11);
 
-     gsl_matrix * cordTransfer  = gsl_matrix_alloc (6, 6);
+
+    gsl_matrix * cordTransfer  = gsl_matrix_alloc (6, 6);
     gsl_matrix * invCordTransfer  = gsl_matrix_alloc (6, 6);
     gsl_matrix * cordTransferTemp  = gsl_matrix_alloc (6, 6);
+
+    
     gsl_matrix_mul(tengMatrixR,dispMatrixH,cordTransferTemp);
     gsl_matrix_mul(twissMatrixB,cordTransferTemp,cordTransfer);
 
@@ -359,16 +354,40 @@ void LatticeInterActionPoint::SetLatticeBRHForSynRad(const ReadInputSettings &in
     gsl_matrix_mul(cordTransfer,sympleMarixJ6,cordTransferTemp);
     gsl_matrix_mul(sympleMarixJ6,cordTransferTemp,invCordTransfer);
     gsl_matrix_scale (invCordTransfer, -1);
-
     gsl_matrix_transpose(cordTransfer);
+
+
+    // test M^{T}.J6.M==J6
+    // gsl_matrix *  mat66Temp = gsl_matrix_alloc (6, 6);
+    // gsl_matrix_transpose(cordTransfer);
+    // gsl_matrix_mul(cordTransfer,sympleMarixJ6,cordTransferTemp);
+    // gsl_matrix_transpose(cordTransfer);
+    // gsl_matrix_mul(cordTransferTemp,cordTransfer,mat66Temp);
+
+    // for(int i=0;i<6;i++)
+    // {
+    //     for(int j=0;j<6;j++)
+    //     {
+            
+    //         cout<<setw(15)<<left<<gsl_matrix_get(invCordTransfer,i,j) ;
+    //     }
+    //     cout<<endl;
+    // }
+    // cout<<__FILE__<<endl;
+    // getchar();
+
+
 
     for(int i=0;i<6;i++)
     {
         for(int j=0;j<6;j++)
         {
             latticeSynRadBRH[6*i+j] = gsl_matrix_get(cordTransfer,i,j);
+            // cout<<setw(15)<<left<<latticeSynRadBRH[6*i+j];
         }
+        // cout<<endl;
     }
+    // getchar();
 
     for(int i=0;i<6;i++)
     {

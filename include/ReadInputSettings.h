@@ -44,7 +44,8 @@ public:
         double couplingfactorXY;
         double naturalEmit;
         double naturalBunchLength= 0.E0;
- 
+        double tengR21 =0.E0;
+        double skewQuadFocLen=0;
         // calculated
         double  rGamma; 
         double  rBeta;  

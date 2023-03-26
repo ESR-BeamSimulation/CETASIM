@@ -272,9 +272,15 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     gsl_matrix *ILmatrix  = gsl_matrix_alloc (6, 6);
     gsl_matrix *cord0     = gsl_matrix_alloc (6, 1);
     gsl_matrix *cord1     = gsl_matrix_alloc (6, 1);
+    gsl_matrix *skewQuad  = gsl_matrix_alloc (6, 6);
     gsl_matrix_set_zero(ILmatrix);
     gsl_matrix_set_zero(cord0);
     gsl_matrix_set_zero(cord1);
+    gsl_matrix_set_identity(skewQuad);
+    
+    gsl_matrix_set(skewQuad,1,2,-inputParameter.ringParBasic->skewQuadFocLen);
+    gsl_matrix_set(skewQuad,3,0,-inputParameter.ringParBasic->skewQuadFocLen);
+
 
     //ref. Elegant ILMatrix element
     double xPosN,yPosN,xMomN,yMomN;
@@ -336,13 +342,19 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
        
         
         // gsl_matrix_mul(ILmatrix,cord0,cord1);
-        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,ILmatrix,cord0,0.0,cord1); 
-        ePositionX[i]  = gsl_matrix_get(cord1,0,0);
-        eMomentumX[i]  = gsl_matrix_get(cord1,1,0);
-        ePositionY[i]  = gsl_matrix_get(cord1,2,0);
-        eMomentumY[i]  = gsl_matrix_get(cord1,3,0);
-        ePositionZ[i]  = gsl_matrix_get(cord1,4,0);
-        eMomentumZ[i]  = gsl_matrix_get(cord1,5,0);
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,ILmatrix,cord0,0.0,cord1);
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,skewQuad,cord1,0.0,cord0);
+
+        
+        
+        ePositionX[i]  = gsl_matrix_get(cord0,0,0);
+        eMomentumX[i]  = gsl_matrix_get(cord0,1,0);
+        ePositionY[i]  = gsl_matrix_get(cord0,2,0);
+        eMomentumY[i]  = gsl_matrix_get(cord0,3,0);
+        ePositionZ[i]  = gsl_matrix_get(cord0,4,0);
+        eMomentumZ[i]  = gsl_matrix_get(cord0,5,0);
+
+
 
         // for(int j=0;j<6;j++)
         // {
@@ -362,6 +374,7 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     gsl_matrix_free(ILmatrix);
     gsl_matrix_free (cord0);
     gsl_matrix_free (cord1);
+    gsl_matrix_free(skewQuad);
 
 
 
@@ -433,17 +446,17 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     for(int i=0;i<synchRadDampTime.size();i++)
     {
         synchRadDampTime[i] = inputParameter.ringParBasic->synchRadDampTime[i];
+        
     }
 
-    gsl_matrix * cordTransfer  = gsl_matrix_alloc (6, 6);
+    gsl_matrix * cordTransfer     = gsl_matrix_alloc (6, 6);
     gsl_matrix * invCordTransfer  = gsl_matrix_alloc (6, 6);
-
 
     for(int i=0;i<6;i++)
     {
         for(int j=0;j<6;j++)
         {
-            gsl_matrix_set(cordTransfer,i,j,latticeInterActionPoint.latticeSynRadBRH[6*i+j]);
+            gsl_matrix_set(cordTransfer,   i,j,latticeInterActionPoint.latticeSynRadBRH[6*i+j]);
             gsl_matrix_set(invCordTransfer,i,j,latticeInterActionPoint.latticeSynRadBRH[6*i+j+36]);
         }
     }
@@ -460,6 +473,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     coeff[0] = sqrt(1 - pow(lambda[0],2)) * sqrt(inputParameter.ringParBasic->emitNat[0]);
     coeff[1] = sqrt(1 - pow(lambda[1],2)) * sqrt(inputParameter.ringParBasic->emitNat[1]);
     coeff[2] = sqrt(1 - pow(lambda[2],4)) * sqrt(inputParameter.ringParBasic->emitNat[2]);
+
 
     gsl_matrix * vecX   = gsl_matrix_alloc (6, 1);
     gsl_matrix * vecNX  = gsl_matrix_alloc (6, 1);

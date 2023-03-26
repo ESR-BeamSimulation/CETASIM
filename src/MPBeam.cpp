@@ -423,24 +423,28 @@ void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter,const Boa
 
     double temp[nBins];
     double wakePoten[nBins];
+    
     for(int i=0;i<nBins;i++)
     {
-        temp[i] = 1.0/sqrt(2*PI)/rmsBunchLength * exp(-pow(boardBandImp.binPosZ[i],2)/2/pow(rmsBunchLength,2)) * CLight ;   // [1/s] 
+        temp[i] = 1.0/sqrt(2*PI)/rmsBunchLength * exp(-pow(boardBandImp.binPosZ[i],2)/2/pow(rmsBunchLength,2)) * CLight ;   // [C/s] 
     }
     
     fftw_complex *r2cout  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size() // bunch specturm
     fftw_complex *c2rin   = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
-
+    
     fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
     fftw_execute(p);
 
-    // (0) - get longitudianl quasi-wake-poten r2cout stores the pspectrum info     
+
+    // (0) - get longitudianl quasi-wake-poten r2cout stores the pspectrum info         
     for(int i=0;i<boardBandImp.zZImp.size();i++)
     {
         complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zZImp[i];
+        // complex<double> indVF = boardBandImp.zZImp[i];
         c2rin[i][0] = indVF.real();
-        c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        c2rin[i][1] = indVF.imag();                                    // [C/s] * [Ohm] = [V]   
     }
+    
     p = fftw_plan_dft_c2r_1d(nBins, c2rin, wakePoten, FFTW_ESTIMATE);
     fftw_execute(p);
     for(int i=0;i<N;i++)   wz[i] = wakePoten[i+indexStart] / nBins;
@@ -491,13 +495,17 @@ void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter,const Boa
     for(int i=0;i<N;i++)  wQy[i] = wakePoten[i+indexStart] / nBins;
 
 
-    
-    // re-generate a quasi-wake from impedance here --- stop here 
+    fftw_destroy_plan(p);
+    fftw_free(r2cout);
+    fftw_free(c2rin);
+
+
+    // re-generate a quasi-wake from impedance here
     double poszHead =   6 * rmsBunchLength; // wake starts starts point at poz=-6 rms bunch length. 
     int indexTail   =   0; 
     int indexHead   =   int ( ( poszHead  + rfLen / 2  ) / dzBin);
     int indexCen    =   int ( ( 0.0       + rfLen / 2  ) / dzBin);
-    int flipNum     =   indexHead - indexCen;  
+    int flipNum     =   indexHead - indexCen - 1;  
     int dim         =   indexHead - indexTail;
     
 
@@ -519,27 +527,32 @@ void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter,const Boa
     }
    
     // flip the longitudianl wake poten
-    // for(int i= 0; i< indexCen - flipNum ;i++ )
-    // {
-    //     quasiWakePoten->wz[i]  = wz[i];
-    // }
-    // for(int i= 0; i< flipNum ;i++ )
-    // {
-    //     quasiWakePoten->wz [i + indexCen - flipNum] = wz[i + indexCen - flipNum] + wz[indexCen + flipNum - i];
-    // }
-    // quasiWakePoten->wz[indexCen] = wz[indexCen];
+    // quasiWakePoten->wz[dim-1] = wz[indexCen];
+    for(int i=0;i<flipNum;i++)
+    {
+        quasiWakePoten->wz[i]  = 0.E0;
+    }
+    for(int i=flipNum;i<indexCen;i++)
+    {
+        quasiWakePoten->wz[i] = wz[i-flipNum];
+    }
+    
+    for(int i=indexCen;i<dim-1;i++)
+    {
+        quasiWakePoten->wz[i] = wz[i-flipNum] + wz[2* (dim-1) - i - flipNum ];
+    }    
+    quasiWakePoten->wz[dim-1] = wz[indexCen];
     // flip end 
 
-
+    // reverse here ensure that  
+    // quasiWakePoten->wz ad quasiWakePoten->wDx... alin from head to tail as show in Fig.2.6, here head -> tail whne posZ->+infinit
+    reverse(quasiWakePoten->binPosZ.begin(),quasiWakePoten->binPosZ.end());
     reverse(quasiWakePoten->wz.begin(),quasiWakePoten->wz.end());
     reverse(quasiWakePoten->wDx.begin(),quasiWakePoten->wDx.end());
     reverse(quasiWakePoten->wDy.begin(),quasiWakePoten->wDy.end());
     reverse(quasiWakePoten->wQx.begin(),quasiWakePoten->wQx.end());
     reverse(quasiWakePoten->wDy.begin(),quasiWakePoten->wQx.end());
     
-    // reverse here ensure that  
-    // quasiWakePoten->wz ad quasiWakePoten->wDx... alin from head to tail as show in Fig.2.6
-
 
     // get wakepoten from wakes
     // benckmark test of wake poten of differetn approach
@@ -637,13 +650,10 @@ void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter,const Boa
     // }
     // fout1.close();
 
-    fftw_destroy_plan(p);
-    fftw_free(r2cout);
-    fftw_free(c2rin);
 
     // for(int i=0;i<N;i++) quasiWakePoten->binPosZ[i] = -rfLen / 2 + i * dzBin;
 
-    // ofstream fout("wakePotenFreqDomain_23mm.dat");
+    // ofstream fout("wake_green_function1.dat");
     // fout<<"SDDS1"<<endl;
     // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
     // fout<<"&column name=profile,        units=m,              type=float,  &end" <<endl;
@@ -658,7 +668,7 @@ void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter,const Boa
 
     // for(int i=0;i<dim;i++) 
     // {
-    //     fout<<setw(15)<<left<<boardBandImp.binPosZ[i+indexStart]
+    //     fout<<setw(15)<<left<<quasiWakePoten->binPosZ[i]
     //         <<setw(15)<<left<<temp[i+indexStart]
     //         <<setw(15)<<left<<quasiWakePoten->wz[i]
     //         <<setw(15)<<left<<quasiWakePoten->wDx[i]
@@ -714,16 +724,24 @@ void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter)
     for(int i=0 ;i<quasiWakePoten->binPosZ.size(); i++) quasiWakePoten->binPosZ[i] -= z0; 
 
     // flip the longitudinal wakes
-    // int wakeBins = quasiWakePoten->binPosZ.size();
-    // vector<double> temp(index,0.E0);
-    // for(int i=0;i<temp.size();i++)  temp[i] = quasiWakePoten->wz[i];
-    // quasiWakePoten->wz[0] = temp[cenIndex] ; 
-    // for(int i=1;i<cenIndex;i++)                    quasiWakePoten->wz[i] = temp[cenIndex + i] + temp[cenIndex - i];
-    // for(int i=cenIndex;i<wakeBins - cenIndex;i++)  quasiWakePoten->wz[i] = temp[cenIndex + i];
-    // for(int i=wakeBins - cenIndex ;i<wakeBins;i++) quasiWakePoten->wz[i] =  0.E0;
+    int wakeBins = quasiWakePoten->binPosZ.size();
+    vector<double> temp(index,0.E0);
+    for(int i=0;i<temp.size();i++)  temp[i] = quasiWakePoten->wz[i];
+    quasiWakePoten->wz[0] = temp[cenIndex] ; 
+    for(int i=1;i<cenIndex;i++)                    
+    {
+        quasiWakePoten->wz[i] = temp[cenIndex + i] + temp[cenIndex - i];
+    }
+    for(int i=cenIndex;i<wakeBins - cenIndex;i++)  
+    {
+        quasiWakePoten->wz[i] = temp[cenIndex + i];
+    }
+    for(int i=wakeBins - cenIndex ;i<wakeBins;i++) 
+    {
+        quasiWakePoten->wz[i] =  0.E0;
+    }
     // end of flips
 
-    
     // quasiWakePoten->wz ad quasiWakePoten->wDx... alin from head to tail as show in Fig.2.6
     // quasiWakePoten->wz[0] is the head particle. 
 
@@ -769,6 +787,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
     // preapre the data for bunch-by-bunch system ---------------   
     BoardBandImp boardBandImp;
+    
     if(bBImpFlag)
     {
         if(inputParameter.ringBBImp->timeDomain==0)
@@ -860,8 +879,13 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         fout<<colname<<endl;
         colname = string("&column name=") + string("rmsEmity_")      + to_string(j) + string(", units=m*rad,   type=float,  &end");            
         fout<<colname<<endl;
+        colname = string("&column name=") + string("eigenEmitx_")    + to_string(j) + string(", units=m*rad,   type=float,  &end");            
+        fout<<colname<<endl;
+        colname = string("&column name=") + string("eigenEmity_")    + to_string(j) + string(", units=m*rad,    type=float,  &end");            
+        fout<<colname<<endl;
         colname = string("&column name=") + string("transmission_")  + to_string(j) + string(",                type=float,  &end");            
         fout<<colname<<endl;
+       
     }
     fout<<"&data mode=ascii, &end"<<endl;
     for(int i=0 ;i<5;i++) fout<<inputParameter.ringParBasic->radIntegral[i]<<endl;
@@ -963,7 +987,11 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
                 <<setw(15)<<left<<beamVec[index].rmsRy
                 <<setw(15)<<left<<beamVec[index].emittanceX
                 <<setw(15)<<left<<beamVec[index].emittanceY
-                <<setw(15)<<left<<beamVec[index].transmission;
+                <<setw(15)<<left<<beamVec[index].eigenEmitX
+                <<setw(15)<<left<<beamVec[index].eigenEmitY
+                <<setw(15)<<left<<beamVec[index].transmission
+                ;
+
         }
         fout<<endl;        
         

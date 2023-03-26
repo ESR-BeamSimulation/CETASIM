@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_histogram.h>
+#include <fftw3.h>
 
 using namespace std;
 using std::vector;
@@ -75,7 +76,6 @@ void BoardBandImp::ReadInImp(const  ReadInputSettings &inputParameter)
     // vector<complex<double>> zDxImp0 = zDxImp ;
     // vector<complex<double>> zDyImp0 = zDyImp ;
 
-
     // // to set the minus frequency part of the impedance
     // reverse(freq.begin(),freq.end());
     // reverse(zZImp.begin(),zZImp.end());
@@ -100,6 +100,7 @@ void BoardBandImp::ReadInImp(const  ReadInputSettings &inputParameter)
     // zDxImp.insert(zDxImp.end(),zDxImp0.begin(),zDxImp0.end());
     // zDyImp.insert(zDyImp.end(),zDyImp0.begin(),zDyImp0.end());
 
+
     double rBeta        = inputParameter.ringParBasic->rBeta;
 
     nBins   = freq.size();                 
@@ -115,6 +116,76 @@ void BoardBandImp::ReadInImp(const  ReadInputSettings &inputParameter)
     {
         binPosZ[i] = (- tMax + i * dt ) * CLight * rBeta;
     }
+
+
+
+
+
+
+    // test fft from impedance to wake directly.....
+    // double Rs = 1;
+    // double fR = 1.0E+9;
+    // double Q = 10;
+    // int nn=pow(2,16);
+    // double df = 10 * fR / nn ;
+
+    // // double alpha  = 2.0 * PI * fR / 2 / Q;
+    // // double omegab = sqrt(pow(2.0*PI*fR,2) - pow(alpha,2) ); 
+    
+    // double freTemp=0;
+    // complex<double>  zZImpTemp[nn];
+
+
+    // ofstream fout("test.dat");
+    // for(int i=0;i<nn;i++ )
+    // {
+    //     freTemp = i * df;
+    //     if(freTemp==0)
+    //     {
+    //         zZImpTemp[i] = complex<double>(0.0,0.0);
+    //     }
+    //     else
+    //     {
+    //         zZImpTemp[i]   = Rs / (1.0 + li * Q * ( fR / freTemp -  freTemp / fR));    // [C/s*Ohm] = [V]
+    //     }
+    // }
+    
+    // fftw_complex *c2rin   = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nn );
+    
+    // for(int i=0;i<nn ;i++)
+    // {
+    //     c2rin[i][0] = zZImpTemp[i].real();
+    //     c2rin[i][1] = zZImpTemp[i].imag(); 
+    // }
+
+    // double temp[2*nn+1];
+    
+    // fftw_plan p = fftw_plan_dft_c2r_1d(nn, c2rin, temp, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+    // fftw_execute(p);
+
+    
+    
+    // fout<<"SDDS1"<<endl;
+    // fout<<"&column name=z,              units=m,              type=float,  &end" <<endl;
+    // fout<<"&column name=wakeZ,                                 type=float,  &end" <<endl;
+    // fout<<"&data mode=ascii, &end"                                               <<endl;
+    // fout<<"! page number " << 1 <<endl;
+    // fout<<nn<<endl;
+
+
+    // for(int i=0;i<2*nn;i++)
+    // {
+    //     double posz = i*dz;
+    //     fout<<setw(15)<<left<<posz
+    //         <<setw(15)<<left<<temp[i]/nn
+    //         // <<2*Rs*alpha*exp(-alpha * posz / CLight) * (cos(-omegab * posz / CLight) + alpha / omegab * sin(-omegab * posz / CLight)  )
+    //         <<endl;
+    // }
+
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+
+    
 }
 
 

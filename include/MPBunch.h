@@ -79,7 +79,7 @@ public:
     void BBImpBunchInteractionTD(const ReadInputSettings &inputParameter,const BoardBandImp &boardBandImp,const LatticeInterActionPoint &latticeInterActionPoint,vector<vector<double>> wakePoten);
     void GetSmoothedBunchProfileGassionFilter(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp );
     void GetSmoothedBunchProfileGassionFilter(double *profile,int nBins);
-    
+    void GetEigenEmit(const LatticeInterActionPoint &latticeInterActionPoint);
 
 
     void BunchMomentumUpdateDuetoRFRigid(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);

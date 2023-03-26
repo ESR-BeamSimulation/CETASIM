@@ -99,7 +99,15 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringParBasic->synchRadDampTime[0]=stod(strVec[1]);
             ringParBasic->synchRadDampTime[1]=stod(strVec[2]); 
             ringParBasic->synchRadDampTime[2]=stod(strVec[3]);
-        }         
+        }
+        if(strVec[0]=="ringtengmatrixr21")
+        {
+          ringParBasic->tengR21 = stod(strVec[1]);        
+        }
+        if(strVec[0]=="ringskewquadfoclen")
+        {
+          ringParBasic->skewQuadFocLen = stod(strVec[1]);  
+        }
         
         if(strVec[0]=="ringpipeaperaturex")
         {

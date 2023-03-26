@@ -109,11 +109,8 @@ void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c)
     int dimBx = b->size1;
     int dimBy = b->size2; 
 
-
     int dimCx = c->size1;
     int dimCy = c->size2; 
-
-
 
     if(dimAy!= dimBx)
     {
