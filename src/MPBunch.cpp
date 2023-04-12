@@ -34,9 +34,11 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
+#include <gsl/gsl_eigen.h>
 #include <memory.h>
 #include <fftw3.h>
 #include <complex.h>
+
 
 
 MPBunch::MPBunch()
@@ -289,7 +291,7 @@ double MPBunch::GSSlover(double if0)
     double mid;
 
     rangeLow = 0.E0;
-    rangeUP  = 8.E0;    // seems like 8 rms emittance truncated..
+    rangeUP  = 20.E0;    // seems like 10 rms emittance truncated..
 
     fLow = 1 - if0 - (1+rangeLow) * exp(-rangeLow);    // compared with yuri' equation in NIMA BeamPath.
     fUp  = 1 - if0 - (1+rangeUP ) * exp(-rangeUP );
@@ -477,6 +479,7 @@ void MPBunch::GetMPBunchRMS(const LatticeInterActionPoint &latticeInterActionPoi
     GetZMinMax();
     GetEigenEmit(latticeInterActionPoint);
 }
+
 void MPBunch::GetEigenEmit(const LatticeInterActionPoint &latticeInterActionPoint)
 {
     double etax   = latticeInterActionPoint.twissDispX[0];
@@ -527,7 +530,7 @@ void MPBunch::GetEigenEmit(const LatticeInterActionPoint &latticeInterActionPoin
     }
 
     for(int i=0;i<10;i++) aver2[i] /= macroEleNumPerBunch;
-
+    
     // aver2[0] = 8.57;
     // aver2[1] = -4.34;
     // aver2[2] = -3.83;
@@ -587,14 +590,42 @@ void MPBunch::GetEigenEmit(const LatticeInterActionPoint &latticeInterActionPoin
 
     eigenEmitX = sqrt(- trCJ2 + sqrt( trCJ2 * trCJ2 -  16 * det ) )/2;
     eigenEmitY = sqrt(- trCJ2 - sqrt( trCJ2 * trCJ2 -  16 * det ) )/2; 
-
     emitXY4D = sqrt(sqrt(det));
+
 
     gsl_matrix_free(matrixCJ);
     gsl_matrix_free(matrixCJ2);
     gsl_matrix_free(simgMatrix);
     gsl_matrix_free(sympleMarixJ4);
 
+
+    // get the coupling alpha at x-y plane // Andrea Franchi  phd theiss, 2006 Fig.9.5
+    // double emitXY = sqrt(aver2[0] * aver2[7] -  aver2[2] * aver2[2] );   // m 
+    // xyCouplingAlpha = - aver2[2] / emitXY;  // rad 
+
+    gsl_matrix *xyEllipse = gsl_matrix_alloc (2, 2); 
+    gsl_matrix_set(xyEllipse,0,0,aver2[0]);
+    gsl_matrix_set(xyEllipse,0,1,aver2[2]);
+    gsl_matrix_set(xyEllipse,1,0,aver2[2]);
+    gsl_matrix_set(xyEllipse,1,1,aver2[7]);
+
+    gsl_vector *eval = gsl_vector_alloc (2);
+    gsl_matrix *evec = gsl_matrix_alloc (2, 2);
+     
+    gsl_eigen_symmv_workspace * w =  gsl_eigen_symmv_alloc (2);
+    gsl_eigen_symmv (xyEllipse, eval, evec, w);
+    gsl_eigen_symmv_sort (eval, evec,GSL_EIGEN_SORT_ABS_ASC);
+
+
+    double v1y = gsl_matrix_get(evec,0,1);
+    double v1x = gsl_matrix_get(evec,0,0);
+    
+    xyCouplingAlpha = atan2(v1y,v1x) - PI /2;
+    
+    gsl_eigen_symmv_free (w); 
+    gsl_vector_free(eval);
+    gsl_matrix_free(evec);
+    gsl_matrix_free(xyEllipse);
 
  
 }

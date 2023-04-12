@@ -40,7 +40,7 @@ ReadInputSettings::~ReadInputSettings()
     delete ringBBImp;
     delete ringRun;
     delete driveMode; 
-    
+    delete ramping;
 }
 
 int ReadInputSettings::ParamRead(int argc, char *argv[])
@@ -104,9 +104,9 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         {
           ringParBasic->tengR21 = stod(strVec[1]);        
         }
-        if(strVec[0]=="ringskewquadfoclen")
+        if(strVec[0]=="ringskewquadk")
         {
-          ringParBasic->skewQuadFocLen = stod(strVec[1]);  
+          ringParBasic->skewQuadK = stod(strVec[1]); 
         }
         
         if(strVec[0]=="ringpipeaperaturex")
@@ -815,7 +815,23 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringRun->TBTBunchDisDataBunchIndex[i] = stoi(strVec[i+1]);           
           }          
         }
-                                                               
+
+        if(strVec[0]=="runramping")
+        {
+          ringRun->tuneRampFlag = stoi(strVec[1]);
+        }
+
+        // 11) ramping
+        if(strVec[0]=="rampingnu")
+        {
+          ramping->rampingNu[0] = stoi(strVec[1]);
+          ramping->rampingNu[1] = stoi(strVec[2]);
+        }
+        if(strVec[0]=="rampingdnu")
+        {
+          ramping->deltaNuPerTurn[0] = stod(strVec[1]);
+          ramping->deltaNuPerTurn[1] = stod(strVec[2]);
+        }
     }
 
 

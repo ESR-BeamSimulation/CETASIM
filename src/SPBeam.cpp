@@ -439,6 +439,7 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     int totBunchNum                 = inputParameter.ringFillPatt->totBunchNumber;
     int ionInfoPrintInterval        = inputParameter.ringIonEffPara->ionInfoPrintInterval;
     int bunchInfoPrintInterval      = inputParameter.ringRun->bunchInfoPrintInterval;
+    int tuneRampFlag                = inputParameter.ringRun->tuneRampFlag;
 
     // preapre the data for bunch-by-bunch system ---------------   
     FIRFeedBack firFeedBack;
@@ -474,6 +475,15 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     fout<<"&parameter name=Jx,                     type=float,  &end"<<endl;
     fout<<"&parameter name=Jy,                     type=float,  &end"<<endl;
     fout<<"&parameter name=Jz,                     type=float,  &end"<<endl;
+    fout<<"&parameter name=f1001Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f1010Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f0110Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f0101Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f1001Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=f1010Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=f0110Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=f0101Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=LCFactor,               type=float,  &end"<<endl;
     fout<<"&column name=Turns,          type=long,              &end"<<endl;
     fout<<"&column name=IonCharge,      units=e,   type=float,  &end"<<endl;
     fout<<"&column name=MaxAverX,       units=m,   type=float,  &end"<<endl;
@@ -492,6 +502,10 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     fout<<"&column name=rmsAllBunchPZ,  units=rad, type=float,  &end"<<endl;
     fout<<"&column name=MaxJx,          units=m,   type=float,  &end"<<endl;
     fout<<"&column name=MaxJy,          units=m,   type=float,  &end"<<endl;
+    fout<<"&column name=Nux,                       type=float,  &end"<<endl;
+    fout<<"&column name=Nuy,                       type=float,  &end"<<endl;
+    fout<<"&column name=deltaNu,                   type=float,  &end"<<endl;
+
 
     for(int j=0;j<inputParameter.ringRun->TBTBunchPrintNum;j++)
     {
@@ -508,10 +522,26 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         fout<<colname<<endl;
         colname = string("&column name=") + string("pz_")            + to_string(bunchPrinted) + string(", units=rad, type=float,  &end");
         fout<<colname<<endl;
+        colname = string("&column name=") + string("Jx_")            + to_string(bunchPrinted) + string(", units=m,   type=float,  &end");
+        fout<<colname<<endl;
+        colname = string("&column name=") + string("Jy_")            + to_string(bunchPrinted) + string(", units=m,   type=float,  &end");
+        fout<<colname<<endl;
     }
+    fout<<"&data mode=ascii, &end"<<endl;
     for(int i=0 ;i<5;i++) fout<<inputParameter.ringParBasic->radIntegral[i]<<endl;
     for(int i=0 ;i<3;i++) fout<<inputParameter.ringParBasic->dampingPartJ[i]<<endl;
-    fout<<"&data mode=ascii, &end"<<endl;
+    
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f1001)<<endl;
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f1010)<<endl;
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f0110)<<endl;
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f0101)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f1001)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f1010)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f0110)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f0101)<<endl;
+    fout<<latticeInterActionPoint.resDrivingTerms->linearCouplingFactor<<endl;
+    
+    
     fout<<"! page number "<<1<<endl;
     fout<<nTurns<<endl;
 
@@ -577,6 +607,10 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             BeamTransferDuetoDriveMode(inputParameter,n);
         }   
 
+       
+        if(tuneRampFlag) TuneRamping(inputParameter,n);
+        
+
         SPBeamRMSCal(latticeInterActionPoint, 0);
         SPGetBeamInfo();
                     
@@ -596,6 +630,8 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
 
         MarkParticleLostInBunch(inputParameter,latticeInterActionPoint);
 
+        double nux = inputParameter.ringParBasic->workQx - floor(inputParameter.ringParBasic->workQx); 
+        double nuy = inputParameter.ringParBasic->workQy - floor(inputParameter.ringParBasic->workQy);
         fout<<n<<"  "
             <<setw(15)<<left<< latticeInterActionPoint.totIonCharge
             <<setw(15)<<left<< weakStrongBeamInfo->bunchAverXMax     //
@@ -613,7 +649,10 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             <<setw(15)<<left<< weakStrongBeamInfo->bunchRmsSizePY    // over all bunches
             <<setw(15)<<left<< weakStrongBeamInfo->bunchRmsSizePZ    // over all bunches
             <<setw(15)<<left<< log10(sqrt(weakStrongBeamInfo->actionJxMax))    
-            <<setw(15)<<left<< log10(sqrt(weakStrongBeamInfo->actionJyMax));
+            <<setw(15)<<left<< log10(sqrt(weakStrongBeamInfo->actionJyMax))
+            <<setw(15)<<left<< nux
+            <<setw(15)<<left<< nuy
+            <<setw(15)<<left<< nuy-nux ;
         
         for(int i=0;i<inputParameter.ringRun->TBTBunchPrintNum;i++)
         {
@@ -624,7 +663,9 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
                 <<setw(15)<<left<<beamVec[index].yAver
                 <<setw(15)<<left<<beamVec[index].pyAver
                 <<setw(15)<<left<<beamVec[index].zAver
-                <<setw(15)<<left<<beamVec[index].pzAver;
+                <<setw(15)<<left<<beamVec[index].pzAver
+                <<setw(15)<<left<<beamVec[index].actionJx
+                <<setw(15)<<left<<beamVec[index].actionJy;
         
         }
         fout<<endl;                                           
@@ -647,6 +688,13 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         }
     }    
     //sddsplot();    
+}
+
+void SPBeam::TuneRamping(ReadInputSettings &inputParameter,double n)
+{
+    int nTurns       = inputParameter.ringRun->nTurns;       
+    if(inputParameter.ramping->rampingNu[0]==1 ) inputParameter.ringParBasic->workQx +=  inputParameter.ramping->deltaNuPerTurn[0];
+    if(inputParameter.ramping->rampingNu[1]==1 ) inputParameter.ringParBasic->workQy +=  inputParameter.ramping->deltaNuPerTurn[1];
 }
 
 void SPBeam::BeamTransferDueToLatticeL(ReadInputSettings &inputParameter)

@@ -92,6 +92,7 @@ public:
     double totIonCharge;
     double eigenEmitX,eigenEmitY;
     double emitXY4D=0;
+    double xyCouplingAlpha=0;  //rms value in x-y space
 
     struct BunchRFModeInfo{
         vector<complex<double> > induceVolBunchCen;

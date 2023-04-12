@@ -48,6 +48,7 @@ double cpuSecond();
 double Gaussrand(double rms, double aver,double randomIndex);
 void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c);
 void gsl_matrix_inv(gsl_matrix *a);
+double gsl_get_trace(gsl_matrix * A);
 double get_det(gsl_matrix * A);
 int StringVecSplit(string str, vector<string> &strVec);
 int StringSplit(string str, vector<string> &strVec);
@@ -56,5 +57,7 @@ void RMOutPutFiles();
 void sddsplot();
 double vectorDisNorm2(vector<double> a,vector<double> b);
 string convertToString(char* a, int size);
+void PrintGSLMatrix(gsl_matrix *mat, int row, int col);
+
 
 #endif

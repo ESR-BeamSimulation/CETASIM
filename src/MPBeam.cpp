@@ -776,6 +776,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     int totBunchNum                 = inputParameter.ringFillPatt->totBunchNumber;
     int ionInfoPrintInterval        = inputParameter.ringIonEffPara->ionInfoPrintInterval;
     int bunchInfoPrintInterval      = inputParameter.ringRun->bunchInfoPrintInterval;
+    int tuneRampFlag                = inputParameter.ringRun->tuneRampFlag;
 
     // preapre the data for bunch-by-bunch system ---------------   
     FIRFeedBack firFeedBack;
@@ -835,6 +836,15 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     fout<<"&parameter name=Jx,                     type=float,  &end"<<endl;
     fout<<"&parameter name=Jy,                     type=float,  &end"<<endl;
     fout<<"&parameter name=Jz,                     type=float,  &end"<<endl;
+    fout<<"&parameter name=f1001Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f1010Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f0110Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f0101Abs,               type=float,  &end"<<endl;
+    fout<<"&parameter name=f1001Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=f1010Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=f0110Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=f0101Arg,  units=rad,   type=float,  &end"<<endl;
+    fout<<"&parameter name=LCFactor,               type=float,  &end"<<endl;
     fout<<"&column name=Turns,                     type=long,   &end"<<endl;    
     fout<<"&column name=IonCharge,      units=e,   type=float,  &end"<<endl;
     fout<<"&column name=maxAverX,       units=m,   type=float,  &end"<<endl;
@@ -851,6 +861,9 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     fout<<"&column name=rmsAllBunchPX,  units=rad, type=float,  &end"<<endl;
     fout<<"&column name=rmsAllBunchPY,  units=rad, type=float,  &end"<<endl;
     fout<<"&column name=rmsAllBunchPZ,  units=rad, type=float,  &end"<<endl;
+    fout<<"&column name=Nux,                       type=float,  &end"<<endl;
+    fout<<"&column name=Nuy,                       type=float,  &end"<<endl;
+    fout<<"&column name=deltaNu,                   type=float,  &end"<<endl;
 
     for(int j=0;j<inputParameter.ringRun->TBTBunchPrintNum;j++)
     {
@@ -885,11 +898,22 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         fout<<colname<<endl;
         colname = string("&column name=") + string("transmission_")  + to_string(j) + string(",                type=float,  &end");            
         fout<<colname<<endl;
+        colname = string("&column name=") + string("xyCouplingAlpha_")  + to_string(j) + string(", units=rad,  type=float,  &end");            
+        fout<<colname<<endl;
        
     }
     fout<<"&data mode=ascii, &end"<<endl;
     for(int i=0 ;i<5;i++) fout<<inputParameter.ringParBasic->radIntegral[i]<<endl;
     for(int i=0 ;i<3;i++) fout<<inputParameter.ringParBasic->dampingPartJ[i]<<endl;
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f1001)<<endl;
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f1010)<<endl;
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f0110)<<endl;
+    fout<<abs(latticeInterActionPoint.resDrivingTerms->f0101)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f1001)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f1010)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f0110)<<endl;
+    fout<<arg(latticeInterActionPoint.resDrivingTerms->f0101)<<endl;
+    fout<<latticeInterActionPoint.resDrivingTerms->linearCouplingFactor<<endl;
 
     fout<<"! page number "<<1<<endl;
     fout<<nTurns<<endl;
@@ -899,7 +923,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     // run loop starts, for nTrns and each trun for k interaction-points
     for(int n=0;n<nTurns;n++)
     {
-        if(n%10==0) cout<<n<<"  turns, bunch_0 transmission: "<<beamVec[0].transmission <<endl;
+        if(n%100==0) cout<<n<<"  turns, bunch_0 transmission: "<<beamVec[0].transmission <<endl;
 
         MPBeamRMSCal(latticeInterActionPoint, 0);
         MPGetBeamInfo();
@@ -941,11 +965,15 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         if(sRWakeFlag) SRWakeBeamIntaction(inputParameter,sRWakeFunction,latticeInterActionPoint,n);
              
         if(fIRBunchByBunchFeedbackFlag) FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
-    
+
+        if(tuneRampFlag) TuneRamping(inputParameter,n);
+
+
         if((inputParameter.driveMode->driveModeOn!=0) && (inputParameter.driveMode->driveStart <n )  &&  (inputParameter.driveMode->driveEnd >n) )
         {
             BeamTransferDuetoDriveMode(inputParameter,n);
         }
+
 
         if(synRadDampingFlag==1) BeamSynRadDamping(inputParameter,latticeInterActionPoint);
         
@@ -954,7 +982,8 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         MPBeamRMSCal(latticeInterActionPoint, 0);
         MPGetBeamInfo();
 
-
+        double nux = inputParameter.ringParBasic->workQx - floor(inputParameter.ringParBasic->workQx); 
+        double nuy = inputParameter.ringParBasic->workQy - floor(inputParameter.ringParBasic->workQy);
         fout<<setw(15)<<left<<n
             <<setw(15)<<left<< latticeInterActionPoint.totIonCharge
             <<setw(15)<<left<< strongStrongBunchInfo->bunchAverXMax
@@ -970,7 +999,10 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             <<setw(15)<<left<< strongStrongBunchInfo->bunchRmsSizeZ     // over all bunches
             <<setw(15)<<left<< strongStrongBunchInfo->bunchRmsSizePX    // over all bunches
             <<setw(15)<<left<< strongStrongBunchInfo->bunchRmsSizePY    // over all bunches
-            <<setw(15)<<left<< strongStrongBunchInfo->bunchRmsSizePZ;   // over all bunches
+            <<setw(15)<<left<< strongStrongBunchInfo->bunchRmsSizePZ   // over all bunches
+            <<setw(15)<<left<< nux
+            <<setw(15)<<left<< nuy
+            <<setw(15)<<left<< nuy-nux;
 
         for(int i=0;i<inputParameter.ringRun->TBTBunchPrintNum;i++)
         {
@@ -990,7 +1022,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
                 <<setw(15)<<left<<beamVec[index].eigenEmitX
                 <<setw(15)<<left<<beamVec[index].eigenEmitY
                 <<setw(15)<<left<<beamVec[index].transmission
-                ;
+                <<setw(15)<<left<<beamVec[index].xyCouplingAlpha;
 
         }
         fout<<endl;        
@@ -1023,6 +1055,14 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     //     cout<<"Haissinski and longitudinal phase space trajectory"<<endl;
     // } 
 
+}
+
+
+void MPBeam::TuneRamping(ReadInputSettings &inputParameter, double turns)
+{
+    int nTurns       = inputParameter.ringRun->nTurns;       
+    if(inputParameter.ramping->rampingNu[0]==1 ) inputParameter.ringParBasic->workQx +=  inputParameter.ramping->deltaNuPerTurn[0];
+    if(inputParameter.ramping->rampingNu[1]==1 ) inputParameter.ringParBasic->workQy +=  inputParameter.ramping->deltaNuPerTurn[1];
 }
 
 void MPBeam::BeamTransferDueToLatticeL(const ReadInputSettings &inputParameter)

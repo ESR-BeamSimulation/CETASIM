@@ -30,6 +30,10 @@
 #include <cufftXt.h>
 #include <cufft.h>
 #include "CUDAFunction.cuh"
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_eigen.h>
+#include <gsl/gsl_complex.h>
+#include <gsl/gsl_complex_math.h>
 
 
 Bunch::Bunch()
@@ -273,13 +277,20 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     gsl_matrix *cord0     = gsl_matrix_alloc (6, 1);
     gsl_matrix *cord1     = gsl_matrix_alloc (6, 1);
     gsl_matrix *skewQuad  = gsl_matrix_alloc (6, 6);
+    gsl_matrix *oneTurnMap  = gsl_matrix_alloc (6, 6);
     gsl_matrix_set_zero(ILmatrix);
     gsl_matrix_set_zero(cord0);
     gsl_matrix_set_zero(cord1);
+    gsl_matrix_set_zero(oneTurnMap);
     gsl_matrix_set_identity(skewQuad);
     
-    gsl_matrix_set(skewQuad,1,2,-inputParameter.ringParBasic->skewQuadFocLen);
-    gsl_matrix_set(skewQuad,3,0,-inputParameter.ringParBasic->skewQuadFocLen);
+    gsl_matrix_set(skewQuad,1,2,inputParameter.ringParBasic->skewQuadK);
+    gsl_matrix_set(skewQuad,3,0,inputParameter.ringParBasic->skewQuadK);
+
+
+    gsl_vector_complex *eval = gsl_vector_complex_alloc (6);
+    gsl_matrix_complex *evec = gsl_matrix_complex_alloc (6, 6);
+    gsl_eigen_nonsymmv_workspace * w =  gsl_eigen_nonsymmv_alloc (6);
 
 
     //ref. Elegant ILMatrix element
@@ -345,8 +356,6 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,ILmatrix,cord0,0.0,cord1);
         gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,skewQuad,cord1,0.0,cord0);
 
-        
-        
         ePositionX[i]  = gsl_matrix_get(cord0,0,0);
         eMomentumX[i]  = gsl_matrix_get(cord0,1,0);
         ePositionY[i]  = gsl_matrix_get(cord0,2,0);
@@ -355,12 +364,33 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         eMomentumZ[i]  = gsl_matrix_get(cord0,5,0);
 
 
+        // here try to get the eigen value of the one turn transfer map
+        // ----start -------------------------------  
+        // gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,ILmatrix,skewQuad,0.0,oneTurnMap);
+        // gsl_eigen_nonsymmv (oneTurnMap, eval, evec, w);
+        // gsl_eigen_nonsymmv_sort (eval, evec,GSL_EIGEN_SORT_ABS_DESC);
+        
+        // gsl_complex gsltemp;
+        // GSL_REAL(gsltemp)=1;
+        // GSL_IMAG(gsltemp)=0;
+        // for(int i=0;i<6;i++)
+        // {
+        //     gsl_complex eval_i = gsl_vector_complex_get (eval, i);
+        //     gsl_vector_complex_view evec_i  = gsl_matrix_complex_column (evec, i);
+        //     gsltemp = gsl_complex_mul(eval_i,gsltemp);
+        //     printf ("eigenvalue = %g + %gi   %g     %g \n", GSL_REAL(eval_i), GSL_IMAG(eval_i), gsl_complex_abs(eval_i),gsltemp );
+
+        // }
+        // ----end -------------------------------
+
+
 
         // for(int j=0;j<6;j++)
         // {
         //     for(int k=0;k<6;k++) printf("%15.7f\t",ILmatrix->data[j * ILmatrix->tda+k]);
         //     cout<<endl;       
         // }
+        
         // for(int j=0;j<6;j++) printf("%15.10f\t", cord0->data[j * cord0->tda]);
         // cout<<endl;
         // for(int j=0;j<6;j++) printf("%15.10f\t", cord1->data[j * cord1->tda]);
@@ -375,8 +405,11 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     gsl_matrix_free (cord0);
     gsl_matrix_free (cord1);
     gsl_matrix_free(skewQuad);
+    gsl_matrix_free(oneTurnMap);
 
-
+    gsl_vector_complex_free(eval);
+    gsl_matrix_complex_free(evec);
+    gsl_eigen_nonsymmv_free (w);
 
 
 

@@ -45,7 +45,7 @@ public:
         double naturalEmit;
         double naturalBunchLength= 0.E0;
         double tengR21 =0.E0;
-        double skewQuadFocLen=0;
+        double skewQuadK=0;
         // calculated
         double  rGamma; 
         double  rBeta;  
@@ -235,6 +235,7 @@ public:
         int lRWakeFlag;
         int sRWakeFlag;
         int TBTBunchPrintNum;
+        int tuneRampFlag;
         vector<int> TBTBunchDisDataBunchIndex;
         string TBTBunchAverData;
         string TBTBunchDisData;
@@ -242,13 +243,19 @@ public:
         string TBTBunchHaissinski;
         string TBTBunchLongTraj;
         string runCBMGR;
+
         
         int bunchInfoPrintInterval;
     };       
     RingRun * ringRun =  new RingRun; 
 
-
-    
+    // 11 run ramping
+    struct Ramping
+    {
+        int rampingNu[2];       //x and y
+        double deltaNuPerTurn[2]; //dnuyx and dnuy
+    };       
+    Ramping * ramping =  new Ramping; 
 };
 
 #endif

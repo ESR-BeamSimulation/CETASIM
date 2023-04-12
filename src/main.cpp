@@ -61,6 +61,7 @@ int main(int argc,char *argv[])
     latticeInterActionPoint.Initial(inputParameter);
     latticeInterActionPoint.SetLatticeParaForOneTurnMap(inputParameter);
     latticeInterActionPoint.SetLatticeBRHForSynRad(inputParameter);
+    latticeInterActionPoint.GetTransLinearCouplingCoef(inputParameter);
 
     Train train;
     train.Initial(inputParameter);

@@ -138,6 +138,15 @@ void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c)
     }
 }
 
+void PrintGSLMatrix(gsl_matrix *mat, int row, int col)
+{
+    for(int j=0;j<row;j++)
+    {
+        for(int k=0;k<col;k++) printf("%15.7f\t",mat->data[j * mat->tda+k]);
+        cout<<endl;       
+    }
+    cout<<endl;
+}
 
 void gsl_matrix_inv(gsl_matrix *a)
 {
@@ -174,6 +183,17 @@ double get_det(gsl_matrix * A)
     gsl_permutation_free(p);
     gsl_matrix_free(tmpA);
     return det;
+}
+
+double gsl_get_trace(gsl_matrix * A)
+{   
+    int n = A->size1;
+    double trace = 0.E0;
+    for(int i=0;i<n;i++)
+    {
+        trace += gsl_matrix_get(A,i,i);
+    }
+    return trace;
 }
 
 

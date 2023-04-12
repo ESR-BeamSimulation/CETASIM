@@ -34,6 +34,7 @@ public:
     int gasSpec;
      
     int harmonics;
+    
 
     // (1) lattice function
     vector<double> twissAlphaX;
@@ -104,7 +105,17 @@ public:
     double latticeParaForOneTurnMap[22];
     double latticeSynRadBRH[72];
     double latticeSynRadCoff[6];  //Ref ZhangYuan -- used in GPU
- 
+    
+    struct ResDrivingTerms{
+        // skew quadrupole 
+        complex<double> f1001;
+        complex<double> f1010;
+        complex<double> f0101;
+        complex<double> f0110;
+        double linearCouplingFactor;             // according to the definition of Yong-Chul' note
+
+    };
+    ResDrivingTerms *resDrivingTerms = new ResDrivingTerms;
 
     void Initial(const ReadInputSettings &inputParameter);
     void InitialLattice(const ReadInputSettings &inputParameter);
@@ -117,7 +128,7 @@ public:
     void GetIonNumberPerInterAction(double electronNumPerBunch, int k);
     void SetLatticeParaForOneTurnMap(const ReadInputSettings &inputParameter);
     void SetLatticeBRHForSynRad(const ReadInputSettings &inputParameter);  //Hirata 1997 paper
-
+    void GetTransLinearCouplingCoef(const ReadInputSettings &inputParameter);
     
 private:
 

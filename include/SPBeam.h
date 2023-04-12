@@ -124,7 +124,7 @@ public:
     void GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter);
     
     // shared funcitons by MP and SP cases.         
-    
+    void TuneRamping(ReadInputSettings &inputParameter,double n);
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
     void BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int k);

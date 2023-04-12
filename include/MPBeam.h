@@ -136,7 +136,7 @@ public:
     void GetQuasiWakePoten(const ReadInputSettings &inputParameter, const BoardBandImp &boardBandImp);
     void GetQuasiWakePoten(const ReadInputSettings &inputParameter);
     void LongWakePotenBenchmark(const ReadInputSettings &inputParameter,const BoardBandImp &boardBandImp);
-
+    void TuneRamping(ReadInputSettings &inputParameter, double turns);
     //// shared funcitons by MP and SP--just copy of each other.         
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
     void InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
