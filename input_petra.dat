@@ -11,7 +11,7 @@ ringElectronBeamEnergy     = 6.0E+9
 ringSdelta0                = 8.969490e-4                      // natural energy spread
 ringNaturalEmit            = 20e-12                           // natural emittance
 ringCoupling               = 0.0                              // decide the excitation
-ringSkewQuadFocLen         = 0.01                             // 1/f, f is the focucing legnth of the skew quadrupole             
+ringskewQuadK              = 0.005                            // 1/f [1/m]            
 ringU0                     = 4.166343E+6
 ringCurrent                = 0.001
 ringChrom                  = 0 0
@@ -54,6 +54,11 @@ rfResDirFBPhaseShift  = 0.0  0.0                  // direct feedback -- rad
 rfResDirFBDelay       = 0.E-6 0.E-6               // direct feedback -- second  
 
 rfBunchBinNum      =  32                          // MP model used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]    
+&end
+
+&Ramping
+RampingNu =  0    1                               // tune ramping x and y 
+RampingDNu = 2E-3 2E-5                            // dnu ramping per turn                                        
 &end
 
 
@@ -142,10 +147,10 @@ bunchEmittance      = 20.E-12                                                   
 bunchKappa           = 0.1                                                       // emittance of bunched beam to be generated with this coupling factor
 bunchRmsBunchLength  = 2.3E-3
 bunchRmsEnergySpread = 8.969490e-4                                                   // particles are generated according to this value. x y z, px py pz ->The same as ring energy spread
-bunchInitialStaticOffSet    = 0.E-5 0.E-5 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
+bunchInitialStaticOffSet    = 1.2E-5 5.E-6 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
 bunchInitialDynamicOffSet   = 0.E-4 0.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
-bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 3000
+bunchDistributionType    = 1                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
+bunchMacroEleNumPerBunch = 1
 &end
 
 
@@ -200,7 +205,7 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 
 &run
-runcalSetting = 2                                          // 1: SP 2:MP 
+runcalSetting = 1                                          // 1: SP 2:MP 
 runNTurns = 10000
 runGrowthRateFittingStart=9900
 runGrowthRateFittingEnd=10000
@@ -221,12 +226,13 @@ runTBTBunchHaissinski = TBTBunchHaissinski
 
 !runCBMGR = coupledBunchedModeGrowthRate
 
-runSynRadDampingFlag = 1                   
+runSynRadDampingFlag = 0                   
 runBeamIonFlag = 0
 runFIRBunchByBunchFeedbackFlag = 0 
 runLongRangeWake = 0
 runShortRangeWake = 0                                           
 runBBIFlag = 0                               
+runRamping=1
 &end
 
 
@@ -236,13 +242,13 @@ runBBIFlag = 0
 tip: in the setting of exciting-damping simulation, excitation strength need to be in the right range, otherwise may not be able to get the coupled bunch growth rate correctly.
 
 2022-to do list:
- 
 2022--04-16 short range wake subroutine need to be benchmaked with other codes, in time domain, RW aggree with Haisskin solutions
 2022--08-12 think about how to apply the quadrupole wake into the trackking. Ref. "simulation of transverse multi-bunch instability of proton beams in LHC-Eq.(2.42)"      
 2022--08-19 PRAB 2002.511001 quadrupole wake field in the short and long range wake field--- not done yet. 
             // send the technnote to yong-chul and Svens, go through the paper of the linac coupling material   
             // linac simulation preparation.
-            // Prepare the word version of software description for CETAsim.  
+            // Prepare the word version of software description for CETAsim.
+            // repeat the Franchi's paper simulation 
             
            
 Jobs:
