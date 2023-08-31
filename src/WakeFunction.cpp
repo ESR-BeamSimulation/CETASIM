@@ -115,7 +115,7 @@ void WakeFunction::BBRWakeParaReadIn(string inputfilename)
     {        
         vector<string> strVec;
         string         str;
-        getline(fin1,str);
+        for(int i=0;i<12;i++) getline(fin1,str);
         
         int i=0;
         while (!fin1.eof())
@@ -124,13 +124,17 @@ void WakeFunction::BBRWakeParaReadIn(string inputfilename)
             if(str.length()==0)  continue;
 		                
 	        StringSplit2(str,strVec);
+            
 
-	        lRs     .push_back(stod(strVec[0]));
-	        lQ      .push_back(stod(strVec[1]));
-	        lOmega  .push_back(stod(strVec[2]) * 2 * PI );
-	        tRs     .push_back(stod(strVec[3]));
-	        tQ      .push_back(stod(strVec[4]));
-	        tOmega  .push_back(stod(strVec[5])* 2 * PI);
+	        lRs      .push_back(stod(strVec[0]));                // ohm
+	        lQ       .push_back(stod(strVec[1]));
+	        lOmega   .push_back(stod(strVec[2]) * 2 * PI );      // hz
+	        txRs     .push_back(stod(strVec[3]));               // ohm /m^2 
+	        txQ      .push_back(stod(strVec[4]));
+	        txOmega  .push_back(stod(strVec[5])* 2 * PI);
+            tyRs     .push_back(stod(strVec[6]));               // ohm /m^2    
+	        tyQ      .push_back(stod(strVec[7]));
+	        tyOmega  .push_back(stod(strVec[8])* 2 * PI);
 
 	        i++;
         }			
@@ -412,10 +416,12 @@ vector<double> WakeFunction:: GetBBRPusdoWakeFun(double u, int i,double sigmat)
     double lRsTemp    = lRs[i];
     double lQTemp     = lQ[i];
     double lOmegaTemp = lOmega[i];
-    double tRsTemp    = tRs[i];
-    double tQTemp     = tQ[i];
-    double tOmegaTemp = tOmega[i];
-
+    double txRsTemp    = txRs[i];
+    double txQTemp     = txQ[i];
+    double txOmegaTemp = txOmega[i];
+    double tyRsTemp    = tyRs[i];
+    double tyQTemp     = tyQ[i];
+    double tyOmegaTemp = tyOmega[i];
 
     double sigmaz = sigmat * CLight; 
     
@@ -442,9 +448,9 @@ vector<double> WakeFunction:: GetBBRPusdoWakeFun(double u, int i,double sigmat)
     wakeFun[2] = coeffL * sum;
 
 
-    // tranverse pusdo wake poten  -- 3.58
-    vz   = tOmegaTemp * sigmaz / CLight;
-    zMax = 3 * vz / (2 * tQTemp);
+    // tranverse pusdo x wake poten  -- 3.58
+    vz   = txOmegaTemp * sigmaz / CLight;
+    zMax = 3 * vz / (2 * txQTemp);
     dz   = zMax /  nz;
 
     sum = 0;
@@ -452,13 +458,30 @@ vector<double> WakeFunction:: GetBBRPusdoWakeFun(double u, int i,double sigmat)
     {
         z = j * dz;
         
-        term0 = -1 / 2.0 * pow( u + 2 * tQTemp / vz * z ,2) - z;
-        term2 = sin(z * sqrt(4 * tQTemp * tQTemp - 1)) / sqrt(4 * tQTemp * tQTemp - 1);
-        sum  += 2 * tQTemp / vz * exp(term0) * term2 * dz;
+        term0 = -1 / 2.0 * pow( u + 2 * txQTemp / vz * z ,2) - z;
+        term2 = sin(z * sqrt(4 * txQTemp * txQTemp - 1)) / sqrt(4 * txQTemp * txQTemp - 1);
+        sum  += 2 * txQTemp / vz * exp(term0) * term2 * dz;
     }
-    double coeffT = sqrt(2. / PI ) * tRsTemp * CLight;
-    wakeFun[0] = sum * coeffT;
-    wakeFun[1] = sum * coeffT;
+    double coeffTx = sqrt(2. / PI ) * txRsTemp * CLight;
+    wakeFun[0] = sum * coeffTx;
+
+
+    // tranverse pusdo y wake poten  -- 3.58
+    vz   = tyOmegaTemp * sigmaz / CLight;
+    zMax = 3 * vz / (2 * tyQTemp);
+    dz   = zMax /  nz;
+
+    sum = 0;
+    for(int j=0;j<nz;j++)
+    {
+        z = j * dz;
+        
+        term0 = -1 / 2.0 * pow( u + 2 * tyQTemp / vz * z ,2) - z;
+        term2 = sin(z * sqrt(4 * tyQTemp * tyQTemp - 1)) / sqrt(4 * tyQTemp * tyQTemp - 1);
+        sum  += 2 * tyQTemp / vz * exp(term0) * term2 * dz;
+    }
+    double coeffTy = sqrt(2. / PI ) * tyRsTemp * CLight;
+    wakeFun[1] = sum * coeffTy;
 
     
     return wakeFun;
@@ -472,7 +495,7 @@ vector<double> WakeFunction::GetBBRWakeFun1(double tau)
     double sigmat=1.e-3 / CLight;  //1mm pusedo wake poten
     double u,coeffL,coeffT;
 
-    for(int i=0;i<tRs.size();i++)
+    for(int i=0;i<txRs.size();i++)
     {
         u           =  tau / sigmat;  
         wakeFunTemp = GetBBRPusdoWakeFun(u, i, sigmat);
@@ -493,8 +516,7 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
     // notification: 
     // longitudnal wake -- head is positive -- loss energy
     // transverse  wake -- head is negative -- defocusing
-     
-    
+        
     if(tau>0)
     {   
         cerr<<"BBR model, tau is larger than zero"<<endl;
@@ -509,15 +531,24 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
 
     // transverse BBR wake function  Alex Chao's notation Eq. 2.88 head is negative -- defocusing
         
-    for(int i=0;i<tRs.size();i++)
+    for(int i=0;i<txRs.size();i++)
     {                               
-        alpha  =  tOmega[i] / 2.0 / tQ[i];
-        omegab =  sqrt( pow(tOmega[i],2) - pow(alpha,2) );
-        coeff  =  CLight * tRs[i] * tOmega[i] / tQ[i] / omegab  * exp( alpha * tau ) * sin ( omegab * tau  ) ; //[m/s] * [ohm]/[m^2] ->  [ohm]/[m s] -> [V/C/m]
+        // for x wakes
+        alpha  =  txOmega[i] / 2.0 / txQ[i];
+        omegab =  sqrt( pow(txOmega[i],2) - pow(alpha,2) );
+        coeff  =  CLight * txRs[i] * txOmega[i] / txQ[i] / omegab  * exp( alpha * tau ) * sin ( omegab * tau  ) ; //[m/s] * [ohm]/[m^2] ->  [ohm]/[m s] -> [V/C/m]
     
-        wakeFun[0] +=  coeff * betaFunAver[0] / betaFunIntPoint[0];                                                    // [V/C/m]            
+        wakeFun[0] +=  coeff * betaFunAver[0] / betaFunIntPoint[0];                                                    // [V/C/m]           
+
+        // for y wakes
+        alpha  =  tyOmega[i] / 2.0 / tyQ[i];
+        omegab =  sqrt( pow(tyOmega[i],2) - pow(alpha,2) );
+        coeff  =  CLight * tyRs[i] * tyOmega[i] / tyQ[i] / omegab  * exp( alpha * tau ) * sin ( omegab * tau  ) ; //[m/s] * [ohm]/[m^2] ->  [ohm]/[m s] -> [V/C/m]
+     
         wakeFun[1] +=  coeff * betaFunAver[1] / betaFunIntPoint[1];                                                    // [V/C/m]           
+    
     }
+    
 
     
     // longitudinal BBR wake function Alex Chao's Eq. 2.84--- head is postive -- loss energy
@@ -544,7 +575,7 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
 }
 
 
-void WakeFunction:: GetyokoyaFactor(double a, double b, vector<double> &yokoyaFactor)
+void WakeFunction::GetyokoyaFactor(double a, double b, vector<double> &yokoyaFactor)
 {
 
 	double f=sqrt(abs(pow(a,2)-pow(b,2)));
@@ -558,18 +589,12 @@ void WakeFunction:: GetyokoyaFactor(double a, double b, vector<double> &yokoyaFa
 	coef[3] = - coef[1];
 	coef[4] =   coef[1];
 
-
-
 	vector<double> lFunPL(5,0);
 
 	int kronekDeltaP=0;
 	int kronekDeltaL=0;
 
-
 	vector<double> temp(5,0);
-
-	
-
 	for (int L=0;L<50;L++)
 	{
 		if(L==0) 

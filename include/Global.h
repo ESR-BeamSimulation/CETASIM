@@ -57,7 +57,7 @@ void RMOutPutFiles();
 void sddsplot();
 double vectorDisNorm2(vector<double> a,vector<double> b);
 string convertToString(char* a, int size);
-void PrintGSLMatrix(gsl_matrix *mat, int row, int col);
+void PrintGSLMatrix(gsl_matrix *mat);
 
 
 #endif

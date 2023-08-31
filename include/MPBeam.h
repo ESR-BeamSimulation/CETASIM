@@ -142,9 +142,10 @@ public:
     void InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    
     void BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BeamMomtumUpdateDueToRF(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator);
-    // void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
-    // void BeamTransferPerTurnDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
-    void BeamTransferDueToLatticeL(const ReadInputSettings &inputParameter); 
+    void BeamMomtumUpdateDueToRFTest(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator);
+    void BeamLongiPosTransferOneTurn(const ReadInputSettings &inputParameter);
+    void GetTimeDisToNextBunch(const ReadInputSettings &inputParameter);
+    void BeamEnergyLossOneTurn(const ReadInputSettings &inputParameter); 
     void BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void BeamTransferPerTurnR66AndSynRadGPU(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);  

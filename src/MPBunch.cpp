@@ -63,7 +63,7 @@ void MPBunch::InitialMPBunch(const  ReadInputSettings &inputParameter)
     
     beamCurDenZProf.resize(bunchBinNumberZ+1);
     posZBins.resize(bunchBinNumberZ);
-    densProfVsBin.resize(bunchBinNumberZ+1);
+    densProfVsBin.resize(bunchBinNumberZ);
     densProfVsBinAnalytical.resize(bunchBinNumberZ+1);
     hamiltonPotenWell.resize(bunchBinNumberZ+1);
 
@@ -603,33 +603,42 @@ void MPBunch::GetEigenEmit(const LatticeInterActionPoint &latticeInterActionPoin
     // double emitXY = sqrt(aver2[0] * aver2[7] -  aver2[2] * aver2[2] );   // m 
     // xyCouplingAlpha = - aver2[2] / emitXY;  // rad 
 
-    gsl_matrix *xyEllipse = gsl_matrix_alloc (2, 2); 
-    gsl_matrix_set(xyEllipse,0,0,aver2[0]);
-    gsl_matrix_set(xyEllipse,0,1,aver2[2]);
-    gsl_matrix_set(xyEllipse,1,0,aver2[2]);
-    gsl_matrix_set(xyEllipse,1,1,aver2[7]);
+    // gsl_matrix *xyEllipse = gsl_matrix_alloc (2, 2); 
+    // gsl_matrix_set(xyEllipse,0,0,aver2[0]);
+    // gsl_matrix_set(xyEllipse,0,1,aver2[2]);
+    // gsl_matrix_set(xyEllipse,1,0,aver2[2]);
+    // gsl_matrix_set(xyEllipse,1,1,aver2[7]);
 
-    gsl_vector *eval = gsl_vector_alloc (2);
-    gsl_matrix *evec = gsl_matrix_alloc (2, 2);
+    // gsl_vector *eval = gsl_vector_alloc (2);
+    // gsl_matrix *evec = gsl_matrix_alloc (2, 2);
      
-    gsl_eigen_symmv_workspace * w =  gsl_eigen_symmv_alloc (2);
-    gsl_eigen_symmv (xyEllipse, eval, evec, w);
-    gsl_eigen_symmv_sort (eval, evec,GSL_EIGEN_SORT_ABS_ASC);
+    // gsl_eigen_symmv_workspace * w =  gsl_eigen_symmv_alloc (2);
+    // gsl_eigen_symmv (xyEllipse, eval, evec, w);
+    // gsl_eigen_symmv_sort (eval, evec,GSL_EIGEN_SORT_ABS_ASC);
 
-
-    double v1y = gsl_matrix_get(evec,0,1);
-    double v1x = gsl_matrix_get(evec,0,0);
+    // double v1y = gsl_matrix_get(evec,0,1);
+    // double v1x = gsl_matrix_get(evec,0,0);
     
-    xyCouplingAlpha = atan2(v1y,v1x) - PI /2;
+    // xyCouplingAlpha = atan2(v1y,v1x) - PI /2;
     
-    gsl_eigen_symmv_free (w); 
-    gsl_vector_free(eval);
-    gsl_matrix_free(evec);
-    gsl_matrix_free(xyEllipse);
+    // gsl_eigen_symmv_free (w); 
+    // gsl_vector_free(eval);
+    // gsl_matrix_free(evec);
+    // gsl_matrix_free(xyEllipse);
 
- 
+    double a = aver2[0];
+    double b = aver2[2];
+    double c = aver2[7];
+    double lambda =(a + c) / 2 + sqrt( (a - c) * (a - c) / 4 + b * b  );
+    if(b==0)
+    {
+        xyCouplingAlpha = a>=c? 0: PI/2;
+    } 
+    else
+    {
+        xyCouplingAlpha = atan2((lambda-a),b);
+    }
 }
-
 
 
 void MPBunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k)
@@ -809,7 +818,7 @@ void MPBunch::BunchMomentumUpdateDuetoRFRigid(const ReadInputSettings &inputPara
 
         // calculate the Vb0 once per bunch
         vb0  = complex<double>(-1 * 2 * PI * resFre * cavityResonator.resonatorVec[j].resShuntImpRs /
-                            cavityResonator.resonatorVec[j].resQualityQ0,0.E0) * electronNumPerBunch * ElectronCharge;  // [Volt]s
+                            cavityResonator.resonatorVec[j].resQualityQ0,0.E0) * electronNumPerBunch * ElectronCharge;  // [Volt]
 
         // loop for bin-by-bin in one bunch from head to tail...
         for(int k=0;k<histoParIndex.size();k++) 
@@ -823,7 +832,7 @@ void MPBunch::BunchMomentumUpdateDuetoRFRigid(const ReadInputSettings &inputPara
                 int index          = histoParIndex[k][i];
                 eMomentumZ[index] += cavVoltage.real() / electronBeamEnergy / pow(rBeta,2);
                 eMomentumZ[index] += vb0.real()/2.0    / electronBeamEnergy / pow(rBeta,2);
-                if(j==0) eMomentumZ[index] -= u0                / electronBeamEnergy / pow(rBeta,2); 
+                if(j==0) eMomentumZ[index] -= u0       / electronBeamEnergy / pow(rBeta,2); 
             }
 
             // to get the weighing average of cavvity voltage, beam inuced voltage...
@@ -861,11 +870,201 @@ void MPBunch::BunchMomentumUpdateDuetoRFRigid(const ReadInputSettings &inputPara
 
 }
 
+void MPBunch::BunchMomentumUpdateDueToRFModeStable(const ReadInputSettings &inputParameter,Resonator &resonator, int resIndex)
+{
 
-void MPBunch:: BunchMomentumUpdateDuetoRFBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double f0         = inputParameter.ringParBasic->f0;
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double fRF         = f0 * ringHarmH;
+    int bunchBinNumberZ = inputParameter.ringParRf->rfBunchBinNum;
+    double dzBin = (zMaxCurrentTurn - zMinCurrentTurn) / bunchBinNumberZ;
+    double dtBin = dzBin / CLight / rBeta;
+    double resHarm = resonator.resHarm;
+    double resFre  = resonator.resFre;
+    double tB, deltaL, cPsi;
+    tB = deltaL = cPsi = 0.E0;
+
+    // bunch bins are alined from head to tail [zmax-> zMin] when i=0,1,2,...
+    for(int i=0;i<posZBins.size();i++)
+    {
+        posZBins[i] = zMaxCurrentTurn - i * dzBin  - dzBin / 2.0;  
+    }
+    
+    vector<vector<int>> histoParIndex;
+    histoParIndex.resize(bunchBinNumberZ);
+    for(int i=0;i<ePositionZ.size();i++)
+    {
+        if(eSurive[i]!=0) continue;
+        int index = floor((  zMaxCurrentTurn - ePositionZ[i] ) / dzBin);         
+        histoParIndex[index].push_back(i);  
+    }
+    for(int i=0;i<bunchBinNumberZ;i++)
+    {
+        densProfVsBin[i] = histoParIndex[i].size() / double(macroEleNumPerBunch) /  dzBin;
+    }
+    
+
+    double cavVoltageReal = 0.E0;
+    double cavVoltageImag = 0.E0;
+    double induceVolReal = 0.E0;
+    double induceVolImag = 0.E0;
+    double genVolReal = 0.E0;
+    double genVolImag = 0.E0;
+    complex<double> vb0=(0,0);
+    complex<double> cavVoltage=(0.E0,0.E0);
+    complex<double> genVoltage=(0.E0,0.E0);
+    complex<double> selfLossVolAccume=(0.E0,0.E0);
+    int particleInBunch=0;
+
+    // rigid beam Vb is calculated once per bunch
+    vb0  = complex<double>(-1 * 2 * PI * resFre * resonator.resShuntImpRs / resonator.resQualityQ0, 0.E0) * electronNumPerBunch * ElectronCharge;  // [Volt]
+ 
+    genVoltage = resonator.resGenVol;     
+    cavVoltage = resonator.vbAccum + genVoltage;
+
+    for(int k=0;k<histoParIndex.size();k++) 
+    {                    
+        // loop for particle in each bin          
+        for(int i=0;i<histoParIndex[k].size();i++)
+        {
+            int index          = histoParIndex[k][i];
+            eMomentumZ[index] += (cavVoltage * exp( - li * posZBins[k]  / CLight / rBeta * 2. * PI * double(resHarm) * fRF)).real() / electronBeamEnergy / pow(rBeta,2);
+            eMomentumZ[index] += vb0.real()/2.0  / electronBeamEnergy / pow(rBeta,2);
+        }
+
+        particleInBunch   += histoParIndex[k].size();
+        selfLossVolAccume += vb0/2.0           * double(histoParIndex[k].size());
+        cavVoltageReal    += cavVoltage.real() * double(histoParIndex[k].size());
+        cavVoltageImag    += cavVoltage.imag() * double(histoParIndex[k].size());
+        genVolReal        += genVoltage.real() * double(histoParIndex[k].size());
+        genVolImag        += genVoltage.imag() * double(histoParIndex[k].size());
+        induceVolReal     += (resonator.vbAccum + vb0).real() * double(histoParIndex[k].size()); 
+        induceVolImag     += (resonator.vbAccum + vb0).imag() * double(histoParIndex[k].size());
+
+        // beam induced voltage retotate and decay bin-by-bin            
+        // tB     = dtBin;
+        // deltaL = tB  / resonator.tF;
+        // cPsi   = 2.0 * PI *  resonator.resFre * tB;
+        // resonator.vbAccum += vb0;
+        // resonator.vbAccum *= exp(- deltaL ) * exp (li * cPsi);
+    }
+    resonator.vbAccum += vb0;
+
+    cavVoltageReal /= double(particleInBunch);
+    cavVoltageImag /= double(particleInBunch);
+    genVolReal     /= double(particleInBunch);
+    genVolImag     /= double(particleInBunch);
+    induceVolReal  /= double(particleInBunch);
+    induceVolImag  /= double(particleInBunch); 
+
+    bunchRFModeInfo->cavVolBunchCen[resIndex]       = complex<double>(cavVoltageReal,cavVoltageImag);
+    bunchRFModeInfo->genVolBunchAver[resIndex]      = complex<double>(genVolReal    ,genVolImag    ); 
+    bunchRFModeInfo->induceVolBunchCen[resIndex]    = complex<double>(induceVolReal ,induceVolImag); 
+    bunchRFModeInfo->selfLossVolBunchCen[resIndex]  =  selfLossVolAccume / double(particleInBunch) ;
+}
+
+
+void MPBunch::BunchMomentumUpdateDueToRFMode(const ReadInputSettings &inputParameter,Resonator &resonator, int resIndex)
+{
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double f0         = inputParameter.ringParBasic->f0;
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double fRF         = f0 * ringHarmH;
+    int bunchBinNumberZ = inputParameter.ringParRf->rfBunchBinNum;
+    double dzBin = (zMaxCurrentTurn - zMinCurrentTurn) / bunchBinNumberZ;
+    double dtBin = dzBin / CLight / rBeta;
+    double resHarm = resonator.resHarm;
+    double resFre  = resonator.resFre;
+    double tB, deltaL, cPsi;
+    tB = deltaL = cPsi = 0.E0;
+
+    // bunch bins are alined from head to tail [zmax-> zMin] when i=0,1,2,...
+    for(int i=0;i<posZBins.size();i++)
+    {
+        posZBins[i] = zMaxCurrentTurn - i * dzBin  - dzBin / 2.0;  
+    }
+    
+    vector<vector<int>> histoParIndex;
+    histoParIndex.resize(bunchBinNumberZ);
+    for(int i=0;i<ePositionZ.size();i++)
+    {
+        if(eSurive[i]!=0) continue;
+        int index = floor((  zMaxCurrentTurn - ePositionZ[i] ) / dzBin);         
+        histoParIndex[index].push_back(i);  
+    }
+    for(int i=0;i<bunchBinNumberZ;i++)
+    {
+        densProfVsBin[i] = histoParIndex[i].size() / double(macroEleNumPerBunch) / dzBin;
+    }
+   
+    double cavVoltageReal = 0.E0;
+    double cavVoltageImag = 0.E0;
+    double induceVolReal = 0.E0;
+    double induceVolImag = 0.E0;
+    double genVolReal = 0.E0;
+    double genVolImag = 0.E0;
+    complex<double> vb0=(0,0);
+    complex<double> cavVoltage=(0.E0,0.E0);
+    complex<double> genVoltage=(0.E0,0.E0);
+    complex<double> selfLossVolAccume=(0.E0,0.E0);
+    int particleInBunch=0;
+
+    // loop for bin-by-bin in one bunch, bins is alined from head to tail and each bin excite beam induced voltage itself
+
+    for(int k=0;k<histoParIndex.size();k++) 
+    {            
+        genVoltage = resonator.resGenVol * exp( - li * posZBins[k]  / CLight / rBeta * 2. * PI * double(resHarm) * fRF); 
+        cavVoltage = resonator.vbAccum   +  genVoltage;
+        
+        vb0  = complex<double>(-1 * 2 * PI * resFre * resonator.resShuntImpRs / resonator.resQualityQ0, 0.E0) * macroEleCharge*double(histoParIndex[k].size()) * ElectronCharge;  // [Volt]
+
+        // loop for particle in each bin          
+        for(int i=0;i<histoParIndex[k].size();i++)
+        {
+            int index          = histoParIndex[k][i];
+            eMomentumZ[index] += cavVoltage.real() / electronBeamEnergy / pow(rBeta,2);
+            eMomentumZ[index] += vb0.real()/2.0    / electronBeamEnergy / pow(rBeta,2);
+        }
+
+        particleInBunch   += histoParIndex[k].size();
+        selfLossVolAccume += vb0/2.0           * double(histoParIndex[k].size());
+        cavVoltageReal    += cavVoltage.real() * double(histoParIndex[k].size());
+        cavVoltageImag    += cavVoltage.imag() * double(histoParIndex[k].size());
+        genVolReal        += genVoltage.real() * double(histoParIndex[k].size());
+        genVolImag        += genVoltage.imag() * double(histoParIndex[k].size());
+        induceVolReal     += (resonator.vbAccum + vb0).real() * double(histoParIndex[k].size()); 
+        induceVolImag     += (resonator.vbAccum + vb0).imag() * double(histoParIndex[k].size());
+
+        // beam induced voltage retotate and decay bin-by-bin            
+        tB     = dtBin;
+        deltaL = tB  / resonator.tF;
+        cPsi   = 2.0 * PI *  resonator.resFre * tB;
+        resonator.vbAccum += vb0;
+        resonator.vbAccum *= exp(- deltaL ) * exp (li * cPsi);
+    }
+    
+    
+    cavVoltageReal /= double(particleInBunch);
+    cavVoltageImag /= double(particleInBunch);
+    genVolReal     /= double(particleInBunch);
+    genVolImag     /= double(particleInBunch);
+    induceVolReal  /= double(particleInBunch);
+    induceVolImag  /= double(particleInBunch); 
+
+    bunchRFModeInfo->cavVolBunchCen[resIndex]       = complex<double>(cavVoltageReal,cavVoltageImag);
+    bunchRFModeInfo->genVolBunchAver[resIndex]      = complex<double>(genVolReal    ,genVolImag    ); 
+    bunchRFModeInfo->induceVolBunchCen[resIndex]    = complex<double>(induceVolReal ,induceVolImag); 
+    bunchRFModeInfo->selfLossVolBunchCen[resIndex]  =  selfLossVolAccume / double(particleInBunch) ;
+
+}
+
+
+void MPBunch::BunchMomentumUpdateDuetoRFBinByBin(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
     // Ref. bunch.h that ePositionZ = - ePositionT * c. head pariticles: deltaT<0, ePositionZ[i]>0.
-    double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
     
     int resNum        = inputParameter.ringParRf->resNum;
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
@@ -925,8 +1124,7 @@ void MPBunch:: BunchMomentumUpdateDuetoRFBinByBin(const ReadInputSettings &input
         // each bin excite beam induced voltage itself
         for(int k=0;k<histoParIndex.size();k++) 
         {
-            // change in the real time frame for generator voltage calculation...
-            
+            // change in the real time frame for generator voltage calculation...            
             genVoltage = cavityResonator.resonatorVec[j].resGenVol * exp(  - li * posZBins[k]  / CLight * 2. * PI * double(resHarm) * fRF); 
             cavVoltage = cavityResonator.resonatorVec[j].vbAccum   +  genVoltage;
             
@@ -983,35 +1181,9 @@ void MPBunch:: BunchMomentumUpdateDuetoRFBinByBin(const ReadInputSettings &input
         cavityResonator.resonatorVec[j].vbAccum *=  exp(- deltaL ) * exp (li * cPsi);
     }
 
-    
 }
 
-void MPBunch::BunchLongiMomentumUpdateDuetoRF(const ReadInputSettings &inputParameter)
-{
-    double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
-    double t0         = inputParameter.ringParBasic->t0;
-    double rBeta      = inputParameter.ringParBasic->rBeta;
-    double eta        = inputParameter.ringParBasic->eta;
-    double u0         = inputParameter.ringParBasic->u0;
-    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
 
-    // momentum and position update
-    double rmsEnergySpreadTemp = inputParameter.ringParBasic-> sdelta0; // quantum excitation  natural beam energy spread.
-    std::random_device rd{};
-    std::mt19937 gen{rd()};
-    std::normal_distribution<> qEpsilon{0,2*rmsEnergySpreadTemp/sqrt(synchRadDampTime[2])};
-
-    for (int i=0;i<eMomentumZ.size();i++)
-    {
-        eMomentumZ[i]  -= u0 / electronBeamEnergy / pow(rBeta,2); 
-        if(inputParameter.ringRun->synRadDampingFlag==1)
-        {
-            eMomentumZ[i] +=  qEpsilon(gen);
-            eMomentumZ[i] *= (1.0-2.0/synchRadDampTime[2]);        
-        }            
-        ePositionZ[i] -= eta * t0 * CLight  * eMomentumZ[i];
-    }   
-}
 
 
 
@@ -1236,9 +1408,12 @@ void MPBunch::BunchTransferDueToLatticeLNoInstability(const ReadInputSettings &i
 
 void MPBunch::GetZMinMax()
 {
-
     double zMin = ePositionZ[0];
     double zMax = ePositionZ[0];
+
+    // zMin = *min_element(ePositionZ.begin(),ePositionZ.end());
+    // zMax = *max_element(ePositionZ.begin(),ePositionZ.end());
+ 
 
     for (int i=0;i<ePositionZ.size();i++)
     {        
@@ -1522,31 +1697,38 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
     double dzBin   =  boardBandImp.dz;
     int   nBins    =  profileForBunchBBImp.size(); // bins for bunch profile, that is 2*boardBandImp.zZImp.size() - 1
    
+    int doTracking=0;
+    for (int i=0;i<5;i++)
+    {
+        doTracking = doTracking || inputParameter.ringBBImp->impedSimFlag[i];
+    }
+    if(doTracking==0) return;
+    
 
     fftw_complex *r2cout  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size() // bunch specturm
     fftw_complex *c2rin   = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * (nBins /2 +1) );  // the same size as boardBandImp.zZImp.size()
 
     double temp[nBins];
     int    partBinIndex[macroEleNumPerBunch];
-    
+
+    // get the smoothed longi-BunchCharge-profile 
+    fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
+        int index = partBinIndex[i];
+        profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
+    }
+    GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
+    for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
+
+    fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+    fftw_execute(p);
+
     
     // (0) in zz  directoin --------------------------------------------------- Eq3.10 
     if(inputParameter.ringBBImp->impedSimFlag[0]==1)  // beam longitudianl impedance interactoin
     {
-        // get the longi-ddisu-profile 
-        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
-
-        for(int i=0;i<macroEleNumPerBunch;i++)
-        {
-            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
-            int index = partBinIndex[i];
-            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
-        }
-        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
-        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
-
-        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
-        fftw_execute(p);
         for(int i=0;i<boardBandImp.zZImp.size();i++)
         {
             complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zZImp[i];
@@ -1562,8 +1744,49 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
             int index  = partBinIndex[i] ; 
             eMomentumZ[i] += wakePotenFromBBI->wakePotenZ[index] / electronBeamEnergy / pow(rBeta,2);
         }
-        fftw_destroy_plan(p);
     }
+
+    // (3) in zQx  directoin --------------------------------------------------- 
+    if(inputParameter.ringBBImp->impedSimFlag[3]==1)  // beam ZQx interactoin
+    { 
+        for(int i=0;i<boardBandImp.zZImp.size();i++)
+        {
+            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQxImp[i] * li;
+            c2rin[i][0] = indVF.real();
+            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        }
+        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
+        fftw_execute(p);   
+        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenQx[i] = temp[i] / nBins;
+        
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            int index  = partBinIndex[i] ; 
+            eMomentumX[i] += wakePotenFromBBI->wakePotenQx[index] / electronBeamEnergy / pow(rBeta,2) *  ePositionX[i] / latticeInterActionPoint.twissBetaX[0];
+        }
+    }
+
+
+    // (4) in zQy  directoin --------------------------------------------------- 
+    if(inputParameter.ringBBImp->impedSimFlag[4]==1)  // beam ZQx interactoin
+    {
+        for(int i=0;i<boardBandImp.zZImp.size();i++)
+        {
+            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQyImp[i] * li;
+            c2rin[i][0] = indVF.real();
+            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
+        }
+        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
+        fftw_execute(p);   
+        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenQy[i] = temp[i] / nBins;
+        
+        for(int i=0;i<macroEleNumPerBunch;i++)
+        {
+            int index  = partBinIndex[i] ; 
+            eMomentumY[i] += wakePotenFromBBI->wakePotenQy[index] / electronBeamEnergy / pow(rBeta,2) *  ePositionY[i] / latticeInterActionPoint.twissBetaY[0];
+        }
+    }
+
     
 
     // (1) in zDx  directoin --------------------------------------------------- //Alex Chao Eq 3.51
@@ -1580,7 +1803,7 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
         GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
         for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
 
-        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+        p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
         fftw_execute(p);
         for(int i=0;i<boardBandImp.zZImp.size();i++)
         {
@@ -1614,7 +1837,7 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
         GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
         for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
 
-        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
+        p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
         fftw_execute(p);
         for(int i=0;i<boardBandImp.zZImp.size();i++)
         {
@@ -1631,82 +1854,13 @@ void MPBunch::BBImpBunchInteraction(const ReadInputSettings &inputParameter, con
             int index      = partBinIndex[i] ; 
             eMomentumY[i] += wakePotenFromBBI->wakePotenDy[index] / electronBeamEnergy / pow(rBeta,2) / latticeInterActionPoint.twissBetaY[0];
         }
-        fftw_destroy_plan(p);
     }
 
-    // (3) in zQx  directoin --------------------------------------------------- 
-    if(inputParameter.ringBBImp->impedSimFlag[3]==1)  // beam ZQx interactoin
-    {
-        // get the longi-ddisu-profile 
-        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
-
-        for(int i=0;i<macroEleNumPerBunch;i++)
-        {
-            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
-            int index = partBinIndex[i];
-            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
-        }
-        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
-        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
-
-        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
-        fftw_execute(p);
-        for(int i=0;i<boardBandImp.zZImp.size();i++)
-        {
-            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQxImp[i] * li;
-            c2rin[i][0] = indVF.real();
-            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
-        }
-        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
-        fftw_execute(p);   
-        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenQx[i] = temp[i] / nBins;
-        
-        for(int i=0;i<macroEleNumPerBunch;i++)
-        {
-            int index  = partBinIndex[i] ; 
-            eMomentumX[i] += wakePotenFromBBI->wakePotenQx[index] / electronBeamEnergy / pow(rBeta,2) *  ePositionX[i] / latticeInterActionPoint.twissBetaX[0];
-        }
-        fftw_destroy_plan(p);
-    }
-
-
-    // (4) in zQy  directoin --------------------------------------------------- 
-    if(inputParameter.ringBBImp->impedSimFlag[4]==1)  // beam ZQx interactoin
-    {
-        // get the longi-ddisu-profile 
-        fill(profileForBunchBBImp.begin(),profileForBunchBBImp.end(),0); // array[ 2* nBins -1 ] to store the profile
-
-        for(int i=0;i<macroEleNumPerBunch;i++)
-        {
-            partBinIndex[i]  =  (ePositionZ[i] - zMinBin + dzBin / 2 ) / dzBin; 
-            int index = partBinIndex[i];
-            profileForBunchBBImp[index] +=  macroEleCharge * ElectronCharge / dzBin *  CLight;  // [C/s]  
-        }
-        GetSmoothedBunchProfileGassionFilter(inputParameter, boardBandImp);
-        for(int i=0;i<nBins;i++) temp[i] = profileForBunchBBImp[i];
-
-        fftw_plan p = fftw_plan_dft_r2c_1d(nBins, temp, r2cout, FFTW_ESTIMATE);    // ffw, according to g++/nvcc complile flag is FFTW_MEASURE/FFTW_ESTIMATE
-        fftw_execute(p);
-        for(int i=0;i<boardBandImp.zZImp.size();i++)
-        {
-            complex<double> indVF = complex<double> (r2cout[i][0], r2cout[i][1] ) * boardBandImp.zQyImp[i] * li;
-            c2rin[i][0] = indVF.real();
-            c2rin[i][1] = indVF.imag();                              // [C/s] * [Ohm] = [V]   
-        }
-        p = fftw_plan_dft_c2r_1d(nBins, c2rin, temp, FFTW_ESTIMATE);
-        fftw_execute(p);   
-        for(int i=0;i<nBins;i++)  wakePotenFromBBI->wakePotenQy[i] = temp[i] / nBins;
-        
-        for(int i=0;i<macroEleNumPerBunch;i++)
-        {
-            int index  = partBinIndex[i] ; 
-            eMomentumY[i] += wakePotenFromBBI->wakePotenQy[index] / electronBeamEnergy / pow(rBeta,2) *  ePositionY[i] / latticeInterActionPoint.twissBetaY[0];
-        }
-        fftw_destroy_plan(p);
-    }
+    
 
     fftw_free(r2cout);
     fftw_free(c2rin);
+    fftw_destroy_plan(p);
 
 
     // test the wakefield her. 

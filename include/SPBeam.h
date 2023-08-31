@@ -72,6 +72,16 @@ public:
     vector<vector<double> > coupledBunchModeArgX;
     vector<vector<double> > coupledBunchModeArgY;
     vector<vector<double> > coupledBunchModeArgZ;
+    vector<double>CBMIdealGRX;
+    vector<double>CBMIdealGRY;
+    vector<double>CBMIdealGRZ;
+    vector<double>CBMHTGRX;
+    vector<double>CBMHTGRY;
+    vector<double>CBMHTGRZ;
+    vector<double>CBMIQGRX;
+    vector<double>CBMIQGRY;
+    vector<double>CBMIQGRZ;
+    
     // IQ decomposition to get the coupled bunch grwothe rate  -- only the unstable mode can be identified
     vector<vector<double > > ampXIQ;
     vector<vector<double > > ampYIQ;
@@ -98,10 +108,13 @@ public:
     vector<vector<double> > hilbertAmpX;
     vector<vector<double> > hilbertAmpY;
     vector<vector<double> > hilbertAmpZ; 
+
     vector<vector<double> > historyAverX;
     vector<vector<double> > historyAverY;
     vector<vector<double> > historyAverZ;
-
+    vector<vector<double> > historyAverPX;
+    vector<vector<double> > historyAverPY;
+    vector<vector<double> > historyAverPZ;
     
     // for excitation print 
     vector<double > freXIQDecompScan;
@@ -123,6 +136,11 @@ public:
     void GetDriveModeGrowthRate(const int n, const ReadInputSettings &inputParameter);
     void GetCBMGR(const int turns, const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter);
     
+    void GetCBMGR1(const int turns, const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter);
+    void SetIdealCoupledBunchModeData(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter);
+    void SetHilbertCoupledBunchModeData(const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter);
+    void SetIQCoupledBunchModeData(const LatticeInterActionPoint &latticeInterActionPoint, const ReadInputSettings &inputParameter);
+
     // shared funcitons by MP and SP cases.         
     void TuneRamping(ReadInputSettings &inputParameter,double n);
     void Initial(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
@@ -130,13 +148,17 @@ public:
     void BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BeamMomentumUpdateDueToRF(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator,int turns);
     void BeamMomentumUpdateDueToRFTest(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator,int turns);
-    void BeamTransferDueToLatticeL(ReadInputSettings &inputParameter); 
+    void BeamLongiPosTransferOneTurn(const ReadInputSettings &inputParameter); 
+    void BeamEnergyLossOneTurn(const ReadInputSettings &inputParameter);
+
     // void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns);
     // void BeamTransferPerTurnDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void WSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);   
     void SetBeamPosHistoryDataWithinWindow();
     void GetAnalyticalWithFilter(const ReadInputSettings &inputParameter);
     vector<complex<double> > GetHilbertAnalytical(vector<double> signal, const double filterBandWithdNu,  double workQ);
+    vector<complex<double> > GetHilbertAnalytical(vector<complex<double> >  signal, const double filterBandWithdNu,  double workQ);
+    
     void GetHilbertAnalyticalInOneTurn(const ReadInputSettings &inputParameter);
     void BeamTransferDuetoDriveMode(const ReadInputSettings &inputParameter,const int n);                 
     void MarkParticleLostInBunch(const ReadInputSettings &inputParameter, const LatticeInterActionPoint &latticeInterActionPoint);
@@ -146,6 +168,7 @@ public:
     void BeamTransferPerTurnDueWake();
     void BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     
+
     // for long range RW wake function
 	void LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint,int turns);  
     

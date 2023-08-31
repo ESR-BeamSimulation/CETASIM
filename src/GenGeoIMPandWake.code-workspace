@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"path": "../../../../../beegfs/desy/user/chaoli/YongChulWake_Imp/GeoImp_Petra4/GenGeoIMPandWake"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"hash_map": "cpp",
+			"*.tcc": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"string": "cpp",
+			"vector": "cpp",
+			"iomanip": "cpp",
+			"iostream": "cpp",
+			"istream": "cpp",
+			"sstream": "cpp",
+			"complex": "cpp",
+			"bitset": "cpp",
+			"initializer_list": "cpp",
+			"array": "cpp",
+			"hashtable": "cpp",
+			"iosfwd": "cpp",
+			"ostream": "cpp",
+			"random": "cpp",
+			"cmath": "cpp",
+			"unordered_map": "cpp",
+			"cstdlib": "cpp"
+		}
+	}
+}

@@ -293,7 +293,7 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     gsl_eigen_nonsymmv_workspace * w =  gsl_eigen_nonsymmv_alloc (6);
 
 
-    //ref. Elegant ILMatrix element
+    //ref. Elegant ILMatrix element  compute_matrices.c line:2442
     double xPosN,yPosN,xMomN,yMomN;
     double ampX,ampY;
     double nuxtmp,nuytmp,tmp;
@@ -337,7 +337,7 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         tmp = -etayp + etayp * cos(phiy) + ( etay  + pow(alphay,2) * etay +  alphay * betay * etayp) *  sin(phiy) / betay; gsl_matrix_set(ILmatrix,4,2,tmp); //R53 
         tmp =  etax  - etax  * cos(phix) + ( alphax * etax +  betax * etaxp) * sin(phix);                                  gsl_matrix_set(ILmatrix,4,1,tmp); //R52 
         tmp =  etay  - etay  * cos(phiy) + ( alphay * etay +  betay * etayp) * sin(phiy);                                  gsl_matrix_set(ILmatrix,4,3,tmp); //R54  
-        // how to set R55, R56, R65, R66. checked it with yong-chul recently.
+        // R55, R56, R65, R66 and R16 R26 R36 R46 is set to ensure the period one turn solution
         gsl_matrix_set(ILmatrix,4,4,1); //R55
         gsl_matrix_set(ILmatrix,5,5,1); //R66
 
@@ -383,8 +383,6 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         // }
         // ----end -------------------------------
 
-
-
         // for(int j=0;j<6;j++)
         // {
         //     for(int k=0;k<6;k++) printf("%15.7f\t",ILmatrix->data[j * ILmatrix->tda+k]);
@@ -395,10 +393,7 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
         // cout<<endl;
         // for(int j=0;j<6;j++) printf("%15.10f\t", cord1->data[j * cord1->tda]);
         // cout<<endl;
-            
-        // getchar();
-        // longitudinal pozition updated in one turn -- momentum compactor of the whole ring. 
-        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  + alphac[1] * pow( eMomentumZ[i] ,2) + alphac[2] * pow( eMomentumZ[i], 3) ) ;    
+                              
     }
 
     gsl_matrix_free(ILmatrix);
@@ -411,17 +406,71 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     gsl_matrix_complex_free(evec);
     gsl_eigen_nonsymmv_free (w);
 
-
-
 }
 
-void Bunch::BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter)
+
+void Bunch::GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,Resonator &resonator)
+{
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+   
+    complex<double> cavFB=(0.E0,0.E0);
+    double absCavFB,argCavFB;
+
+    // kick due to the cavity dirFB. -- not physical one        
+    cavFB    = resonator.vCavDueToDirFB[bunchHarmNum];
+    absCavFB = abs(cavFB) * resonator.dirCavFB->gain;
+    argCavFB = arg(cavFB) + resonator.dirCavFB->phaseShift + resonator.dirCavFB->delay * resonator.resFre * 2 * PI;
+    
+    cavFB    = absCavFB * exp(li * argCavFB);
+
+    for(int i=0;i<ePositionX.size();i++)
+    {
+        eMomentumZ[i] += cavFB.real() /electronBeamEnergy / pow(rBeta,2);
+    }
+}
+
+
+void Bunch::BunchMomentumUpdateDueToRFCA(const ReadInputSettings &inputParameter,Resonator &resonator)
+{
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double f0         = inputParameter.ringParBasic->f0;
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double fRF         = f0 * ringHarmH;
+    
+    int resHarm = resonator.resHarm;
+    double resFre  = resonator.resFre;
+
+    complex<double> cavVoltage =(0.E0,0.E0);
+    complex<double> genVoltage =(0.E0,0.E0);
+    
+    for (int i=0;i<macroEleNumPerBunch;i++)
+    {
+        genVoltage = resonator.resCavVolReq * exp( - li * ePositionZ[i] / CLight * 2. * PI * double(resHarm) * fRF );
+        cavVoltage = genVoltage;
+        eMomentumZ[i] += cavVoltage.real()  /electronBeamEnergy / pow(rBeta,2);
+    }
+}
+
+void Bunch::BunchEnergyLossOneTurn(const ReadInputSettings &inputParameter)
+{
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double u0         = inputParameter.ringParBasic->u0;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+
+    for (int i=0;i<macroEleNumPerBunch;i++)
+        eMomentumZ[i] -= u0 / electronBeamEnergy / pow(rBeta,2);   
+}
+
+
+void Bunch::BunchLongPosTransferOneTurn(const ReadInputSettings &inputParameter)
 {
     double circRing = inputParameter.ringParBasic->circRing;
     double *alphac = inputParameter.ringParBasic->alphac;
     
     for(int i=0;i<macroEleNumPerBunch;i++)
-        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  - pow(alphac[1] * eMomentumZ[i] ,2) + pow(alphac[2] * eMomentumZ[i] ,3) ) ;  
+        ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  + alphac[1] * pow( eMomentumZ[i] ,2) + alphac[2] * pow( eMomentumZ[i], 3) ) ;
 }
 
 void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k)
@@ -429,7 +478,7 @@ void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,c
 
     double circRing = inputParameter.ringParBasic->circRing;
     double *alphac = inputParameter.ringParBasic->alphac;
-
+    // can be updated to include chrom effect and the dispersion effect.... (not correct at this moment) 
 
     double xtemp=0.E0;
     double ytemp=0.E0;
@@ -463,8 +512,7 @@ void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,c
         double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2) ; 
         if(lossTemp >1) eSurive[i] = 1;   // loss in transverse
     }
-    
-    
+   
 }
 
 
@@ -478,8 +526,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     synchRadDampTime.resize(3);
     for(int i=0;i<synchRadDampTime.size();i++)
     {
-        synchRadDampTime[i] = inputParameter.ringParBasic->synchRadDampTime[i];
-        
+        synchRadDampTime[i] = inputParameter.ringParBasic->synchRadDampTime[i];   
     }
 
     gsl_matrix * cordTransfer     = gsl_matrix_alloc (6, 6);
@@ -503,6 +550,7 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     }
 
     // replace here by natural emittance value from input, also set the synchrontron integration values.
+    // which is actually are the eigen emittance from simulation
     coeff[0] = sqrt(1 - pow(lambda[0],2)) * sqrt(inputParameter.ringParBasic->emitNat[0]);
     coeff[1] = sqrt(1 - pow(lambda[1],2)) * sqrt(inputParameter.ringParBasic->emitNat[1]);
     coeff[2] = sqrt(1 - pow(lambda[2],4)) * sqrt(inputParameter.ringParBasic->emitNat[2]);
@@ -651,88 +699,6 @@ void Bunch::BunchTransferDueToWake()
     }
 }
 
-void Bunch::GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
-{
-    int ringHarmH     = inputParameter.ringParRf->ringHarm;
-    double circRing   = inputParameter.ringParBasic->circRing;
-    double rfLen      = circRing  / ringHarmH;
-    double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
-    double rBeta      = inputParameter.ringParBasic->rBeta;
-    double t0         = inputParameter.ringParBasic->t0;
-    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
-
-    for(int j=0;j<cavityResonator.resonatorVec.size();j++)
-    {
-        for(int k=0;k<bunchGap;k++)
-        {
-
-            int index = bunchHarmNum + k; 
-
-            cavityResonator.resonatorVec[j].vBSample[index]   = cavityResonator.resonatorVec[j].vBSampleTemp;
-            cavityResonator.resonatorVec[j].vGenSample[index] = cavityResonator.resonatorVec[j].resGenVol;
-            cavityResonator.resonatorVec[j].vCavSample[index] = cavityResonator.resonatorVec[j].resGenVol + cavityResonator.resonatorVec[j].vBSampleTemp;
-            cavityResonator.resonatorVec[j].deltaVCavSample[index] = cavityResonator.resonatorVec[j].vCavSample[index]
-                                                                   - cavityResonator.resonatorVec[j].resCavVolReq ;
-
-            //method 1: set this vCavVolDueToDirFB value directly as deltaVCavSample, not robust idea 
-            if(cavityResonator.resonatorVec[j].resDirFB!=0)
-            {
-                cavityResonator.resonatorVec[j].vCavDueToDirFB[index] = cavityResonator.resonatorVec[j].deltaVCavSample[index];
-            }
-
-            // method 2: according to vCavDueToDirFB try to get Ig
-            // to update the cavity voltage due to the generator currnt genIg, and with updated genIG track the cavity dynamics, 
-            // Ref. https://www.aps.anl.gov/files/APS-Uploads/ASDSeminars/2015/2015-05-27_Berenc.pdf
-            // slid 44. in his loop, deltaVCavSample is applied to build the control loop
-            
-            
-            
-            
-            cavityResonator.resonatorVec[j].CavityResonatorDynamics(TrackingTime + k * tRF);
-            GetVBSampledDueToIthBunch(j,k,inputParameter,cavityResonator);
-        }
-    }
-   
-    TrackingTime += bunchGap * tRF;
-
-
-    complex<double> cavFB=(0.E0,0.E0);
-    double absCavFB,argCavFB;
-
-    // kick due to the cavity feedback, here in below only works with dirFB scheme. It seesm not a good idea for our case.
-    for(int j=0;j<cavityResonator.resonatorVec.size();j++)
-    {
-        if(cavityResonator.resonatorVec[j].resDirFB!=0)
-        {
-            cavFB    = cavityResonator.resonatorVec[j].vCavDueToDirFB[bunchHarmNum];
-            absCavFB = abs(cavFB) * cavityResonator.resonatorVec[j].dirCavFB->gain;
-            argCavFB = arg(cavFB) + cavityResonator.resonatorVec[j].dirCavFB->phaseShift 
-                                  + cavityResonator.resonatorVec[j].dirCavFB->delay * cavityResonator.resonatorVec[j].resFre * 2 * PI;
-            
-            cavFB    = absCavFB * exp(li * argCavFB);
-
-            for(int i=0;i<ePositionX.size();i++)
-            {
-                eMomentumZ[i] -= cavFB.real() /electronBeamEnergy / pow(rBeta,2);
-            }
-        }
-    }
-    // end of the kick from the dirfb scheme----------------------------------------------------
-
-}
-
-void Bunch::GetVBSampledDueToIthBunch(const int j,const int k,const ReadInputSettings &inputParameter, CavityResonator &cavityResonator)
-{
-    int ringHarmH     = inputParameter.ringParRf->ringHarm;
-    double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
-
-
-    double deltaL = tRF / cavityResonator.resonatorVec[j].tF;        
-    double cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tRF;
-    cavityResonator.resonatorVec[j].vBSampleTemp *= exp( - deltaL ) * exp (li * cPsi);
-    
-}
-
 
 
 void Bunch::SetBunchPosHistoryDataWithinWindow()
@@ -853,7 +819,7 @@ vector<double> Bunch::GetProfile(const ReadInputSettings &inputParameter)
     double eta        = inputParameter.ringParBasic->eta;
     double sdelta0    = inputParameter.ringParBasic->sdelta0;
 
-    double coef = 2 * PI * ringHarmH * f0 * eta * pow(sdelta0,2);  //  [1/s]
+    double coef = 2 * PI * ringHarmH * f0 * eta * pow(sdelta0,2);  //  [1/s]   // PRAB 17.064401 Eq.(8) 
 
 
     vector<double> profile(haissinski->nz,0);

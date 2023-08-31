@@ -40,7 +40,7 @@ public:
     // beam loading simulation, the same approaches as elegant.
     // have to benchmark with cases when there exist instabilites.....(single and double cavities.....)
     void BunchMomentumUpdateDueToRF(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
-    
+    void BunchMomentumUpdateDueToRFMode(const ReadInputSettings &inputParameter,Resonator &resonator, int resIndex);
     // beam loading simulation, yamamoto's paper, it is not 100% correct approaches. 
     // For certain partilce, Vg exp(li * phi_p) + Vb = Vc, phi_p is particle phase refer to generator. 
     void BunchMomentumUpdateDueToRFYamamoto(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);    

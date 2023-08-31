@@ -118,10 +118,6 @@ void BoardBandImp::ReadInImp(const  ReadInputSettings &inputParameter)
     }
 
 
-
-
-
-
     // test fft from impedance to wake directly.....
     // double Rs = 1;
     // double fR = 1.0E+9;

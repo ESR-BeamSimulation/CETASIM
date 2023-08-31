@@ -51,6 +51,10 @@ int main(int argc,char *argv[])
     */
 
 
+   
+
+
+
     struct timeval t0;
     gettimeofday(&t0, NULL); 
 
@@ -60,8 +64,8 @@ int main(int argc,char *argv[])
     LatticeInterActionPoint latticeInterActionPoint;
     latticeInterActionPoint.Initial(inputParameter);
     latticeInterActionPoint.SetLatticeParaForOneTurnMap(inputParameter);
-    latticeInterActionPoint.SetLatticeBRHForSynRad(inputParameter);
     latticeInterActionPoint.GetTransLinearCouplingCoef(inputParameter);
+    latticeInterActionPoint.SetLatticeBRHForSynRad(inputParameter);
 
     Train train;
     train.Initial(inputParameter);

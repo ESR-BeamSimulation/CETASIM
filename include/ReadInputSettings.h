@@ -61,7 +61,7 @@ public:
         double betaFunAver[3];      // x y z
         double radIntegral[5];
 
-        double emitNat[3];           // x y z
+        double emitNat[3];        // x y z
         double dampingPartJ[3];   // x y z
 
 
@@ -79,6 +79,7 @@ public:
         int resNum;
         int rfBunchBinNum;        
         vector<int>    resHarm;
+        vector<int>    rfMode;
         vector<int>    resType;
         vector<double> resVol;
         vector<double> resShuntImpRs;
@@ -95,7 +96,8 @@ public:
         vector <double> resDirFBPhase;
         vector <double> resDirFBDelay;
         string transResonParWriteTo;
-        string methodForVb="rigid";
+        string methodForVb="soft";
+
         
     };     
     RingParRf *ringParRf = new RingParRf;
@@ -235,11 +237,11 @@ public:
         int lRWakeFlag;
         int sRWakeFlag;
         int TBTBunchPrintNum;
-        int tuneRampFlag;
+        int rampFlag;
         vector<int> TBTBunchDisDataBunchIndex;
         string TBTBunchAverData;
         string TBTBunchDisData;
-        string TBTBunchCavVolData;
+        string TBTBunchPro;
         string TBTBunchHaissinski;
         string TBTBunchLongTraj;
         string runCBMGR;
@@ -254,6 +256,10 @@ public:
     {
         int rampingNu[2];       //x and y
         double deltaNuPerTurn[2]; //dnuyx and dnuy
+        int rampingSKQ;
+        double deltaSKQKPerTurn;
+        int deltaTurns;
+        int rampingTurns[2];
     };       
     Ramping * ramping =  new Ramping; 
 };

@@ -105,7 +105,10 @@ public:
     double latticeParaForOneTurnMap[22];
     double latticeSynRadBRH[72];
     double latticeSynRadCoff[6];  //Ref ZhangYuan -- used in GPU
-    
+    double tengRMatR2[4];         //Ref ZhangYuan Eq.(6)  (0,0),(0,1),(1,0),(1,1)
+    double traceAB[3];            //Sagan Eq.(3) trace of A B and M-N   
+    double gammaC[2];             //Sagan Eq.(8)
+    double detH;      
     struct ResDrivingTerms{
         // skew quadrupole 
         complex<double> f1001;
@@ -113,6 +116,7 @@ public:
         complex<double> f0101;
         complex<double> f0110;
         double linearCouplingFactor;             // according to the definition of Yong-Chul' note
+        double xyAlpha;
 
     };
     ResDrivingTerms *resDrivingTerms = new ResDrivingTerms;

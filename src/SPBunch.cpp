@@ -232,7 +232,47 @@ void SPBunch::WSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionP
 
 }
 
-    
+void SPBunch::BunchMomentumUpdateDueToRFMode(const ReadInputSettings &inputParameter,Resonator &resonator, int resIndex)
+{
+    int ringHarmH     = inputParameter.ringParRf->ringHarm;
+    double f0         = inputParameter.ringParBasic->f0;
+    double rBeta      = inputParameter.ringParBasic->rBeta;
+    double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double fRF         = f0 * ringHarmH;
+
+    complex<double> cavVoltage =(0.E0,0.E0);
+    complex<double> genVoltage =(0.E0,0.E0);
+    complex<double> vb0=(0,0);
+
+    vb0  = complex<double>(- 2 * PI * resonator.resFre * resonator.resShuntImpRs / resonator.resQualityQ0, 0.E0) * electronNumPerBunch * ElectronCharge;  //[Volt] 
+ 
+    if (resonator.resExciteIntability !=0)   //excite instability
+    {
+        genVoltage = resonator.resGenVol * exp( - li * ePositionZ[0] / CLight / rBeta * 2. * PI * fRF  * double(resonator.resHarm) );        
+        
+        cavVoltage = resonator.vbAccum + genVoltage;
+        eMomentumZ[0] += cavVoltage.real()  /electronBeamEnergy / pow(rBeta,2) ;
+        eMomentumZ[0] += vb0.real()/2.0     /electronBeamEnergy / pow(rBeta,2) ;
+    }
+    else   // do not excite coupled bunch instability.
+    {
+        genVoltage = resonator.resGenVol;     
+        cavVoltage = resonator.vbAccum + genVoltage; 
+        eMomentumZ[0] += (cavVoltage * exp( - li * ePositionZ[0] / CLight / rBeta * 2. * PI * fRF * double(resonator.resHarm) ) ).real() / electronBeamEnergy / pow(rBeta,2);
+        eMomentumZ[0] += vb0.real()/ 2.0  / electronBeamEnergy / pow(rBeta,2);
+    }
+
+    resonator.vbAccum += vb0;
+
+    // the info cavity, generator and beam induced voltage bunch feels
+    bunchRFModeInfo->induceVolBunchCen[resIndex]   = resonator.vbAccum;
+    bunchRFModeInfo->genVolBunchAver[resIndex]     = genVoltage;               
+    bunchRFModeInfo->cavVolBunchCen[resIndex]      = cavVoltage;
+    bunchRFModeInfo->selfLossVolBunchCen[resIndex] = vb0/2.0;
+}
+
+
+
 
 void SPBunch::BunchMomentumUpdateDueToRF(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
 {
@@ -248,8 +288,7 @@ void SPBunch::BunchMomentumUpdateDueToRF(const ReadInputSettings &inputParameter
     // Then the instability can be excited... 
 
     // in the longitudinal tracking, the (z,pz) rotate in phase with anti-colckwise
-    double *synchRadDampTime = inputParameter.ringParBasic->synchRadDampTime;
-
+   
     int resNum        = inputParameter.ringParRf->resNum;
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
     double t0         = inputParameter.ringParBasic->t0;
@@ -289,10 +328,10 @@ void SPBunch::BunchMomentumUpdateDueToRF(const ReadInputSettings &inputParameter
         // cavityResonator.resonatorVec[j].vbAccum += vb0;  
         //---------------------------------------------------------------------------------------------------
 
-        //Yamamoto;s approaches, can be used to get stable solution
+        //Yamamoto;s approaches PRAB 2018, can be used to get stable solution
         genVoltage = cavityResonator.resonatorVec[j].resGenVol; 
         cavVoltage = cavityResonator.resonatorVec[j].vbAccum + cavityResonator.resonatorVec[j].resGenVol; 
-        eMomentumZ[0] += (cavVoltage * exp(  - li * ePositionZ[0] / CLight / rBeta * 2. * PI * double(resHarm) * fRF ) ).real() / electronBeamEnergy / pow(rBeta,2);
+        eMomentumZ[0] += (cavVoltage * exp( - li * ePositionZ[0] / CLight / rBeta * 2. * PI * double(resHarm) * fRF ) ).real() / electronBeamEnergy / pow(rBeta,2);
         eMomentumZ[0] += vb0.real()/2.0     / electronBeamEnergy / pow(rBeta,2);
         cavityResonator.resonatorVec[j].vbAccum += vb0; 
         //---------------------------------------------------------------------------------------------------
@@ -332,15 +371,9 @@ void SPBunch::BunchMomentumUpdateDueToRF(const ReadInputSettings &inputParameter
         //-----------------------------------------------------------------------------------------------------------------------------------------
     }
        
-    eMomentumZ[0] -= u0 / electronBeamEnergy / pow(rBeta,2);
-
-
-    // if(inputParameter.ringRun->synRadDampingFlag[1]==1)
-    // {
-    //     eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
-    // }
-    // ePositionZ[0]  -= eta * t0  * CLight * rBeta  * eMomentumZ[0] ;    // deltaZ = -deltaT * CLight = -eta * T0 * deltaPOverP * CLight * rBeta;  
 }
+
+
 
 
 
@@ -470,8 +503,7 @@ void SPBunch::BunchMomentumUpdateDueToRFYamamoto(const ReadInputSettings &inputP
     complex<double> genVoltage =(0.E0,0.E0);
     complex<double> vb0=(0,0);
 
-    // loop of cavities. 
-    // Get Yamomoto's approaches to get his fig.10 -------------------------------------------------
+    
     for(int j=0;j<resNum;j++)
     {                       
         resHarm = cavityResonator.resonatorVec[j].resHarm;
@@ -506,15 +538,6 @@ void SPBunch::BunchMomentumUpdateDueToRFYamamoto(const ReadInputSettings &inputP
         cPsi   = 2.0 * PI *  cavityResonator.resonatorVec[j].resFre * tB;     
         cavityResonator.resonatorVec[j].vbAccum *= exp(- deltaL ) * exp(li * cPsi); 
     }
-    
-    eMomentumZ[0] -= u0 / electronBeamEnergy / pow(rBeta,2);
-    
-    
-    // if(inputParameter.ringRun->synRadDampingFlag[1]==1)
-    // {
-    //     eMomentumZ[0] *= (1.0-2.0/synchRadDampTime[2]);                
-    // }
-    // ePositionZ[0]  -= eta * t0  * CLight * rBeta * eMomentumZ[0];             // deltaZ = - deltaT * CLight = - eta * T0 * deltaPOverP * CLight 
-   
+       
 }
 

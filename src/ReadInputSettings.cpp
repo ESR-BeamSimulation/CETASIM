@@ -185,7 +185,9 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringParRf->resNum = stoi(strVec[1]);
             
             ringParRf->resType        .resize(ringParRf->resNum);
+            ringParRf->rfMode         .resize(ringParRf->resNum);
             ringParRf->resHarm        .resize(ringParRf->resNum);
+
             ringParRf->resVol         .resize(ringParRf->resNum);
             ringParRf->resPhase       .resize(ringParRf->resNum);
             ringParRf->resShuntImpRs  .resize(ringParRf->resNum);
@@ -199,6 +201,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
             ringParRf->resDirFBPhase.resize(ringParRf->resNum);
             ringParRf->resDirFBDelay.resize(ringParRf->resNum);               
             ringParRf->resAmpFBRatioForTotSelfLoss.resize(ringParRf->resNum);                                 
+
         }
 
         if (strVec[0]=="rfresexciteintability") 
@@ -261,6 +264,15 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
                 }
             }
         }
+
+        if (strVec[0]=="rfmode") 
+        { 
+            for(int i=0;i<ringParRf->resNum;i++)
+            {
+                ringParRf->rfMode[i] = stoi(strVec[i+1]);
+            }    
+        }
+
         if (strVec[0]=="rfresharm") 
         {
             for(int i=0;i<ringParRf->resNum;i++)
@@ -766,9 +778,9 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         {
            ringRun->TBTBunchDisData = strVec[1];
         }
-        if(strVec[0]=="runtbtbunchcavvoldata")
+        if(strVec[0]=="runtbtbunchprofile")
         {
-           ringRun->TBTBunchCavVolData = strVec[1];
+           ringRun->TBTBunchPro = strVec[1];
         }
         if(strVec[0]=="runtbtbunchhaissinski")
         {
@@ -818,7 +830,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
 
         if(strVec[0]=="runramping")
         {
-          ringRun->tuneRampFlag = stoi(strVec[1]);
+          ringRun->rampFlag = stoi(strVec[1]);
         }
 
         // 11) ramping
@@ -832,8 +844,26 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
           ramping->deltaNuPerTurn[0] = stod(strVec[1]);
           ramping->deltaNuPerTurn[1] = stod(strVec[2]);
         }
-    }
+        if(strVec[0]=="rampingskq")
+        {
+          ramping->rampingSKQ = stod(strVec[1]);
+        }
+        if(strVec[0]=="rampingdskqk")
+        {
+          ramping->deltaSKQKPerTurn = stod(strVec[1]);
+        }
+        if(strVec[0]=="rampingdturn")
+        {
+          ramping->deltaTurns = stoi(strVec[1]);
+        }
+        if(strVec[0]=="rampingturns")
+        {
+          ramping->rampingTurns[0] = stoi(strVec[1]);
+          ramping->rampingTurns[1] = stoi(strVec[2]);
+        }
 
+    }
+  
 
   if (driveMode->driveStart > driveMode->driveStart)
   {
@@ -855,13 +885,15 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
 
 
 
+
     // debug -- print all bunch data
-    // ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;
-    // ringRun->TBTBunchDisDataBunchIndex.resize(ringRun->TBTBunchPrintNum );
-    // for(int i=0;i<ringRun->TBTBunchPrintNum;i++)
-    // {
-    //    ringRun->TBTBunchDisDataBunchIndex[i] = i; 
-    // }
+    ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;
+    ringRun->TBTBunchPrintNum = 20;
+    ringRun->TBTBunchDisDataBunchIndex.resize(ringRun->TBTBunchPrintNum );
+    for(int i=0;i<ringRun->TBTBunchPrintNum;i++)
+    {
+       ringRun->TBTBunchDisDataBunchIndex[i] = i; 
+    }
     
 
 

@@ -56,7 +56,7 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         resonatorVec[i].vGenSample.resize(ringHarmH);
         resonatorVec[i].deltaVCavSample.resize(ringHarmH);
         resonatorVec[i].vBSample.resize(ringHarmH);
-        resonatorVec[i].vCavDueToDirFB.resize(ringHarmH);      
+        resonatorVec[i].vCavDueToDirFB.resize(ringHarmH);    
     }
     
      //initialize the resonator paramters -- can be modified to cover the passive and active cavities cases.     
@@ -65,6 +65,8 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         // read from input file
         resonatorVec[i].resHarm            = inputParameter.ringParRf-> resHarm[i];
         resonatorVec[i].resType            = inputParameter.ringParRf-> resType[i];
+        resonatorVec[i].resRfMode          = inputParameter.ringParRf-> rfMode[i];
+        
         
         resonatorVec[i].resShuntImpRs      = inputParameter.ringParRf-> resShuntImpRs[i];
         resonatorVec[i].resQualityQ0       = inputParameter.ringParRf-> resQualityQ0[i];
@@ -84,7 +86,12 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
             resonatorVec[i].dirCavFB->phaseShift = inputParameter.ringParRf->resDirFBPhase[i];
             resonatorVec[i].dirCavFB->delay      = inputParameter.ringParRf->resDirFBDelay[i]; 
         }
-             
+
+        if(resonatorVec[i].resQualityQ0<0)
+        {      
+            cerr<<"resonator quality factor can not be less than 0.5"<<endl;     
+            exit(0);
+        }
         // calcuated....
         resonatorVec[i].resQualityQL       = resonatorVec[i].resQualityQ0 / (1 + resonatorVec[i].resCouplingBeta );                
         resonatorVec[i].resFre             = resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; 
@@ -98,7 +105,8 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         resonatorVec[i].resDeTunePsi      = atan(tanPsi);   // in interval [-pi/2,pi/2] 
         resonatorVec[i].tF                = 2 * resonatorVec[i].resQualityQL / (2 * PI * resonatorVec[i].resFre );  //Eq.(7.25) [s] same notation as P.B. Wilson [s]                         
         resonatorVec[i].resGenVolFB       = complex<double>(0.e0,0.e0);
-        
+
+         
     }
         
     double  u0 = inputParameter.ringParBasic->u0;
@@ -162,7 +170,7 @@ void CavityResonator::GetIntialGenIg()
 {
     for(int i=0;i<resonatorVec.size();i++)
     {
-        resonatorVec[i].GetInitialGenIg();
+        resonatorVec[i].GetInitialResonatorGenIg();
     }
 }
 
@@ -172,7 +180,7 @@ void CavityResonator::GetInitalCavityPowerInfo(ReadInputSettings &inputParameter
     // the same as P.B. Wilson Eq. (4.1.2)
     for(int i=0;i<resonatorVec.size();i++)
     {
-        resonatorVec[i].GetInitialCavityPower(inputParameter);
+        resonatorVec[i].GetInitialResonatorPower(inputParameter);
     }
 }  
 

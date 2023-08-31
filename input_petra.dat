@@ -3,19 +3,19 @@
 &ring
 ringCircRing = 2304.E0
 ringWorkQ                  = 135.1793E0  86.26997E0  0.00481263E0
-ringSynchRadDampTime       = 2310       2879      1642        // in the unit of turns [x,y,z]
-ringPipeAperatureX         = 15.0E-3                          // [m]
-ringPipeAperatureY         = 6.0E-3                           // [m]
-ringPipeAperatureR         = 1.0E-1                           // [m]   not used in code
-ringElectronBeamEnergy     = 6.0E+9
-ringSdelta0                = 8.969490e-4                      // natural energy spread
-ringNaturalEmit            = 20e-12                           // natural emittance
-ringCoupling               = 0.0                              // decide the excitation
-ringskewQuadK              = 0.005                            // 1/f [1/m]            
+ringSynchRadDampTime       = 2310       2880      1642        // in the unit of turns [x,y,z]
+ringPipeAperatureX         = 15.E-2                          // [m]
+ringPipeAperatureY         = 10.E-2                           // [m]
+ringPipeAperatureR         = 1.E-1                           // [m]   not used in code
+ringElectronBeamEnergy     = 6.E+9
+ringSdelta0                = 8.969490E-4                      // natural energy spread
+ringNaturalEmit            = 19.39e-12                        // natural emittance
+ringCoupling               = 0.1                              // decide the quant excitation
+ringskewQuadK              = 0.E-3                            // 1/f [1/m]            
 ringU0                     = 4.166343E+6
-ringCurrent                = 0.001
+ringCurrent                = 0.2
 ringChrom                  = 0 0
-ringAlphac                 = 3.33022e-5  0  0               // up to the second order
+ringAlphac                 = 3.330217E-5  0  0              // up to the second order
 ringADTX                   = 0 0                            // up to the second order
 ringADTY                   = 0 0                            // up to the second order
 ringADTXY                  = 0 0                            // up to the second order
@@ -26,39 +26,41 @@ ringADTXY                  = 0 0                            // up to the second 
 // If what to simulate idea cavity, just set Rs=0 and detunfre=0 
 &rfset
 rfRingHarm        = 3840                          // harmonics number of the ring
-rfResNum          = 1                             // passive HC can also be treated as RLC impedance--long range wake in time domain treatment 
+rfResNum          = 2                             // passive HC can also be treated as RLC impedance 
+rfMode            = 1  1                          // RFCA or RFMode? 0:RFCA, 1:RFMODE
 rfResHarm         = 1  3                          // harm number of the cavity (normalized by ringHarm). 
 rfResType         = 1  1                          // active=1, passive=0. Main cavity is always active
-rfResVol          = 8.0E+6  2.222906e+6            // cavity voltage [V],   target value to be maintained.  
+rfResVol          = 8.0E+6  2.222906e+6           // cavity voltage [V],   target value to be maintained.  
 rfResPhase        = 0.944817  -1.80728            // cavity phase   [rad], target value to be maintained.  Cos covention. code will give warning, if U0 can not be compansated.
                                                   // if only with 1 cavity, the ideal value will be set as default  
-rfResPhase        = 1.02302  -1.5707                                                  
+!rfResPhase        = 1.02302  -1.5707              // \cos convetion -> \sin convetion - pi/2                                   
                                                   
-!rfResShuntImpRs   = 81.6E+6 36.E+6                // [ohm]
-!rfResShuntImpRs   = 40.8E+6  1.8E+6             // [ohm]
-rfResShuntImpRs    = 0.0E+6 0.E+6                // [ohm]
+rfResShuntImpRs   = 81.6E+6 36.E+6               // [ohm]
+!rfResShuntImpRs    = 40.8E+6  1.8E+6              // [ohm]
 
 rfResQualityQ0     = 29600   17000                 // unLoaded quality factor
 rfResCouplingBeta  = 3.0     5.3                   // coupling factor   
-rfResDetuneFre     = -27.9e+3  233.44e+3          // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
-!rfResDetuneFre    = -13.943e+3  13.882e+3              // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
-rfResDetuneFre     = -0.e+3  0.e+3 
+rfResDetuneFre     = -27.906e+3  277.648e+3           // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+!rfResDetuneFre    = -13.943e+3  13.882e+3         // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
 rfTransientCavParWriteTo = rfTransientPar         // Data file to store the initial cavity and genertor setiings.
 rfResCold          = 0 0                          // in tracking, cavity is cold (1) or beam induced volage is built up already (0).
-rfResExciteIntability = 0 0                       // to exite coupled bunch instability or not
+rfResExciteIntability = 0 0                       // to exite coupled bunch instability or not. 
 
 
 rfResDirFB            = 0 0                       // direct feedback
-rfResDirFBGain        = 1.E-2 1.E-1               // direct feedback -- gain factor dimenionless 
+rfResDirFBGain        = 1.E0 1.E0                 // direct feedback -- gain factor dimenionless 
 rfResDirFBPhaseShift  = 0.0  0.0                  // direct feedback -- rad
 rfResDirFBDelay       = 0.E-6 0.E-6               // direct feedback -- second  
-
-rfBunchBinNum      =  32                          // MP model used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength]    
+rfBunchBinNum         = 32                       // MP model used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength] 
 &end
 
 &Ramping
 RampingNu =  0    1                               // tune ramping x and y 
-RampingDNu = 2E-3 2E-5                            // dnu ramping per turn                                        
+RampingDNu = -5E-6 1E-5                           // dnu ramping per turn
+RampingSKQ =  0                                   // ramping skew quad strenth
+RampingDSKQK = 1E-6                               // dsk skew quad strength per turn
+RampingDTurn = 1                                  // vary Nu or SKQ  once per RampingDTurn tunrs
+RampingTurns = 0  2000   
 &end
 
 
@@ -66,13 +68,13 @@ RampingDNu = 2E-3 2E-5                            // dnu ramping per turn
 &LongRangeWake
 LRWPipeGeoInput=input_SectorGeo.dat
 !LRWBBRInput=input_BBR.dat
-LRWNTurnsWakeTrunction =  10
+LRWNTurnsWakeTrunction =  20
 &end
 
 // Ref to Alex Chao Eq.(2.90) in transverse and Eq.(2.86) in longitudinal. Then, parameter can be translated to BBR model as well.
 &DRIVEMode
 driveModeOn = 0
-driveStart = 0
+driveStart = 1
 driveEnd   = 300
 driveAmp = 1e-7                                      //z: [V]; x:[rad]; y:[rad]  
 driveFre = 21504643.8948177
@@ -84,7 +86,7 @@ driveHW = 1                                         // applying hanning window i
 
 // based on the analytical wake from resistive wall and RLC model
 &ShortRangeWake                                         //in SP model, the hainsinski is solved by 1ps wake potential (RW and BBR model)  
-!SRWPipeGeoInput=input_SectorGeo.dat
+SRWPipeGeoInput=input_SectorGeo.dat
 SRWBBRInput=input_BBR.dat  
 SRWWakePotenWriteTo = SRWakePotenBBR   
 SRWBunchBinNum   =  100                                 // specifiy the bins number in multi-particle tracking.                                 
@@ -93,42 +95,15 @@ SRWBunchBinNum   =  100                                 // specifiy the bins num
 
 &BoardBandImpedance
 BBIimpedInput=GeoAndRW.dat                         // input is elegant difinition, take care of the unit 
-BBIimpedSimLandTFlag=1 0 0 0 0                    //z,zdx,zdy,zqx,zqy  which impedane is included
-BBIimpedSimTimeOrFreFlag = 1                       //1 time domain,  //0, frequency domain 
-BBIimpedSimQuasiGreenBunchLength = 1.E-3          //bunch length to generate the quasi-green wake function
+BBIimpedSimLandTFlag=1 0 0 0 0                     //z,zdx,zdy,zqx,zqy  which impedane is included
+BBIimpedSimTimeOrFreFlag = 0                       //1 time domain,  //0, frequency domain 
+BBIimpedSimQuasiGreenBunchLength = 1.E-3           //bunch length to generate the quasi-green wake function
 BBIWakeInput = GeoAndRW1mmWake.dat                 //raw data of the wake field
 &end
 
 
 
 &filling_pattern
-
-fpTrainNumber = 1
-fptotBunchNumber = 960
-fpBunchNumberPerTrain = 960 
-fpTrainGaps = 0
-fpBunchGaps = 3
-fpSetBunchchargeNum = 1
-fpSetBunchChargeIndex = 0    
-fpsetBunchCharge = 1 
-
-fpTrainNumber = 2
-fptotBunchNumber = 200
-fpBunchNumberPerTrain = 100 100 
-fpTrainGaps = 920 920
-fpBunchGaps = 9 9
-fpSetBunchchargeNum = 1
-fpSetBunchChargeIndex = 0    
-fpsetBunchCharge = 1  
-
-fpTrainNumber = 80
-fpTotBunchNumber = 1600
-fpBunchNumberPerTrain = 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
-fpTrainGaps = 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
-fpBunchGaps = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-fpSetBunchchargeNum = 1
-fpSetBunchChargeIndex = 0   
-fpsetBunchCharge = 1 
 
 fpTrainNumber = 1
 fptotBunchNumber = 1
@@ -139,6 +114,35 @@ fpSetBunchchargeNum = 1
 fpSetBunchChargeIndex = 0    
 fpsetBunchCharge = 1 
 
+
+fpTrainNumber = 1
+fptotBunchNumber = 80
+fpBunchNumberPerTrain = 80 
+fpTrainGaps = 0
+fpBunchGaps = 47
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0    
+fpsetBunchCharge = 1 
+
+
+fpTrainNumber = 2
+fptotBunchNumber = 200
+fpBunchNumberPerTrain = 100 100 
+fpTrainGaps = 920 920
+fpBunchGaps = 9 9
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0    
+fpsetBunchCharge = 1 
+
+fpTrainNumber = 80
+fpTotBunchNumber = 1600
+fpBunchNumberPerTrain = 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
+fpTrainGaps = 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+fpBunchGaps = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0   
+fpsetBunchCharge = 1 
+
 &end
 
 
@@ -147,10 +151,10 @@ bunchEmittance      = 20.E-12                                                   
 bunchKappa           = 0.1                                                       // emittance of bunched beam to be generated with this coupling factor
 bunchRmsBunchLength  = 2.3E-3
 bunchRmsEnergySpread = 8.969490e-4                                                   // particles are generated according to this value. x y z, px py pz ->The same as ring energy spread
-bunchInitialStaticOffSet    = 1.2E-5 5.E-6 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
-bunchInitialDynamicOffSet   = 0.E-4 0.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
+bunchInitialStaticOffSet    = 0.E-5 0.E-6 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
+bunchInitialDynamicOffSet   = 1.E-4 1.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
 bunchDistributionType    = 1                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
-bunchMacroEleNumPerBunch = 1
+bunchMacroEleNumPerBunch = 3000
 &end
 
 
@@ -205,37 +209,38 @@ fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
 
 
 &run
-runcalSetting = 1                                          // 1: SP 2:MP 
+runcalSetting = 2                                          // 1: SP 2:MP 
 runNTurns = 10000
-runGrowthRateFittingStart=9900
-runGrowthRateFittingEnd=10000
-runBunchInfoPrintInterval = 1000                            // settings to print out the TBT data
+runGrowthRateFittingStart=1
+runGrowthRateFittingEnd=2
+runBunchInfoPrintInterval = 500                            // settings to print out the TBT data
 
 //set the bunch to be printed out, result.sdds, runTBTBunchAverData, runTBTBunchHaissinski,runTBTBunchLongTraj, and runTBTBunchDisData
 runTBTBunchPrintNum = 21                                       
 runTBTBunchDisDataBunchIndex = 350 355 360 365 370 375 380 385 390 395 400 405 410 415 420 425 430 435 440 445 450                      // bunch index to be printed
 
-runTBTBunchPrintNum = 1                                  // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
+runTBTBunchPrintNum = 10                                                                     // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
+runTBTBunchDisDataBunchIndex = 0 10 20 30 40 50 60 70 80 90 99 11 12 13 14 15 16 17 18 19             // bunch index to be printed
+
+runTBTBunchPrintNum = 1                                                                     // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
 runTBTBunchDisDataBunchIndex = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19             // bunch index to be printed
 
 runTBTBunchAverData = TBTBunchAverData
+runTBTBunchHaissinski = BunchHaissinski  
 runTBTBunchDisData  = TBTBunchDisData                         // only works in strong model that calsetting=2
-runTBTBunchCavVolData = TBTBunchCavVolData                    // only works in strong model that calsetting=2
-runTBTBunchHaissinski = TBTBunchHaissinski                     
-!runTBTBunchLongTraj   = longPariTraj                          
+runTBTBunchProfile = TBTBunchPro                    // only works in strong model that calsetting=2                   
+!runTBTBunchLongTraj   = longPariTraj                         // only when electron is in single partilce...                          
 
-!runCBMGR = coupledBunchedModeGrowthRate
+!runCBMGR = CBMGR
 
-runSynRadDampingFlag = 0                   
+runSynRadDampingFlag = 1                   
 runBeamIonFlag = 0
 runFIRBunchByBunchFeedbackFlag = 0 
 runLongRangeWake = 0
 runShortRangeWake = 0                                           
-runBBIFlag = 0                               
-runRamping=1
+runBBIFlag = 0                              
+runRamping=0
 &end
-
-
 
 
 
@@ -244,15 +249,12 @@ tip: in the setting of exciting-damping simulation, excitation strength need to 
 2022-to do list:
 2022--04-16 short range wake subroutine need to be benchmaked with other codes, in time domain, RW aggree with Haisskin solutions
 2022--08-12 think about how to apply the quadrupole wake into the trackking. Ref. "simulation of transverse multi-bunch instability of proton beams in LHC-Eq.(2.42)"      
-2022--08-19 PRAB 2002.511001 quadrupole wake field in the short and long range wake field--- not done yet. 
-            // send the technnote to yong-chul and Svens, go through the paper of the linac coupling material   
-            // linac simulation preparation.
-            // Prepare the word version of software description for CETAsim.
-            // repeat the Franchi's paper simulation 
+2022--08-19 // update the transfer map in include chrom when multi-interactin points are set in simulation amplitude depend tune shift 
+2023--08-15 // consider how to put the cavity feedback into the transient beam laoding simulation -- right now, a simple direct feedback is there, not test
+            // transient beam loading, have to include the case when the instability are not excited.
+            // add analytical haissksi (can take harmonic cavity, impedance and short range wake into accout) in the bunch.cpp  - impedacne is not included yet
+                        
             
-           
-Jobs:
-    check the non-unifrom fft subroutine -- impedance wake 2d reference.  
-    at the end of the year, to make code mauul and parepare the GPU code structure....
- 
-
+            
+            
+            

@@ -259,11 +259,14 @@ void LatticeInterActionPoint::SetLatticeBRHForSynRad(const ReadInputSettings &in
     gsl_matrix * tengMatrixR  = gsl_matrix_alloc (6, 6);
     gsl_matrix_set_identity(tengMatrixR);
 
-    gsl_matrix * R2  = gsl_matrix_alloc (2, 2);     //coupling matrix Eq.(6)
-    // gsl_matrix_set_identity(R2);                  // full coupling
+    gsl_matrix * R2  = gsl_matrix_alloc (2, 2);     // coupling matrix Eq.(6)
     gsl_matrix_set_zero(R2);                        // no coupling at the point in SR calculation
-    // gsl_matrix_set(R2,1,0,inputParameter.ringParBasic->tengR21);
-    double det = gsl_matrix_get(R2,0,0) * gsl_matrix_get(R2,1,1) - gsl_matrix_get(R2,1,0) * gsl_matrix_get(R2,0,1);
+    // gsl_matrix_set(R2,0,0,tengRMatR2[0]);
+    // gsl_matrix_set(R2,0,1,tengRMatR2[1]);
+    // gsl_matrix_set(R2,1,0,tengRMatR2[2]);
+    // gsl_matrix_set(R2,1,1,tengRMatR2[3]);
+
+    double det = get_det(R2);
     double b = sqrt(1 - det);
     
     gsl_matrix * R12  = gsl_matrix_alloc (2, 2);
@@ -448,6 +451,7 @@ void LatticeInterActionPoint::GetTransLinearCouplingCoef(const ReadInputSettings
     gsl_matrix *ILmatrix44  = gsl_matrix_alloc (4, 4); 
     gsl_matrix_set_zero(ILmatrix44);
 
+
     double tmp;
     tmp = cos(phix) + alphax * sin(phix);   gsl_matrix_set(ILmatrix44,0,0,tmp);   //R11
     tmp =             betax  * sin(phix);   gsl_matrix_set(ILmatrix44,0,1,tmp);   //R12
@@ -462,7 +466,6 @@ void LatticeInterActionPoint::GetTransLinearCouplingCoef(const ReadInputSettings
 
     gsl_matrix *oneTurn44  = gsl_matrix_alloc (4, 4);
     gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,ILmatrix44,skewQuad44,0.0,oneTurn44);
-
 
     gsl_matrix *MM  = gsl_matrix_alloc (2, 2);
     gsl_matrix *mm  = gsl_matrix_alloc (2, 2); 
@@ -486,6 +489,7 @@ void LatticeInterActionPoint::GetTransLinearCouplingCoef(const ReadInputSettings
             gsl_matrix_set(nn,i,j,gsl_matrix_get(oneTurn44,i+2,j  ));
         }
     }
+
  
     // Ref. Eq. (10)
     gsl_matrix *nnp     = gsl_matrix_alloc (2, 2);
@@ -501,45 +505,75 @@ void LatticeInterActionPoint::GetTransLinearCouplingCoef(const ReadInputSettings
     gsl_matrix_memcpy(HH,nnp);
     gsl_matrix_add(HH,mm);
 
-    // calculate equation (8) and (9)
+    // calculate equation (8) and (9) and (17) (18)
     gsl_matrix *MMsubNN = gsl_matrix_alloc (2, 2);
+    gsl_matrix_set_zero(MMsubNN);
     gsl_matrix_memcpy(MMsubNN,MM);
     gsl_matrix_sub(MMsubNN,NN);
 
     double trace = gsl_get_trace(MMsubNN);
     double det = get_det(HH);
-    int sign = (trace > 0) ? 1 : -1;
+    int sign = (trace < 0) ? -1 : 1;
    
-    double temp1 = pow(trace,2) / (pow(trace,2) + 4 * det);
-    double gamma = sqrt(0.5 + 0.5*sqrt(temp1));
-    double coef  = - sign / gamma / sqrt(pow(trace,2) + 4 * det); 
-
-    // gamma = sqrt(0.5 - 0.5*sqrt(temp1));
-    // coef  = sign / gamma / sqrt(pow(trace,2) + 4 * det); 
-
-    gsl_matrix *CC = gsl_matrix_alloc (2, 2);
-    gsl_matrix_memcpy(CC,HH);
-    gsl_matrix_scale(CC,coef);
-    // CC is set. 
+    double temp1  = trace==0? 0 :  pow(trace,2) / (pow(trace,2) + 4 * det);
     
+    double gamma0[2],coeff0[2];
+    for(int i=0;i<2;i++) coeff0[i] = 0;  
+    gamma0[0] = sqrt(0.5 + 0.5*sqrt(temp1));
+    gamma0[1] = sqrt(0.5 - 0.5*sqrt(temp1));
+    
+    if(gamma0[0]!=0) coeff0[0] = - sign / gamma0[0] / sqrt(pow(trace,2) + 4 * det); 
+    if(gamma0[1]!=0) coeff0[1] =   sign / gamma0[1] / sqrt(pow(trace,2) + 4 * det); 
+
+
+    gsl_matrix *CC  = gsl_matrix_alloc (2, 2);
     gsl_matrix *CCp = gsl_matrix_alloc (2, 2);
-    gsl_matrix_transpose_memcpy(CCp,CC);
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,-1.0, J2    , CCp, 0.0,temp22);
-    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, temp22, J2,  0.0,CCp);
-    // CCP is set
-
-    // set V matrix
-    gsl_matrix *VV  = gsl_matrix_alloc (4, 4);
-    gsl_matrix_set_identity(VV);
-    gsl_matrix_scale(VV,gamma);
-    
+  
+    gsl_matrix *VV        = gsl_matrix_alloc (4, 4);
     gsl_matrix *VVI       = gsl_matrix_alloc (4, 4);
     gsl_matrix *UU        = gsl_matrix_alloc (4, 4);
     gsl_matrix *temp44    = gsl_matrix_alloc (4, 4);
+    gsl_matrix *Ga        = gsl_matrix_alloc (2, 2);
+    gsl_matrix *Gb        = gsl_matrix_alloc (2, 2);
+    gsl_matrix *GbI       = gsl_matrix_alloc (2, 2);
+    gsl_matrix *CCB       = gsl_matrix_alloc (2, 2);
+    
+    gsl_matrix_set_zero(CC);
+    gsl_matrix_set_zero(CCp);
+    gsl_matrix_set_zero(VV);
     gsl_matrix_set_zero(VVI);
     gsl_matrix_set_zero(UU);
-    gsl_matrix_set_zero(temp44);    
+    gsl_matrix_set_zero(temp44); 
+    gsl_matrix_set_zero(Ga);
+    gsl_matrix_set_zero(Gb); 
+    gsl_matrix_set_zero(GbI);
+    gsl_matrix_set_zero(CCB);
     
+    
+    double gamma;
+    double  coef;  
+    if(inputParameter.ringParBasic->skewQuadK==0)
+    {
+        gamma = gamma0[0];
+        coef  = coeff0[0];
+    }
+    else
+    {
+        gamma = (nuy - floor(nuy)) -  (nux - floor(nux)) <=0? gamma0[0]:gamma0[0];
+        coef  = (nuy - floor(nuy)) -  (nux - floor(nux)) <=0? coeff0[0]:coeff0[0];
+    }
+    
+    // set C matrix
+    gsl_matrix_memcpy(CC,HH);
+    gsl_matrix_scale(CC,coef);
+    gsl_matrix_transpose_memcpy(CCp,CC);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,-1.0, J2    , CCp, 0.0,temp22);
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, temp22, J2,  0.0,CCp);
+    // set V matrix
+    gsl_matrix_set_identity(VV);
+    gsl_matrix_scale(VV,gamma);
+
+            
     for(int i=0;i<2;i++)
     {
         for(int j=0;j<2;j++)
@@ -547,25 +581,16 @@ void LatticeInterActionPoint::GetTransLinearCouplingCoef(const ReadInputSettings
             gsl_matrix_set(VV,i,   j+2,  gsl_matrix_get(CC, i,j));
             gsl_matrix_set(VV,i+2, j,   -gsl_matrix_get(CCp,i,j));
         }     
-    }    
+    }
 
     gsl_matrix_memcpy(VVI,VV);
     gsl_matrix_inv(VVI);
-
+ 
+    // eq(2) to get UU
     gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, VVI,    oneTurn44, 0.0, temp44);
     gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, temp44, VV,        0.0, UU);
 
-
-    // CCB is Eq (50), how to use CCB to get the coupling strength?
-    gsl_matrix *Ga       = gsl_matrix_alloc (2, 2);
-    gsl_matrix *Gb       = gsl_matrix_alloc (2, 2);
-    gsl_matrix *GbI      = gsl_matrix_alloc (2, 2);
-    gsl_matrix *CCB      = gsl_matrix_alloc (2, 2);
-    gsl_matrix_set_zero(Ga);
-    gsl_matrix_set_zero(Gb); 
-    gsl_matrix_set_zero(GbI);
-    gsl_matrix_set_zero(CCB);
-    
+    // CCB is Eq (50),   
     gsl_matrix_set(Ga,0,0,    1./sqrt(betax));
     gsl_matrix_set(Ga,1,0,alphax/sqrt(betax));
     gsl_matrix_set(Ga,1,1,       sqrt(betax));
@@ -581,13 +606,40 @@ void LatticeInterActionPoint::GetTransLinearCouplingCoef(const ReadInputSettings
     gsl_blas_dgemm(CblasNoTrans,CblasNoTrans, 1.0, temp22, GbI,       0.0, CCB);
 
     
-    // get the RDT terms from the CCB matrix notation.
+    // get the RDT terms from the CCB matrix notation. Ref. PRAB.8.034001
     resDrivingTerms-> f1001 = ( gsl_matrix_get(CCB,0,1) - gsl_matrix_get(CCB,1,0) + li * gsl_matrix_get(CCB,0,0) + li * gsl_matrix_get(CCB,1,1) ) / (4 * gamma);
     resDrivingTerms-> f1010 = (-gsl_matrix_get(CCB,0,1) - gsl_matrix_get(CCB,1,0) + li * gsl_matrix_get(CCB,0,0) - li * gsl_matrix_get(CCB,1,1) ) / (4 * gamma);
     resDrivingTerms-> f0110 = conj(resDrivingTerms-> f1001);
     resDrivingTerms-> f0101 = conj(resDrivingTerms-> f1010);
-    resDrivingTerms->linearCouplingFactor = sqrt(betax * betay / 4 / pow(PI,2) * pow(inputParameter.ringParBasic->skewQuadK,2));  // []
+    resDrivingTerms->linearCouplingFactor = sqrt(betax * betay / 4 / pow(PI,2) ) * inputParameter.ringParBasic->skewQuadK;  // []
     
+    traceAB[0] = gsl_matrix_get(UU,0,0) + gsl_matrix_get(UU,1,1); // it gives the eigen tune of the eigen mode
+    traceAB[1] = gsl_matrix_get(UU,2,2) + gsl_matrix_get(UU,3,3); // it gives the eigen tune of the eigen mode
+    traceAB[2] = trace;
+    gammaC[0]  = gamma0[0];
+    gammaC[1]  = gamma0[1]; 
+    detH =  det;  
+
+    // get xy-alpha PRAB 10 064003, Eq.(15)
+    double deltaNu = nuy - floor(nuy) - (nux - floor(nux) );
+    if(deltaNu==0)
+    {
+        resDrivingTerms->xyAlpha = resDrivingTerms->linearCouplingFactor>0 ? PI / 4: -PI / 4   ;
+    }
+    else
+    {
+        resDrivingTerms->xyAlpha = atan2(resDrivingTerms->linearCouplingFactor,deltaNu) / 2.0 ;
+    }
+
+    tengRMatR2[0] = gsl_matrix_get(CC,0,0);
+    tengRMatR2[1] = gsl_matrix_get(CC,0,1);
+    tengRMatR2[2] = gsl_matrix_get(CC,1,0);
+    tengRMatR2[3] = gsl_matrix_get(CC,1,1);
+
+
+
+    // cout<<resDrivingTerms->linearCouplingFactor<<"  "<<deltaNu<<endl;
+
     // equaiton(3)  PRAB 8, 034001, 2005 / get f1001 and f1010 according the defintion to compare
     // equaiton(41) PRAB 10, 064003, 2007, the same as above
     // double phase0 = 2* PI * (nux - nuy);

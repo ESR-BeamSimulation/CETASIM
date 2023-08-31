@@ -17,6 +17,7 @@
 #include "ReadInputSettings.h"
 #include "CavityResonator.h"
 #include "WakeFunction.h"
+#include "Resonator.h"
 #include "Spline.h"
 using namespace std;
 using std::vector;
@@ -144,15 +145,15 @@ public:
     void BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint);
-    void BunchTransferDueToLatticeL(const ReadInputSettings &inputParameter);
+    void BunchLongPosTransferOneTurn(const ReadInputSettings &inputParameter);
     void SetBunchPosHistoryDataWithinWindow();
     void MarkLostParticle(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchSynRadDamping(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
     void BunchTransferDueToWake();
     void BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter, const int n);
-    void GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,CavityResonator &cavityResonator);
-    void GetVBSampledDueToIthBunch(const int j,const int k,const ReadInputSettings &inputParameter, CavityResonator &cavityResonator);
-    
+    void GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,Resonator &resonator);
+    void BunchMomentumUpdateDueToRFCA(const ReadInputSettings &inputParameter,Resonator &resonator);   
+    void BunchEnergyLossOneTurn(const ReadInputSettings &inputParameter);
 
     // bunch haissinski solution//deal the data in Haissinski structure. 
     void GetBunchHaissinski(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);

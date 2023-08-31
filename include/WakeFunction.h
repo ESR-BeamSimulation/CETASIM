@@ -54,9 +54,14 @@ public:
     vector<double> lRs;     //ohm
     vector<double> lQ;
     vector<double> lOmega;
-    vector<double> tRs;     //ohm /m
-    vector<double> tQ;
-    vector<double> tOmega;
+    vector<double> tyRs;     //ohm /m
+    vector<double> tyQ;
+    vector<double> tyOmega;
+    vector<double> txRs;     //ohm /m
+    vector<double> txQ;
+    vector<double> txOmega;
+    
+
 	vector<double> GetBBRWakeFun(double tau); // works for both long and short range wakefunction
     vector<double> GetBBRWakeFun1(double tau) ; // works for both long and short range wakefunction--1mm bunch pusedo-wake potential as wake function
 

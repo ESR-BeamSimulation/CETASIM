@@ -31,9 +31,10 @@ public:
 
     int    resHarm;                       // normalized by the ringHarmoics * f0
     int    resType;
-    double resShuntImpRs = 0.E0;
-    double resQualityQ0  = 0.E0;
-    double resQualityQL  = 0.E0;
+    int    resRfMode = 1;
+    double resShuntImpRs  = 0.E0;
+    double resQualityQ0   = 0.E0;
+    double resQualityQL   = 0.E0;
     double resCouplingBeta = 0.E0;       
     double resDetuneFre    = 0.E0;                  // Hz
     double resFre          = 0.E0;                        // Hz, 
@@ -46,11 +47,20 @@ public:
     
     // to get the initial status of generator
     complex<double> resGenVgr = (0.0,0.0);      // generator voltage on resonance
-    complex<double> resGenIg  = (0.0,0);        // generaot current
+    complex<double> resGenIg  = (0.0,0);        // generator current
     double resBeamPower  = 0.0;
     double resCavPower  = 0.0;
     double resGenPower   = 0.0;
     double resGenPowerReflect   = 0.0;
+
+ 
+    complex<double> resCavVolReq=(0,0);     // it is the target value -- take into the self-beam loading voltage into account.   
+    complex<double> resGenVol=(0,0);        // in the cos  convention used in the code, the real part represents the momentum change
+    complex<double> vbAccum=(0,0);          // used in the tracking, record transient  cavity voltage
+    complex<double> vbAccum0=(0,0);          // used in the tracking,record transient cavity voltage in omegarf frame 
+    complex<double> vbAccumRFFrame=(0,0);          // used in the tracking,record transient cavity voltage in omegarf frame    
+    complex<double> resGenVolFB=(0.0,0);    // ref. PRAB 24, 104401 2021 Eq. (9). 
+
 
     int resDirFB = 0;
     struct DirCavFB
@@ -79,12 +89,7 @@ public:
     vector<complex<double> > vCavDueToDirFB;
 
 
-    complex<double> resCavVolReq=(0,0);     // it is the target value -- take into the self-beam loading voltage into account.   
-    complex<double> resGenVol=(0,0);        // in the cos  convention used in the code, the real part represents the momentum change
-    complex<double> vbAccum=(0,0);          // used in the tracking, record transient  cavity voltage
-    complex<double> vbAccum0=(0,0);          // used in the tracking,record transient cavity voltage in omegarf frame 
-    complex<double> vbAccumRFFrame=(0,0);          // used in the tracking,record transient cavity voltage in omegarf frame    
-    complex<double> resGenVolFB=(0.0,0);    // ref. PRAB 24, 104401 2021 Eq. (9). 
+   
 
     //  resCavVol=(0,0) is the target vaule or designed value 
     //  vbAccum=(0,0)   is the beam induce votage vector.-- tracking with certain filling pater 10 damping times, and the average of last term is set as vbAccum=(0,0) 
@@ -94,12 +99,16 @@ public:
     vector<vector<complex<double> > > resCavVolOffsetPastTurns;
     vector<complex<double> > resCavVolOffsetAver;
 
-    //function to evoolution the  resGenVol, which is always solved at the  
-    void CavityResonatorDynamics(double time);
-    void GetInitialGenIg();
-    
-    void GetInitialCavityPower(const ReadInputSettings &inputParameter);
-            
+
+
+
+    //function to evoolution the  resGenVol, which is always solved at the     
+    void GetInitialResonatorGenIg();
+    void GetInitialResonatorPower(const ReadInputSettings &inputParameter);
+    void GetBeamInducedVol(double timeToNextBunch);
+    void ResonatorDynamics(double time);
+    void GetResonatorInfoAtNTrf(int harmIndex,double dt);
+
 private:
 
 };

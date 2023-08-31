@@ -138,8 +138,10 @@ void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c)
     }
 }
 
-void PrintGSLMatrix(gsl_matrix *mat, int row, int col)
+void PrintGSLMatrix(gsl_matrix *mat)
 {
+    int row = mat->size1;
+    int col = mat->size2;
     for(int j=0;j<row;j++)
     {
         for(int k=0;k<col;k++) printf("%15.7f\t",mat->data[j * mat->tda+k]);
@@ -150,29 +152,34 @@ void PrintGSLMatrix(gsl_matrix *mat, int row, int col)
 
 void gsl_matrix_inv(gsl_matrix *a)
 {
-    size_t n=a->size1;
-    size_t m=a->size2;
 
-    gsl_matrix *temp1=gsl_matrix_calloc(n,n);
-    gsl_matrix_memcpy(temp1,a);
+    if(gsl_matrix_isnull(a)!=1);
+    {
+        size_t n=a->size1;
+        size_t m=a->size2;
+        gsl_matrix *temp1=gsl_matrix_calloc(n,n);
+        gsl_matrix_memcpy(temp1,a);
 
-    gsl_permutation *p=gsl_permutation_calloc(n);
-    int sign=0;
-    gsl_linalg_LU_decomp(temp1,p,&sign);
-    gsl_matrix *inverse=gsl_matrix_calloc(n,n);
+        gsl_permutation *p=gsl_permutation_calloc(n);
+        int sign=0;
+        gsl_linalg_LU_decomp(temp1,p,&sign);
+        gsl_matrix *inverse=gsl_matrix_calloc(n,n);
 
-    gsl_linalg_LU_invert(temp1,p,inverse);
-    gsl_matrix_memcpy(a,inverse);
+        gsl_linalg_LU_invert(temp1,p,inverse);
+        gsl_matrix_memcpy(a,inverse);
 
-    gsl_permutation_free(p);
-    gsl_matrix_free(temp1);
-    gsl_matrix_free(inverse);
- 
+        gsl_permutation_free(p);
+        gsl_matrix_free(temp1);
+        gsl_matrix_free(inverse);
+    }
 }
 
-double get_det(gsl_matrix * A)
+double get_det(gsl_matrix *A)
 {
     double det=0.0; 
+    
+    if(gsl_matrix_isnull(A)) return det;
+ 
     int n = A->size1;
     gsl_permutation *p = gsl_permutation_calloc(n);
     gsl_matrix *tmpA = gsl_matrix_calloc(n, n);
