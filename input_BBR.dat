@@ -1,0 +1,13 @@
+SDDS1
+&column name=zRL,       type=float, units=Ohm      &end
+&column name=zQL,       type=float,                &end
+&column name=zFr,       type=float, units=Hz       &end
+&column name=xRL,       type=float, units=Ohm/m/m  &end
+&column name=xQL,       type=float,                &end
+&column name=xFr,       type=float, units=Hz       &end
+&column name=xRL,       type=float, units=Ohm/m/m  &end
+&column name=yQL,       type=float,                &end
+&column name=yFr,       type=float, units=Hz       &end
+&data mode=ascii, &end
+! page number 1
+0.04e+7      7400       499.6429324e+6         5.e+9        1.e+3     499.6429324e+6     5.e+8         1.e+3     499.6429324e+6   3.1394601567e+8
