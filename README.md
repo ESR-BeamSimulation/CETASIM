@@ -20,11 +20,6 @@ If the user working with the Linux system, supplying the right path (LIBFLGS) in
 ./make
 
 
-
-
-
-
-This code is delveped with C++ by Chao Li.
 Any problems, please contact the author li.chao@desy.de supperli.imp@gmail.com.
 
 
