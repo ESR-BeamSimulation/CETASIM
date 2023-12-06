@@ -12,7 +12,7 @@ It can deal with
  a skew quadrupole can also be introduced, which is very useful for the emittance sharing and the emittance exchange studies.
 
 
-##Code compiling 
+Code compiling 
 Two extra numerical libraries, GSL and FFTW are needed for code compiling. 
 The version of the GSL library has to be larger than 2.7. 
 If the user working with the Linux system, supplying the right path (LIBFLGS) in the Makefile, the source code can be compiled easily by the make command
