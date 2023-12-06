@@ -1,0 +1,275 @@
+//input file for Petra4 H6BA-v4.0
+
+&ring
+ringCircRing = 2304.E0
+ringWorkQ                  = 135.1793E0  86.26997E0  0.00481263E0
+ringSynchRadDampTime       = 2310       2880      1642        // in the unit of turns [x,y,z]
+ringPipeAperatureX         = 15.E-2                          // [m]
+ringPipeAperatureY         = 10.E-2                           // [m]
+ringPipeAperatureR         = 1.E-1                           // [m]   not used in code
+ringElectronBeamEnergy     = 6.E+9
+ringSdelta0                = 8.969490E-4                      // natural energy spread
+ringNaturalEmit            = 19.39e-12                        // natural emittance
+ringCoupling               = 0.1                              // decide the 
+ringskewQuadK              = 0.E-3                            // 1/f [1/m]            
+ringU0                     = 4.166343E+6
+ringCurrent =  0.08
+ringChrom                  = 0 0
+ringAlphac                 = 3.330217E-5  0  0              // up to the second order
+ringADTX                   = 0 0                            // up to the second order
+ringADTY                   = 0 0                            // up to the second order
+ringADTXY                  = 0 0                            // up to the second order
+&end
+
+
+// Include the generator and cavity setting. The cavities paramters have to be set in this section.
+// If what to simulate idea cavity, just set Rs=0 and detunfre=0 
+&rfset
+rfRingHarm        = 3840                          // harmonics number of the ring
+rfResNum          = 1                             // passive HC can also be treated as RLC impedance 
+rfMode            = 0  0                          // RFCA or RFMode? 0:RFCA, 1:RFMODE
+rfResHarm         = 1  3                          // harm number of the cavity (normalized by ringHarm). 
+rfResType         = 1  1                          // active=1, passive=0. Main cavity is always active
+rfResVol          = 8.0E+6  2.2229056e+6           // cavity voltage [V],   target value to be maintained.  
+!rfResPhase        = 0.944816  -1.80728            // cavity phase   [rad], target value to be maintained.  
+                                               
+rfResPhase        = 1.02302  -1.5707             //
+
+!rfResVol          = 8.0E+6    2.22171e+6          // cavity voltage [V],   target value to be maintained.  
+!rfResPhase        = 0.943928  -1.80771            // cavity phase   [rad], target value to be maintained.  
+                                                                                     
+rfResShuntImpRs    = 81.6E+6 36.E+6                // [ohm]
+!rfResShuntImpRs   = 40.8E+6  1.8E+6              // [ohm]
+
+rfResQualityQ0     = 29600   17000                 // unLoaded quality factor
+rfResCouplingBeta  = 3.0     5.3                   // coupling factor   
+rfResDetuneFre     = -27.906e+3  277.6e+3           // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+!rfResDetuneFre    = -13.953e+3  13.882e+3         // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+!rfResDetuneFre     = -11.6119e+3  0.e+3         // Hz   resonatorVec[i].resHarm * ringHarmH * f0 + resonatorVec[i].resDetuneFre; if resDetuneFre>0; psi>0
+rfTransientCavParWriteTo = rfTransientPar         // Data file to store the initial cavity and genertor setiings.
+rfResCold          = 0 0                          // in tracking, cavity is cold (1) or beam induced volage is built up already (0).
+rfResExciteIntability = 0 0                       // to exite coupled bunch instability or not. 
+
+rfResDirFB            = 0 0                       // direct feedback -- 
+rfResDirFBGain        = 1.E0 1.E0                 // direct feedback -- gain factor dimenionless 
+rfResDirFBPhaseShift  = 0.0  0.0                  // direct feedback -- rad
+rfResDirFBDelay       = 0.E-6 0.E-6               // direct feedback -- second  
+rfBunchBinNum         = 32                        // MP model used bin of a soft bunch in longitudinal triansent beam loading simulation, bunch bin range [minZ-rmsbunchLength,maxZ+rmsbunchLength] 
+&end
+
+&Ramping
+RampingNu =  0    1                               // tune ramping x and y 
+RampingDNu = -5E-6 1E-5                           // dnu ramping per turn
+RampingSKQ =  0                                   // ramping skew quad strenth
+RampingDSKQK = 1E-6                               // dsk skew quad strength per turn
+RampingDTurn = 1                                  // vary Nu or SKQ  once per RampingDTurn tunrs
+RampingTurns = 0  2000   
+&end
+
+
+// long range RW wake function  Ref. NIMA 221-230 806 (2016) Nagaoka  Eq.(26), rigid bunch approximation for long range wake simulation. 
+&LongRangeWake
+LRWPipeGeoInput=input_SectorGeo.dat
+!LRWBBRInput=input_BBR.dat
+LRWNTurnsWakeTrunction =  20
+&end
+
+// Ref to Alex Chao Eq.(2.90) in transverse and Eq.(2.86) in longitudinal. Then, parameter can be translated to BBR model as well.
+&DRIVEMode
+driveModeOn = 0
+driveStart = 1
+driveEnd   = 300
+driveAmp = 1e-7                                      //z: [V]; x:[rad]; y:[rad]  
+driveFre = 21504643.8948177
+drivePlane = 2                                      // 0:z; 1:x; 2:y 
+driveHW = 1                                         // applying hanning window in one turn data
+&end
+
+
+
+// based on the analytical wake from resistive wall and RLC model
+&ShortRangeWake                                         //in SP model, the hainsinski is solved by 1ps wake potential (RW and BBR model)  
+!SRWPipeGeoInput=input_SectorGeo.dat
+SRWBBRInput=input_BBR.dat  
+SRWWakePotenWriteTo = SRWakePotenBBR   
+SRWBunchBinNum   =  100                                 // specifiy the bins number in multi-particle tracking.                                 
+&end
+
+
+&BoardBandImpedance
+BBIimpedInput=GeoAndRW.dat                         // input is elegant difinition, take care of the unit 
+BBIimpedSimLandTFlag=1 0 0 0 0                     //z,zdx,zdy,zqx,zqy  which impedane is included
+BBIimpedSimTimeOrFreFlag = 0                       //1 time domain,  //0, frequency domain 
+BBIimpedSimQuasiGreenBunchLength = 1.E-3           //bunch length to generate the quasi-green wake function
+BBIWakeInput = GeoAndRW1mmWake.dat                 //raw data of the wake field
+&end
+
+
+
+&filling_pattern
+
+fpTrainNumber = 2
+fptotBunchNumber = 200
+fpBunchNumberPerTrain = 100 100 
+fpTrainGaps = 920 920
+fpBunchGaps = 9 9
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0    
+fpsetBunchCharge = 1 
+
+fpTrainNumber = 1
+fptotBunchNumber = 1920
+fpBunchNumberPerTrain = 1920 
+fpTrainGaps = 0
+fpBunchGaps = 1
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0    
+fpsetBunchCharge = 1 
+
+
+fpTrainNumber = 80
+fpTotBunchNumber = 1600
+fpBunchNumberPerTrain = 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20
+fpTrainGaps = 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8 8
+fpBunchGaps = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0   
+fpsetBunchCharge = 1 
+
+fpTrainNumber = 1
+fptotBunchNumber = 80
+fpBunchNumberPerTrain = 80 
+fpTrainGaps = 0
+fpBunchGaps = 47
+fpSetBunchchargeNum = 1
+fpSetBunchChargeIndex = 0    
+fpsetBunchCharge = 1 
+
+&end
+
+
+&bunch
+bunchEmittance       = 20.E-12                                                    // emittance of bunched beam to be generated
+bunchKappa           = 1                                                       // emittance of bunched beam to be generated with this coupling factor
+bunchRmsBunchLength  = 2.3E-3
+bunchRmsEnergySpread = 8.969490e-4                                                   // particles are generated according to this value. x y z, px py pz ->The same as ring energy spread
+bunchInitialStaticOffSet    = 1.E-4 1.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // static initial displacement error m and rad
+bunchInitialDynamicOffSet   = 1.E-4 1.E-4 0.E-4 0.E-5 0.E-5 0.E-5                 // dynamic initial displacement error 1 sigma error m and rad
+bunchDistributionType    = 3                                                      // 1: KV 2:WB  3:GS  For  longitudian is Gausion 3sigma truncted
+bunchMacroEleNumPerBunch = 1
+&end
+
+
+//Max-4 ion data...
+&ion_effect
+ionCalTwissInput             = twiss.dat
+ionCalGasSpec                = 4
+ionCalIonMassNumber          = 2  16 28 44
+ionCalIongasPercent          = 0.96  0.01   0.01  0.02                                     // partial pressure percent
+ionCalCorssSectionEI         = 0.35   2.1   2.0  2.92                                      // [Mb]=[2.0E-22 1/m^2] Collision crossing
+ionCalIonlossboundary        = 10							                               // max(ionlossboundary * bunchEffectiveSizeXMax, PipeAperature(x,y,r)) is the ion loss criteria
+ionCalIonMaxNumber           = 1.E+5
+ionCalNumberofIonBeamInterPoint    = 1
+ionCalMacroIonNumberGeneratedPerIP = 10
+ionCalIonInfoPrintInterval   = 1000
+ionCalIonDisWriteTo          = WSIonDis
+&end
+
+//APS ion initical condition...
+&ion_effect
+ionCalTwissInput             = twiss.dat
+ionCalGasSpec                = 4
+ionCalIonMassNumber          = 2  16 28 44
+ionCalIongasPercent          = 0.43  0.08  0.36  0.13                                      // partial pressure percent
+ionCalCorssSectionEI         = 0.35   2.1   2.0  2.92                                      // [Mb]=[2.0E-22 1/m^2] Collision crossing
+ionCalIonlossboundary        = 8							                               // max(ionlossboundary * bunchEffectiveSizeXMax, PipeAperature(x,y,r)) is the ion loss criteria
+ionCalIonMaxNumber           = 1.E+5
+ionCalNumberofIonBeamInterPoint   = 1
+ionCalMacroIonNumberGeneratedPerIP = 10
+ionCalIonInfoPrintInterval   = 200
+ionCalIonDisWriteTo          = WSIonDis
+&end
+
+
+//CO only as condition...
+&ion_effect
+ionCalTwissInput             = twiss.dat
+ionCalGasSpec                = 1
+ionCalIonMassNumber          = 28
+ionCalIongasPercent          = 1                                                           // partial pressure percent
+ionCalCorssSectionEI         = 2.0                                                         // [Mb]=[2.0E-22 1/m^2] Collision crossing
+ionCalIonlossboundary        = 8							                               // max(ionlossboundary * bunchEffectiveSizeXMax, PipeAperature(x,y,r)) is the ion loss criteria
+ionCalIonMaxNumber           = 1.E+5
+ionCalNumberofIonBeamInterPoint   = 1
+ionCalMacroIonNumberGeneratedPerIP = 10
+ionCalIonInfoPrintInterval   = 1000
+ionCalIonDisWriteTo          = WSIonDis
+&end
+
+
+
+
+
+&feed_back
+fbMode  = 1                                   // 0: ideal bunch-by-bunch feedback  1: bunch-by-bunch feedback with digital filters  
+fbnumberofSections = 2                        // how many fb period in simulation      
+fbStart = 1000    1600                         // start and end of feedback in unit of turns  
+fbEnd =   1300    5000
+fbKickStrengthKx=20.e-5
+fbKickStrengthKy=20.e-4
+fbKickStrengthF=1
+fbGain =  1
+fbDelay = 1
+fbTaps  = 9
+fbKickerDispP =   0
+fbKickerDisp  =   0
+fbFIRBunchByBunchFeedbackPowerLimit =1000                  // power wat limit on feedback
+fbFIRBunchByBunchFeedbackKickerImped =123.E+3              // ohm
+fbFircoeffx  =  0.3039  0.6124   0.3034   -0.1764   -0.3555  -0.1712    0.0347  -0.0811  -0.4702
+fbFircoeffy  =  0.6923  0.1701  -0.5195   -0.2701    0.0343  -0.1399   -0.0406   0.2606  -0.1872
+fbFircoeffz  =   0.  0.   0.   0.     0.  0.  0 0 0
+fbFircoeffxy =   0.  0.   0.   0.     0.  0.  0 0 0
+
+&end
+
+
+
+&run
+runcalSetting = 1                                          // 1: SP 2:MP 
+runNTurns = 5000
+runGrowthRateFittingStart=900
+runGrowthRateFittingEnd=1200
+runBunchInfoPrintInterval = 5                            // settings to print out the TBT data
+
+//set the bunch to be printed out, result.sdds, runTBTBunchAverData, runTBTBunchHaissinski,runTBTBunchLongTraj, and runTBTBunchDisData
+runTBTBunchPrintNum = 21                                       
+runTBTBunchDisDataBunchIndex = 350 355 360 365 370 375 380 385 390 395 400 405 410 415 420 425 430 435 440 445 450                      // bunch index to be printed
+
+runTBTBunchPrintNum = 10                                                                     // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
+runTBTBunchDisDataBunchIndex = 0 10 20 30 40 50 60 70 80 90 99 11 12 13 14 15 16 17 18 19             // bunch index to be printed
+
+runTBTBunchPrintNum = 0                                                                     // data print in result.sdds -- average turn by turn and in TBTBunchDisData bunch distribution.
+runTBTBunchDisDataBunchIndex = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19             // bunch index to be printed
+
+runTBTBunchAverData = TBTBunchAverData
+runTBTBunchHaissinski = BunchHaissinski  
+!runTBTBunchDisData  = TBTBunchDisData                // only works in strong model that calsetting=2
+!runTBTBunchProfile = TBTBunchPro                    // only works in strong model that calsetting=2                   
+!runTBTBunchLongTraj   = longPariTraj               // only when electron is in single partilce...                          
+
+runCBMGR = CBMGR
+
+runSynRadDampingFlag = 1                   
+runBeamIonFlag = 0
+runFIRBunchByBunchFeedbackFlag = 1
+runLongRangeWake = 1
+runShortRangeWake = 0                                           
+runBBIFlag = 0                              
+runRamping=0
+&end
+
+
+
+            
+            
+            
