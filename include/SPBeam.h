@@ -150,6 +150,7 @@ public:
     void BeamMomentumUpdateDueToRFTest(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,CavityResonator &cavityResonator,int turns);
     void BeamLongiPosTransferOneTurn(const ReadInputSettings &inputParameter); 
     void BeamEnergyLossOneTurn(const ReadInputSettings &inputParameter);
+    void PrintHaissinski(ReadInputSettings &inputParameter);
 
     // void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns);
     // void BeamTransferPerTurnDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);

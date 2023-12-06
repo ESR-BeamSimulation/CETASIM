@@ -116,6 +116,10 @@ public:
     double zMin;
     double averZ;
     double rmsZ;
+    double averNus = 0;
+    double rmsNus = 0;
+    vector<double> nus;
+    vector<double> actionJ;
     vector<double> bunchProfile;                // head to tail -> [+,-]--ensure to have a positive hamiltonian--SYL Eq. 3.36
     vector<double> bunchPosZ;
     vector<double> totWakePoten;
@@ -123,15 +127,14 @@ public:
     vector<double> bbrWakePoten;            
     vector<double> wakeHamiltonian;          
     vector<double> rfHamiltonian;           
-    vector<double> totHamiltonian;           
-    
+    vector<double> totHamiltonian;
+    vector<double> vRF;
+
     vector<double> cavAmp;
     vector<double> cavPhase;                                  
     };
     Haissinski *haissinski = new Haissinski;
     
-
-
     
     vector<double> lRWakeForceAver;        // used in the long range wakefunction simulation
     
@@ -152,7 +155,7 @@ public:
     void BunchTransferDueToWake();
     void BunchTransferDueToDriveMode(const ReadInputSettings &inputParameter, const int n);
     void GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,Resonator &resonator);
-    void BunchMomentumUpdateDueToRFCA(const ReadInputSettings &inputParameter,Resonator &resonator);   
+    void BunchMomentumUpdateDueToRFCA(const ReadInputSettings &inputParameter,Resonator &resonator,int resIndex);   
     void BunchEnergyLossOneTurn(const ReadInputSettings &inputParameter);
 
     // bunch haissinski solution//deal the data in Haissinski structure. 
@@ -167,6 +170,7 @@ public:
 
     // once got the hassinski--then get the particle longitudinal phase space 
     void GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,int bunchIndex);
+    void GetParticleLongitudinalPhaseSpace1(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,int bunchIndex);
     vector<double> LeapFrog(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,vector<double> z,const tk::spline &wakePotenFit);
 
 

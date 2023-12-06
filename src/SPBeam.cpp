@@ -79,6 +79,7 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
         int index = inputParameter.ringFillPatt->bunchChargeIndex[i];
         beamVec[index].normCurrent = inputParameter.ringFillPatt->bunchCharge[i];
     }
+
     int totNormCurrent=0;
     for(int i=0;i<totBunchNum;i++)
     {
@@ -135,6 +136,7 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     getchar();
     */    
 
+
 //----------------------------------------------------------------------------------------
 //  set section is used to generate the beam filling pattern data from mb track.
 
@@ -185,11 +187,10 @@ void SPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
                 counter += 1;
             }
         }
-
     }
     fout1.close();
     //------------------------------------end ------------------------------------------
-     
+
 }
 
 void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityResonator &cavityResonator)
@@ -217,13 +218,13 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
     complex<double> vbAccumAver1 = (0.E0,0.E0);
     complex<double> vbAccumAver2 = (0.E0,0.E0);
     complex<double> vbKickAccum = (0.E0,0.E0);
-    complex<double> vbKickAver[2];
+    complex<double> vbKickAver[resNum];
+
+    
 
     int nTurns;
     int bunchHarmIndex;
 
-
-    
     for(int i=0; i<resNum;i++)
     {
         // if(cavityResonator.resonatorVec[i].resRfMode==0) continue;
@@ -236,7 +237,8 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
         vbAccumAver2 =   complex<double>(0,0);
 
         vbKickAccum  =   complex<double>(0,0);              // get the accumme of  vb0/2
-        vbKickAver[i]   =   complex<double>(0,0);
+        vbKickAver[i] =  complex<double>(0,0);
+        
 
         for(int n=0;n<nTurns;n++)
         {
@@ -272,55 +274,28 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
             }
         }
              
-        vbAccumAver =  (vbAccumAver1 + vbAccumAver2) /2.0/ double(beamVec.size());   // (1)
-        vbAccumAver =  vbAccumAver1/double(beamVec.size());                          // before decay and rotate, just  after bunch left.
-        // vbAccumAver =  vbAccumAver2/double(beamVec.size());                       // after decay and rotate.
+        // vbAccumAver =  (vbAccumAver1 + vbAccumAver2) /2.0/ double(beamVec.size());   // (1)
+        // vbAccumAver =  vbAccumAver1/double(beamVec.size());                          // before decay and rotate, just  after bunch left.
+        vbAccumAver =  vbAccumAver2/double(beamVec.size());                             // after decay and rotate.
         // DC solution -- which is exactly the same as above equaiton (1)'s reuslts, very good agreement.
-        vbAccumAver = 2.0 * beamCurr * cavityResonator.resonatorVec[i].resShuntImpRs / (1.0 + cavityResonator.resonatorVec[i].resCouplingBeta)
-                                    * cos(cavityResonator.resonatorVec[i].resDeTunePsi) * exp(li * (PI + cavityResonator.resonatorVec[i].resDeTunePsi)  );
+        // vbAccumAver = 2.0 * beamCurr * cavityResonator.resonatorVec[i].resShuntImpRs / (1.0 + cavityResonator.resonatorVec[i].resCouplingBeta)
+        //                             * cos(cavityResonator.resonatorVec[i].resDeTunePsi) * exp(li * (PI + cavityResonator.resonatorVec[i].resDeTunePsi)  );
         
-        cavityResonator.resonatorVec[i].vbAccum   =  vbAccumAver;               // set cavity beam induced voltage. It is the value particle feel
-        cavityResonator.resonatorVec[i].vbAccum0  =  vbAccumAver;
-        cavityResonator.resonatorVec[i].vbAccumRFFrame = vbAccumAver;
-        
-        vbKickAver[i]  =  vbKickAccum /double(beamVec.size());                     // average energy that bunch is kicked by self-loss Vb0/2. 
+        vbKickAver[i]  =  vbKickAccum /double(beamVec.size());                  // average energy that bunch is kicked by self-loss Vb0/2. 
+
+        cavityResonator.resonatorVec[i].vbAccum   =  vbAccumAver;               // set cavity beam induced voltage. It is the value particle sample
+        cavityResonator.resonatorVec[i].vbAccum0  =  vbAccumAver;               // not used 
     }
+
 
     // set the initial resonator cavity parameters
     for(int i=0; i<resNum;i++)
-    {
-        if (cavityResonator.resonatorVec[i].resType==0) // passive cavity
-        {
-            cavityResonator.resonatorVec[i].resGenVol=complex<double>(0.E0,0.E0);
-        }
-        else                                           // active cavity
-        {
-            // double cavArg = arg(cavityResonator.resonatorVec[i].resCavVolReq);
-            // double cavAbs = (cavityResonator.resonatorVec[i].resCavVolReq.real() - vbKickAver[i].real()) / cos( cavArg );
-            // genAddvbAbs = abs(cavAbs);
-            // cavityResonator.resonatorVec[i].resGenVol = cavAbs * exp(li * cavArg ) - cavityResonator.resonatorVec[i].vbAccum;
-            
-            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - cavityResonator.resonatorVec[i].vbAccum;
-        }
-
-        if(cavityResonator.resonatorVec[i].resCold || cavityResonator.resonatorVec[i].resRfMode==0)   // cavity is cold or ideal cavity
-        {
-            cavityResonator.resonatorVec[i].vbAccum = complex<double>(0.E0,0.E0);
-        }
-
-        cavityResonator.resonatorVec[i].GetInitialResonatorGenIg();
+    {    
+        cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - cavityResonator.resonatorVec[i].vbAccum;        
+        cavityResonator.resonatorVec[i].GetInitialResonatorGenIg(inputParameter);
         cavityResonator.resonatorVec[i].GetInitialResonatorPower(inputParameter);
-
-        // set initial cavity voltage, beam indcued volage for each bunch         
-        for(int j=0;j<beamVec.size();j++)
-        {
-            beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // requried voltage.
-            beamVec[j].bunchRFModeInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
-            beamVec[j].bunchRFModeInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
-            beamVec[j].bunchRFModeInfo->selfLossVolBunchCen[i] =    vbKickAver[i];
-        }
     }
-
+   
 
     // print out the data to show the cavity voltage buildup process.  
     vb0=(0,0);
@@ -361,7 +336,8 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
     {
         time =0;
         tF      = cavityResonator.resonatorVec[i].tF  ;      // [s]
-        nTurns  = ceil(100 * tF * f0);
+        nTurns  = ceil(500 * tF * f0);
+        nTurns  = 20;
         vbAccum = complex<double>(0,0);
          
         fout<<abs(cavityResonator.resonatorVec[i].resCavVolReq)           <<endl;
@@ -383,16 +359,28 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
         fout<<"! page number "<<i+1<<endl;
         fout<<nTurns*beamVec.size()<<endl;
 
+
+        cavityResonator.resonatorVec[i].resGenVol = complex<double>(0.E0,0.E0);
         // if(cavityResonator.resonatorVec[i].resRfMode==0) continue;
         
         for(int n=0;n<nTurns;n++)
         {
             for(int j=0;j<beamVec.size();j++)
             {
-                vb0  = complex<double>(-1 * cavityResonator.resonatorVec[i].resFre * 2 * PI * cavityResonator.resonatorVec[i].resShuntImpRs /
+                if(n>4)
+                {
+                    vb0  = complex<double>(-1 * cavityResonator.resonatorVec[i].resFre * 2 * PI * cavityResonator.resonatorVec[i].resShuntImpRs /
                                             cavityResonator.resonatorVec[i].resQualityQ0,0.E0) * beamVec[j].electronNumPerBunch * ElectronCharge;
-                vbAccum += vb0;                                       //[V]
-
+                    vbAccum += vb0;                                       //[V]
+                    
+                    tB = beamVec[j].bunchGap * t0 / ringHarmH ;  //[s]
+                    deltaL = tB / tF ;
+                    // cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
+                    cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
+                    vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);       // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
+                }
+                cavityResonator.resonatorVec[i].ResonatorDynamics(beamVec[j].bunchGap * t0 / ringHarmH );
+                time +=  beamVec[j].bunchGap * t0 / ringHarmH;
                 fout<<setw(15)<<left<<time*f0 
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolAmp
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resCavVolReq)   // required CavVolPhase
@@ -403,20 +391,64 @@ void SPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                     <<setw(15)<<left<<abs(cavityResonator.resonatorVec[i].resGenVol)
                     <<setw(15)<<left<<arg(cavityResonator.resonatorVec[i].resGenVol)
                     <<endl;
-
-                tB = beamVec[j].bunchGap * t0 / ringHarmH ;  //[s]
-                time +=  tB;
-                deltaL = tB / tF ;
-                // cPsi = 2 * PI * (cavityResonator.resonatorVec[i].resFre - ringHarmH * f0 * cavityResonator.resonatorVec[i].resHarm) * tB; 
-                cPsi = 2 * PI * cavityResonator.resonatorVec[i].resFre * tB;
-                vbAccum = vbAccum * exp(- deltaL ) * exp ( li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
             }
         }
         
     }
     fout.close(); 
 
-    // beam induced voltate, generator voltage, cavity voltage are all printout in harmonics*f0 frame      
+    // beam induced voltate, generator voltage, cavity voltage are all printout in harmonics*f0 frame   
+
+
+    // set the initial resonator cavity parameters
+    for(int i=0; i<resNum;i++)
+    {
+        if (cavityResonator.resonatorVec[i].resType==0) // passive cavity
+        {
+            cavityResonator.resonatorVec[i].resGenVol=complex<double>(0.E0,0.E0);
+            cavityResonator.resonatorVec[i].resGenIg =complex<double>(0.E0,0.E0);
+        }
+        else                                           // active cavity
+        {
+            // double cavArg = arg(cavityResonator.resonatorVec[i].resCavVolReq);
+            // double cavAbs = (cavityResonator.resonatorVec[i].resCavVolReq.real() - vbKickAver[i].real()) / cos( cavArg );
+            // cavityResonator.resonatorVec[i].resGenVol = cavAbs * exp(li * cavArg ) - cavityResonator.resonatorVec[i].vbAccum;
+            
+            // set resGenVol compensate the self-loss vb0/2.0
+
+            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - cavityResonator.resonatorVec[i].vbAccum - vbKickAver[i]; 
+            
+        }
+        
+
+        if(cavityResonator.resonatorVec[i].resCold || cavityResonator.resonatorVec[i].resRfMode==0)   // cavity is cold or ideal cavity
+        {
+            cavityResonator.resonatorVec[i].vbAccum = complex<double>(0.E0,0.E0);
+        }
+
+        cavityResonator.resonatorVec[i].GetInitialResonatorGenIg(inputParameter);
+        cavityResonator.resonatorVec[i].GetInitialResonatorPower(inputParameter);
+
+        // set initial cavity voltage, beam indcued volage for each bunch         
+        for(int j=0;j<beamVec.size();j++)
+        {
+            beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // requried voltage.
+            beamVec[j].bunchRFModeInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
+            beamVec[j].bunchRFModeInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
+            beamVec[j].bunchRFModeInfo->selfLossVolBunchCen[i] =    vbKickAver[i];
+        }    
+
+        // if Ronbinson DC unstable?
+        double vc   = abs(cavityResonator.resonatorVec[i].resCavVolReq);
+        double phis = arg(cavityResonator.resonatorVec[i].resCavVolReq);
+        double psi  = cavityResonator.resonatorVec[i].resDeTunePsi;
+        double vbr = 0;
+        vbr = 2.0 * beamCurr * cavityResonator.resonatorVec[i].resShuntImpRs / (1.0 + cavityResonator.resonatorVec[i].resCouplingBeta);
+        
+        double temp = 2 * sin(phis) + vbr / vc * sin( 2 * psi);
+        cavityResonator.resonatorVec[i].robinsonDCStable =  temp > 0? 1 : 0;       
+    }
+
 }
 
 void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter, CavityResonator &cavityResonator)
@@ -431,7 +463,6 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     int ionInfoPrintInterval        = inputParameter.ringIonEffPara->ionInfoPrintInterval;
     int bunchInfoPrintInterval      = inputParameter.ringRun->bunchInfoPrintInterval;
     int rampFlag                    = inputParameter.ringRun->rampFlag;
-
 
     // prepare the ramping class
     Ramping ramping;
@@ -586,8 +617,6 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         // Subroutine in below only change the momentum 
         if(lRWakeFlag) LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint,n); 
         
-        if(fIRBunchByBunchFeedbackFlag)  FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
-     
         if((inputParameter.driveMode->driveModeOn!=0) && (inputParameter.driveMode->driveStart <n )  &&  (inputParameter.driveMode->driveEnd >n) )
         {
             BeamTransferDuetoDriveMode(inputParameter,n);
@@ -596,8 +625,9 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         if(synRadDampingFlag==1) BeamSynRadDamping(inputParameter,latticeInterActionPoint);
        
         if(rampFlag) ramping.RampingPara(inputParameter,latticeInterActionPoint,n);
-        
 
+        SPBeamRMSCal(latticeInterActionPoint, 0);
+        if(fIRBunchByBunchFeedbackFlag)  FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
         SPBeamRMSCal(latticeInterActionPoint, 0);
         SPGetBeamInfo();
                     
@@ -678,8 +708,9 @@ void SPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         {
             GetAnalyticalLongitudinalPhaseSpace(inputParameter,cavityResonator,sRWakeFunction);
         }
+        PrintHaissinski(inputParameter);
     }    
-    //sddsplot();    
+      
 }
 
 void SPBeam::TuneRamping(ReadInputSettings &inputParameter,double n)
@@ -2434,10 +2465,21 @@ void SPBeam::BeamMomentumUpdateDueToRFTest(ReadInputSettings &inputParameter,Lat
    
     for(int i=0;i<inputParameter.ringParRf->resNum;i++)
     {
-        for(int j=0;j<beamVec.size();j++)
-        {              
-            beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]);
-            beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]);            
+        if(cavityResonator.resonatorVec[i].resRfMode ==0)
+        {
+            for(int j=0;j<beamVec.size();j++)
+            {              
+                beamVec[j].haissinski->cavAmp[i]   = abs(cavityResonator.resonatorVec[i].resCavVolReq );
+                beamVec[j].haissinski->cavPhase[i] = arg(cavityResonator.resonatorVec[i].resCavVolReq );            
+            }
+        }
+        else
+        {
+            for(int j=0;j<beamVec.size();j++)
+            {              
+                beamVec[j].haissinski->cavAmp[i]   = abs(beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]);
+                beamVec[j].haissinski->cavPhase[i] = arg(beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]);            
+            }
         }
     }
 
@@ -2450,7 +2492,7 @@ void SPBeam::BeamMomentumUpdateDueToRFTest(ReadInputSettings &inputParameter,Lat
         {
             for(int i=0;i<beamVec.size();i++)
             {
-                beamVec[i].BunchMomentumUpdateDueToRFCA(inputParameter,cavityResonator.resonatorVec[j]);
+                beamVec[i].BunchMomentumUpdateDueToRFCA(inputParameter,cavityResonator.resonatorVec[j],j);
             }
         }
         else  // rfmode element  -- beam loading in included in the tracking
@@ -2464,11 +2506,11 @@ void SPBeam::BeamMomentumUpdateDueToRFTest(ReadInputSettings &inputParameter,Lat
                 for (int k=0;k<beamVec[i].bunchGap;k++)
                 {
                     int harmonicIndex = beamVec[i].bunchHarmNum + k;
-                    double dt = k * tRF  - beamVec[i].zAver / CLight;
+                    double dt = k * tRF - (- beamVec[i].zAver / CLight );
                     cavityResonator.resonatorVec[j].GetResonatorInfoAtNTrf(harmonicIndex,dt);
                     cavityResonator.resonatorVec[j].ResonatorDynamics(tRF);   // cavity is updated by tRF
                 }
-
+               
                 // resonator beamInduced voltage updated till next bunch -- also control condition for instability excitation
                 if(cavityResonator.resonatorVec[j].resExciteIntability!=0)
                 {
@@ -2571,7 +2613,8 @@ void SPBeam::WSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
         if(nTurns==0)
         {
             fout<<"SDDS1"<<endl;
-            fout<<"&parameter name=totIonCharge, units=e, type=float,  &end"<<endl;            
+            fout<<"&parameter name=totIonCharge, units=e, type=float,  &end"<<endl;
+            fout<<"&parameter name=turns,                 type=long,   &end"<<endl;             
             for(int p=0;p<latticeInterActionPoint.ionAccumuPositionX[k].size();p++)
             {
                 string col= string("&parameter name=") + string("numOfMacroIon_") + to_string(p) + string(",  type=long,  &end");   
@@ -2592,6 +2635,7 @@ void SPBeam::WSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
 
         fout<<"! page number "<<nTurns * numberOfInteraction + k + 1 <<endl;
         fout<<latticeInterActionPoint.totIonCharge<<endl;
+        fout<<nTurns<<endl;
         for(int p=0;p<latticeInterActionPoint.ionAccumuPositionX[k].size();p++)
         {
             fout<<latticeInterActionPoint.ionAccumuPositionX[k][p].size()<<endl;            
@@ -2643,19 +2687,13 @@ void SPBeam::BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSetting
 //     }
 // }
 
-
-
-void SPBeam::GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)
+void SPBeam::PrintHaissinski(ReadInputSettings &inputParameter)
 {
+    // print the haissinski of the bunch 
     vector<int> TBTBunchDisDataBunchIndex = inputParameter.ringRun->TBTBunchDisDataBunchIndex;
     int TBTBunchPrintNum  = inputParameter.ringRun->TBTBunchPrintNum;        
     int bunchIndex; 
-
-    for(int i=0;i<TBTBunchPrintNum;i++)
-    {        
-        bunchIndex  = TBTBunchDisDataBunchIndex[i];
-        beamVec[bunchIndex].GetBunchHaissinski(inputParameter,cavityResonator,sRWakeFunction);    // update this subroutine to include board impedance from external files                 
-    }
+    
     string filePrefix = inputParameter.ringRun->TBTBunchHaissinski;
     string fname = filePrefix + ".sdds";
     ofstream fout(fname,ios_base::app);        
@@ -2672,15 +2710,20 @@ void SPBeam::GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &ca
     fout<<"&parameter name=bunchHarm,                       type=long,  &end"<<endl;
     fout<<"&parameter name=averZ,       units=m,            type=float,  &end"<<endl;
     fout<<"&parameter name=rmsZ,        units=m,            type=float,  &end"<<endl;
+    fout<<"&parameter name=averNus,                         type=float,  &end"<<endl;
+    fout<<"&parameter name=rmsNus,                          type=float,  &end"<<endl;
    
     fout<<"&column name=z,              units=m,            type=float,  &end"<<endl;
+    fout<<"&column name=nus,                                type=float,  &end"<<endl;
+    fout<<"&column name=actionJ,        units=m,            type=float,  &end"<<endl;
+    fout<<"&column name=rfV,            units=V,            type=float,  &end"<<endl;
     fout<<"&column name=rfHamilton,                         type=float,  &end"<<endl;
     fout<<"&column name=wakeHamilton,                       type=float,  &end"<<endl;
     fout<<"&column name=totHamilton,                        type=float,  &end"<<endl;
     fout<<"&column name=rwWakePoten,                        type=float,  &end"<<endl;
-    fout<<"&column name=bbrWakePoten,                        type=float,  &end"<<endl;
-    fout<<"&column name=totWakePoten,                        type=float,  &end"<<endl;   
-    fout<<"&column name=profile,       units=arb.units      type=float,  &end"<<endl;
+    fout<<"&column name=bbrWakePoten,                       type=float,  &end"<<endl;
+    fout<<"&column name=totWakePoten,                       type=float,  &end"<<endl;   
+    fout<<"&column name=profile,       units=arb.units      type=float,  &end"<<endl; 
     fout<<"&data mode=ascii, &end"<<endl;
     
     if(!inputParameter.ringRun->TBTBunchHaissinski.empty()  &&  (TBTBunchPrintNum !=0) )
@@ -2698,30 +2741,49 @@ void SPBeam::GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &ca
             fout<<beamVec[bunchIndex].bunchHarmNum<<endl; 
             fout<<beamVec[bunchIndex].haissinski->averZ<<endl;                         
             fout<<beamVec[bunchIndex].haissinski->rmsZ<<endl;
+            fout<<beamVec[bunchIndex].haissinski->averNus<<endl;
+            fout<<beamVec[bunchIndex].haissinski->rmsNus<<endl;
             fout<<beamVec[bunchIndex].haissinski->nz<<endl;
 
             double norm=0;
-            for(int k=0; k<beamVec[bunchIndex].haissinski->nz;k++)
-            {
-                norm += beamVec[bunchIndex].haissinski->bunchProfile[k];
-            }       
+            double dz = beamVec[bunchIndex].haissinski->dz;
+            for(int k=0; k<beamVec[bunchIndex].haissinski->nz;k++)  norm += beamVec[bunchIndex].haissinski->bunchProfile[k] * dz;
+            for(int k=0; k<beamVec[bunchIndex].haissinski->nz;k++)  beamVec[bunchIndex].haissinski->bunchProfile[k] /= norm;      
             
             for(int k=0;k<beamVec[bunchIndex].haissinski->nz;k++)
             {
                 fout<<setw(15)<<left<<beamVec[bunchIndex].haissinski->bunchPosZ[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->nus[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->actionJ[k]
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->vRF[k]
                     <<setw(15)<<left<<beamVec[bunchIndex].haissinski->rfHamiltonian[k]
                     <<setw(15)<<left<<beamVec[bunchIndex].haissinski->wakeHamiltonian[k]
                     <<setw(15)<<left<<beamVec[bunchIndex].haissinski->totHamiltonian[k]
                     <<setw(15)<<left<<beamVec[bunchIndex].haissinski->rwWakePoten[k]
                     <<setw(15)<<left<<beamVec[bunchIndex].haissinski->bbrWakePoten[k]
                     <<setw(15)<<left<<beamVec[bunchIndex].haissinski->totWakePoten[k]
-                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->bunchProfile[k]/norm             
+                    <<setw(15)<<left<<beamVec[bunchIndex].haissinski->bunchProfile[k]            
                     <<endl;    
             }                                
         }
     }
 
     fout.close();    
+
+}
+
+
+void SPBeam::GetHaissinski(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction)
+{
+    vector<int> TBTBunchDisDataBunchIndex = inputParameter.ringRun->TBTBunchDisDataBunchIndex;
+    int TBTBunchPrintNum  = inputParameter.ringRun->TBTBunchPrintNum;        
+    int bunchIndex; 
+
+    for(int i=0;i<TBTBunchPrintNum;i++)
+    {        
+        bunchIndex  = TBTBunchDisDataBunchIndex[i];
+        beamVec[bunchIndex].GetBunchHaissinski(inputParameter,cavityResonator,sRWakeFunction);    // update this subroutine to include board impedance from external files                 
+    }
 }
 
 
@@ -2735,98 +2797,127 @@ void SPBeam::GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParamet
     for(int i=0;i<TBTBunchPrintNum;i++)
     {        
         bunchIndex  = TBTBunchDisDataBunchIndex[i];
-        beamVec[bunchIndex].GetParticleLongitudinalPhaseSpace(inputParameter,cavityResonator,i);                           
+        beamVec[bunchIndex].GetParticleLongitudinalPhaseSpace1(inputParameter,cavityResonator,i);                           
     }
 }
 
 
 void SPBeam::FIRBunchByBunchFeedback(const ReadInputSettings &inputParameter,FIRFeedBack &firFeedBack,int nTurns)
 {
-    //y[0] = \sum_0^{N} a_k x[-k]
-    //Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
-    double rBeta = inputParameter.ringParBasic->rBeta;
-    double eta  = firFeedBack.kickerDisp;
-    double etaP = firFeedBack.kickerDispP;
-
-
-    vector<double> tranAngleKicky;
-    vector<double> tranAngleKickx;
-    vector<double> energyKickU;
-
-    tranAngleKicky.resize(beamVec.size());
-    tranAngleKickx.resize(beamVec.size());
-    energyKickU.resize(beamVec.size());
-
-    int nTaps =  firFeedBack.firCoeffx.size();
-
-    vector<double> posxDataTemp(beamVec.size());
-    vector<double> posyDataTemp(beamVec.size());
-    vector<double> poszDataTemp(beamVec.size());
-
-    for(int i=0;i<beamVec.size();i++)
+    int fbflag = 0;
+    for (int i=0;i<inputParameter.ringBBFB->nSections;i++)
     {
-        posxDataTemp[i] = beamVec[i].xAver;
-        posyDataTemp[i] = beamVec[i].yAver;
-        poszDataTemp[i] = beamVec[i].zAver;
-    }
-
-    firFeedBack.posxData.erase(firFeedBack.posxData.begin());
-    firFeedBack.posyData.erase(firFeedBack.posyData.begin());
-    firFeedBack.poszData.erase(firFeedBack.poszData.begin());
-
-    firFeedBack.posxData.push_back(posxDataTemp);
-    firFeedBack.posyData.push_back(posyDataTemp);
-    firFeedBack.poszData.push_back(poszDataTemp);
-
-
-    for(int i=0;i<beamVec.size();i++)
-    {
-        tranAngleKickx[i] = 0.E0;
-        tranAngleKicky[i] = 0.E0;
-        energyKickU[i]    = 0.E0;
-    }
-
-
-    for(int i=0;i<beamVec.size();i++)
-    {
-        for(int k=0;k<nTaps;k++)
+        if(nTurns>=inputParameter.ringBBFB->start[i] && nTurns<inputParameter.ringBBFB->end[i])
         {
-            tranAngleKickx[i] +=  firFeedBack.firCoeffx[nTaps-k-1] * firFeedBack.posxData[k][i];
-            tranAngleKicky[i] +=  firFeedBack.firCoeffy[nTaps-k-1] * firFeedBack.posyData[k][i];
-            energyKickU[i]    +=  firFeedBack.firCoeffz[nTaps-k-1] * firFeedBack.poszData[k][i];
-        }
-
-        tranAngleKickx[i] =  tranAngleKickx[i] *  firFeedBack.gain * firFeedBack.kickStrengthKx;
-        tranAngleKicky[i] =  tranAngleKicky[i] *  firFeedBack.gain * firFeedBack.kickStrengthKy;
-        energyKickU[i]    =  energyKickU[i]    *  firFeedBack.gain * firFeedBack.kickStrengthF;
-
-
-        if(tranAngleKickx[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
-        {
-            tranAngleKickx[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
-        }
-        if(tranAngleKicky[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
-        {
-            tranAngleKicky[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
-        }
-        if(energyKickU[i]     > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
-        {
-            energyKickU[i]    = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+            fbflag = 1;
         }
     }
-
-
-    for(int i=0;i<beamVec.size();i++)
+    // cout<<"FBFlag:   "<<fbflag<<"   "<< inputParameter.ringBBFB->nSections<<endl;
+    
+    if (inputParameter.ringBBFB->mode ==0 )   // ideal bunch-by-bunch feedback 
     {
-        for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+        if(fbflag==1)
         {
-            beamVec[i].eMomentumX[j] = beamVec[i].eMomentumX[j] + tranAngleKickx[i];
-            beamVec[i].eMomentumY[j] = beamVec[i].eMomentumY[j] + tranAngleKicky[i];
-            beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i] / pow(rBeta,2);
+            for(int i=0;i<beamVec.size();i++)
+            {
+                for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+                {
+                    beamVec[i].eMomentumX[j] -=  beamVec[i].pxAver; 
+                    beamVec[i].eMomentumY[j] -=  beamVec[i].pyAver;
+                    beamVec[i].eMomentumZ[j] -=  beamVec[i].pzAver;
+                }
+            }
+        }
+    }
+    else //Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
+    {
+        
+        //y[0] = \sum_0^{N} a_k x[-k]
+        double rBeta = inputParameter.ringParBasic->rBeta;
+        double eta  = firFeedBack.kickerDisp;
+        double etaP = firFeedBack.kickerDispP;
+
+        vector<double> tranAngleKicky;
+        vector<double> tranAngleKickx;
+        vector<double> energyKickU;
+
+        tranAngleKicky.resize(beamVec.size());
+        tranAngleKickx.resize(beamVec.size());
+        energyKickU.resize(beamVec.size());
+
+        int nTaps =  firFeedBack.firCoeffx.size();
+
+        vector<double> posxDataTemp(beamVec.size());
+        vector<double> posyDataTemp(beamVec.size());
+        vector<double> poszDataTemp(beamVec.size());
+
+        for(int i=0;i<beamVec.size();i++)
+        {
+            posxDataTemp[i] = beamVec[i].xAver;
+            posyDataTemp[i] = beamVec[i].yAver;
+            poszDataTemp[i] = beamVec[i].zAver;
         }
 
-    }
+        firFeedBack.posxData.erase(firFeedBack.posxData.begin());
+        firFeedBack.posyData.erase(firFeedBack.posyData.begin());
+        firFeedBack.poszData.erase(firFeedBack.poszData.begin());
 
+        firFeedBack.posxData.push_back(posxDataTemp);
+        firFeedBack.posyData.push_back(posyDataTemp);
+        firFeedBack.poszData.push_back(poszDataTemp);
+
+
+        for(int i=0;i<beamVec.size();i++)
+        {
+            tranAngleKickx[i] = 0.E0;
+            tranAngleKicky[i] = 0.E0;
+            energyKickU[i]    = 0.E0;
+        }
+
+        if(fbflag==1)
+        {
+            for(int i=0;i<beamVec.size();i++)
+            {
+                for(int k=0;k<nTaps;k++)
+                {
+                    tranAngleKickx[i] +=  firFeedBack.firCoeffx[nTaps-k-1] * firFeedBack.posxData[k][i];
+                    tranAngleKicky[i] +=  firFeedBack.firCoeffy[nTaps-k-1] * firFeedBack.posyData[k][i];
+                    energyKickU[i]    +=  firFeedBack.firCoeffz[nTaps-k-1] * firFeedBack.poszData[k][i];
+                }
+
+                tranAngleKickx[i] =  tranAngleKickx[i] *  firFeedBack.gain * firFeedBack.kickStrengthKx;
+                tranAngleKicky[i] =  tranAngleKicky[i] *  firFeedBack.gain * firFeedBack.kickStrengthKy;
+                energyKickU[i]    =  energyKickU[i]    *  firFeedBack.gain * firFeedBack.kickStrengthF;
+
+                // fIRBunchByBunchFeedbackKickLimit [rad]
+
+                if(tranAngleKickx[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
+                {
+                    tranAngleKickx[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+                }
+                if(tranAngleKicky[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
+                {
+                    tranAngleKicky[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+                }
+                if(energyKickU[i]     > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
+                {
+                    energyKickU[i]    = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+                }
+            }
+
+
+            for(int i=0;i<beamVec.size();i++)
+            {
+                for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+                {
+                    beamVec[i].eMomentumX[j] = beamVec[i].eMomentumX[j] + tranAngleKickx[i];
+                    beamVec[i].eMomentumY[j] = beamVec[i].eMomentumY[j] + tranAngleKicky[i];
+                    beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i] / pow(rBeta,2);
+                }
+
+            }
+        }
+    }
 }
 
 void SPBeam::BeamSynRadDamping(const ReadInputSettings &inputParameter, const LatticeInterActionPoint &latticeInterActionPoint)
@@ -2954,6 +3045,7 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
         beamVec[j].lRWakeForceAver[1] *=  ElectronCharge / electronBeamEnergy / pow(rBeta,2);   // [V/C] * [C] * [1e] / [eV] ->rad
         beamVec[j].lRWakeForceAver[2] *=  ElectronCharge / electronBeamEnergy / pow(rBeta,2);   // [V/C] * [C] * [1e] / [eV] ->rad
     }
+
 
     BeamTransferPerTurnDueWake(); 
 

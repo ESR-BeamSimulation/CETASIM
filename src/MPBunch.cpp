@@ -1053,11 +1053,12 @@ void MPBunch::BunchMomentumUpdateDueToRFMode(const ReadInputSettings &inputParam
     genVolImag     /= double(particleInBunch);
     induceVolReal  /= double(particleInBunch);
     induceVolImag  /= double(particleInBunch); 
+    selfLossVolAccume /= double(particleInBunch);
 
     bunchRFModeInfo->cavVolBunchCen[resIndex]       = complex<double>(cavVoltageReal,cavVoltageImag);
     bunchRFModeInfo->genVolBunchAver[resIndex]      = complex<double>(genVolReal    ,genVolImag    ); 
-    bunchRFModeInfo->induceVolBunchCen[resIndex]    = complex<double>(induceVolReal ,induceVolImag); 
-    bunchRFModeInfo->selfLossVolBunchCen[resIndex]  =  selfLossVolAccume / double(particleInBunch) ;
+    bunchRFModeInfo->induceVolBunchCen[resIndex]    = complex<double>(induceVolReal ,induceVolImag) + selfLossVolAccume ; 
+    bunchRFModeInfo->selfLossVolBunchCen[resIndex]  =  selfLossVolAccume ;
 
 }
 

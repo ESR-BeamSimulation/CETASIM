@@ -161,10 +161,14 @@ public:
     // 6) bunch-by-bunch feedbcak
     struct RingBBFB
     {    
+        int mode = 0;
         double kickStrengthK[3];
         double gain;
         int delay;
         int taps;
+        int nSections = 0;
+        vector<int> start;
+        vector<int> end;
         double kickerDispP;
         double kickerDisp;
         double fIRBunchByBunchFeedbackPowerLimit;                  // power wat limit on feedback   

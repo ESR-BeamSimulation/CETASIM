@@ -87,7 +87,7 @@ void FIRFeedBack::Initial(ReadInputSettings &inputParameter)
 //    kickStrengthKy = tempCoefy * 1.0E-1;
 //    kickStrengthF = 0.E0;
 
-    cout<<"--------Sum of bunch-by-bunch feedbakc coeff--DC rejection?------------"<<endl;
+    cout<<"--------Sum of bunch-by-bunch feedbakc coeff--DC rejection------------"<<endl;
     double sumx  =  accumulate(begin(firCoeffx), end(firCoeffx), 0.0);
     double sumy  =  accumulate(begin(firCoeffy), end(firCoeffy), 0.0);
     double sumz  =  accumulate(begin(firCoeffz), end(firCoeffz), 0.0);

@@ -56,6 +56,8 @@ public:
     vector<double> xPhaseAdv;
     vector<double> yPhaseAdv;
     vector<double> zPhaseAdv;
+    vector<double> averBetaX;
+    vector<double> averBetaY;
     
     vector<double>vacuumPressure;                          // Pa
     vector<vector<double> >vacuumPressureEachGas;          // Pa

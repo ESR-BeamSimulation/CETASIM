@@ -33,6 +33,7 @@ public:
     int    resType;
     int    resRfMode = 1;
     double resShuntImpRs  = 0.E0;
+    double resShuntImpRsL  = 0.E0;
     double resQualityQ0   = 0.E0;
     double resQualityQL   = 0.E0;
     double resCouplingBeta = 0.E0;       
@@ -44,6 +45,8 @@ public:
     double resVolAbsReq;
     double resPhaseReq;
     int resExciteIntability=1;
+    double robinsonDCCurThreshold=0;
+    double robinsonDCStable = 1;
     
     // to get the initial status of generator
     complex<double> resGenVgr = (0.0,0.0);      // generator voltage on resonance
@@ -103,7 +106,7 @@ public:
 
 
     //function to evoolution the  resGenVol, which is always solved at the     
-    void GetInitialResonatorGenIg();
+    void GetInitialResonatorGenIg(const ReadInputSettings &inputParameter);
     void GetInitialResonatorPower(const ReadInputSettings &inputParameter);
     void GetBeamInducedVol(double timeToNextBunch);
     void ResonatorDynamics(double time);

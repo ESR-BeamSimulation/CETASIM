@@ -294,6 +294,7 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
 
 
     //ref. Elegant ILMatrix element  compute_matrices.c line:2442
+    //Sy. Lee, Eq.2.257-with dispersion to maintain the periodic condition. ILmatrix[0][5] ILmatrix[1][5] ILmatrix[2][5] ILmatrix[3][5].
     double xPosN,yPosN,xMomN,yMomN;
     double ampX,ampY;
     double nuxtmp,nuytmp,tmp;
@@ -431,7 +432,7 @@ void Bunch::GetLongiKickDueToCavFB(const ReadInputSettings &inputParameter,Reson
 }
 
 
-void Bunch::BunchMomentumUpdateDueToRFCA(const ReadInputSettings &inputParameter,Resonator &resonator)
+void Bunch::BunchMomentumUpdateDueToRFCA(const ReadInputSettings &inputParameter,Resonator &resonator,int resIndex)
 {
     int ringHarmH     = inputParameter.ringParRf->ringHarm;
     double f0         = inputParameter.ringParBasic->f0;
@@ -444,13 +445,21 @@ void Bunch::BunchMomentumUpdateDueToRFCA(const ReadInputSettings &inputParameter
 
     complex<double> cavVoltage =(0.E0,0.E0);
     complex<double> genVoltage =(0.E0,0.E0);
-    
+
     for (int i=0;i<macroEleNumPerBunch;i++)
     {
-        genVoltage = resonator.resCavVolReq * exp( - li * ePositionZ[i] / CLight * 2. * PI * double(resHarm) * fRF );
+        genVoltage = resonator.resCavVolReq * exp( - li * ePositionZ[i] / CLight / rBeta * 2. * PI * double(resHarm) * fRF );
         cavVoltage = genVoltage;
         eMomentumZ[i] += cavVoltage.real()  /electronBeamEnergy / pow(rBeta,2);
     }
+
+    // the info cavity, generator and beam induced voltage bunch feels
+    bunchRFModeInfo->induceVolBunchCen[resIndex]   = complex<double>(0.E0,0.E0);
+    bunchRFModeInfo->genVolBunchAver[resIndex]     = genVoltage;               
+    bunchRFModeInfo->cavVolBunchCen[resIndex]      = cavVoltage;
+    bunchRFModeInfo->selfLossVolBunchCen[resIndex] = complex<double>(0.E0,0.E0);
+
+
 }
 
 void Bunch::BunchEnergyLossOneTurn(const ReadInputSettings &inputParameter)
@@ -478,40 +487,137 @@ void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,c
 
     double circRing = inputParameter.ringParBasic->circRing;
     double *alphac = inputParameter.ringParBasic->alphac;
+    double nux = inputParameter.ringParBasic->workQx;
+    double nuy = inputParameter.ringParBasic->workQy;
     // can be updated to include chrom effect and the dispersion effect.... (not correct at this moment) 
+    
+    double betaX1, betaX2, alphaX1, alphaX2, phiX0, etaX, etaXP, chromX;
+    double betaY1, betaY2, alphaY1, alphaY2, phiY0, etaY, etaYP, chromY;
+    
+    etaX  = latticeInterActionPoint.twissDispX[k];
+    etaY  = latticeInterActionPoint.twissDispY[k];
+    etaXP = latticeInterActionPoint.twissDispPX[k];
+    etaYP = latticeInterActionPoint.twissDispPY[k];
 
-    double xtemp=0.E0;
-    double ytemp=0.E0;
-    double xPtemp=0.E0;
-    double yPtemp=0.E0;
-    double ztemp=0.E0;
-    double zPtemp=0.E0;
-   
+    alphaX1 = latticeInterActionPoint.twissAlphaX[k];
+    betaX1  = latticeInterActionPoint.twissBetaX[k];
+    alphaY1 = latticeInterActionPoint.twissAlphaY[k];
+    betaY1  = latticeInterActionPoint.twissBetaY[k];
+
+    chromX = inputParameter.ringParBasic->chrom[0] * latticeInterActionPoint.interactionLength[k] / circRing;
+    chromY = inputParameter.ringParBasic->chrom[1] * latticeInterActionPoint.interactionLength[k] / circRing; 
+
+
+    if (k==latticeInterActionPoint.numberOfInteraction-1)
+    {
+        alphaX2 = latticeInterActionPoint.twissAlphaX[0];
+        betaX2  = latticeInterActionPoint.twissBetaX[0];
+        alphaY2 = latticeInterActionPoint.twissAlphaY[0];
+        betaY2  = latticeInterActionPoint.twissBetaY[0]; 
+        phiX0   = 2 * PI * nux  -   latticeInterActionPoint.xPhaseAdv[k]; 
+        phiY0   = 2 * PI * nuy  -   latticeInterActionPoint.yPhaseAdv[k];      
+    }
+    else
+    {
+        alphaX2 = latticeInterActionPoint.twissAlphaX[k+1];
+        betaX2  = latticeInterActionPoint.twissBetaX[k+1];
+        alphaY2 = latticeInterActionPoint.twissAlphaY[k+1];
+        betaY2  = latticeInterActionPoint.twissBetaY[k+1];
+        phiX0   = latticeInterActionPoint.xPhaseAdv[k+1]  - latticeInterActionPoint.xPhaseAdv[k]; 
+        phiY0   = latticeInterActionPoint.yPhaseAdv[k+1]  - latticeInterActionPoint.yPhaseAdv[k];   
+    }
+
+    gsl_matrix * vecX   = gsl_matrix_alloc (3, 1);
+    gsl_matrix * vecNX  = gsl_matrix_alloc (3, 1);
+    gsl_matrix * cordTransfer     = gsl_matrix_alloc (3, 3);
+    
+    double tmp, phiX,phiY;
+
     for(int i=0;i<macroEleNumPerBunch;i++)
     {
         if(eSurive[i]!=0) continue;
-        // refers to SY. Lee Eq. 2.67
 
-        xtemp  = latticeInterActionPoint.xTransferMatrix[k][0] * ePositionX[i]
-               + latticeInterActionPoint.xTransferMatrix[k][1] * eMomentumX[i];
+        phiX = phiX0 + chromX * eMomentumZ[i];
+        // transformation in the x direction:
+        vecX->data[0 * vecX->tda] = ePositionX[i];
+        vecX->data[1 * vecX->tda] = eMomentumX[i];
+        vecX->data[2 * vecX->tda] = eMomentumZ[i]; 
 
-        xPtemp = latticeInterActionPoint.xTransferMatrix[k][2] * ePositionX[i]
-               + latticeInterActionPoint.xTransferMatrix[k][3] * eMomentumX[i];
+        gsl_matrix_set_zero(cordTransfer);
+        tmp = sqrt(betaX2 / betaX1) * (cos(phiX) + alphaX1 * sin(phiX));                                         gsl_matrix_set(cordTransfer,0,0,tmp);
+        tmp = sqrt(betaX2 * betaX1) * (                      sin(phiX));                                         gsl_matrix_set(cordTransfer,0,1,tmp);
+        tmp = etaX;                                                                                              gsl_matrix_set(cordTransfer,0,2,tmp);
 
-        ytemp  = latticeInterActionPoint.yTransferMatrix[k][0] * ePositionY[i]
-               + latticeInterActionPoint.yTransferMatrix[k][1] * eMomentumY[i];
+        tmp = ((-1 - alphaX1 * alphaX2) * sin(phiX) + (alphaX1 - alphaX2) * cos(phiX)) / sqrt(betaX2 * betaX1);  gsl_matrix_set(cordTransfer,1,0,tmp);
+        tmp = sqrt(betaX1 / betaX2) * (cos(phiX) - alphaX2 * sin(phiX));                                         gsl_matrix_set(cordTransfer,1,1,tmp);  
+        tmp = etaXP ;                                                                                            gsl_matrix_set(cordTransfer,1,2,tmp);
+        gsl_matrix_set(cordTransfer,2,2,1);
 
-        yPtemp = latticeInterActionPoint.yTransferMatrix[k][2] * ePositionY[i]
-               + latticeInterActionPoint.yTransferMatrix[k][3] * eMomentumY[i];
+ 
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,cordTransfer,vecX,0.0,vecNX);
 
-        ePositionX[i] = xtemp;
-        ePositionY[i] = ytemp;
-        eMomentumX[i] = xPtemp;
-        eMomentumY[i] = yPtemp;
+        ePositionX[i] = gsl_matrix_get(vecNX,0,0);
+        eMomentumX[i] = gsl_matrix_get(vecNX,1,0);
+        eMomentumZ[i] = gsl_matrix_get(vecNX,2,0);
+
+        // transformation in the y direction:
+        phiY = phiY0 + chromY * eMomentumZ[i];
+        vecX->data[0 * vecX->tda] = ePositionY[i];
+        vecX->data[1 * vecX->tda] = eMomentumY[i];
+        vecX->data[2 * vecX->tda] = eMomentumZ[i];
+
+        gsl_matrix_set_zero(cordTransfer);
+        tmp = sqrt(betaY2 / betaY1) * (cos(phiY) + alphaY1 * sin(phiY));                                         gsl_matrix_set(cordTransfer,0,0,tmp);
+        tmp = sqrt(betaY2 * betaY1) * (                      sin(phiY));                                         gsl_matrix_set(cordTransfer,0,1,tmp);
+        tmp = etaY;                                                                                              gsl_matrix_set(cordTransfer,0,2,tmp);
+
+        tmp = ((-1 - alphaY1 * alphaY2) * sin(phiY) + (alphaY1 - alphaY2) * cos(phiY)) / sqrt(betaY2 * betaY1);  gsl_matrix_set(cordTransfer,1,0,tmp);
+        tmp = sqrt(betaY1 / betaY2) * (cos(phiY) - alphaY2 * sin(phiY));                                         gsl_matrix_set(cordTransfer,1,1,tmp);  
+        tmp = etaYP ;                                                                                            gsl_matrix_set(cordTransfer,1,2,tmp);
+
+        gsl_matrix_set(cordTransfer,2,2,1);
+
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,cordTransfer,vecX,0.0,vecNX);
+
+        ePositionY[i] = gsl_matrix_get(vecNX,0,0);
+        eMomentumY[i] = gsl_matrix_get(vecNX,1,0);
+        eMomentumZ[i] = gsl_matrix_get(vecNX,2,0);
 
         double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2) ; 
         if(lossTemp >1) eSurive[i] = 1;   // loss in transverse
-    }
+    }   
+
+    gsl_matrix_free (cordTransfer);
+    gsl_matrix_free (vecX);
+    gsl_matrix_free (vecNX);
+
+
+    // very initial version of particle tansfer in transverse
+    // for(int i=0;i<macroEleNumPerBunch;i++)
+    // {
+    //     if(eSurive[i]!=0) continue;
+    //     // refers to SY. Lee Eq. 2.67
+
+    //     xtemp  = latticeInterActionPoint.xTransferMatrix[k][0] * ePositionX[i]
+    //            + latticeInterActionPoint.xTransferMatrix[k][1] * eMomentumX[i];
+
+    //     xPtemp = latticeInterActionPoint.xTransferMatrix[k][2] * ePositionX[i]
+    //            + latticeInterActionPoint.xTransferMatrix[k][3] * eMomentumX[i];
+
+    //     ytemp  = latticeInterActionPoint.yTransferMatrix[k][0] * ePositionY[i]
+    //            + latticeInterActionPoint.yTransferMatrix[k][1] * eMomentumY[i];
+
+    //     yPtemp = latticeInterActionPoint.yTransferMatrix[k][2] * ePositionY[i]
+    //            + latticeInterActionPoint.yTransferMatrix[k][3] * eMomentumY[i];
+
+    //     ePositionX[i] = xtemp;
+    //     ePositionY[i] = ytemp;
+    //     eMomentumX[i] = xPtemp;
+    //     eMomentumY[i] = yPtemp;
+
+    //     double lossTemp =pow(ePositionX[i]/latticeInterActionPoint.pipeAperatureX[k],2) + pow(ePositionY[i]/latticeInterActionPoint.pipeAperatureY[k],2) ; 
+    //     if(lossTemp >1) eSurive[i] = 1;   // loss in transverse
+    // }
    
 }
 
@@ -696,7 +802,10 @@ void Bunch::BunchTransferDueToWake()
         eMomentumX[i] += lRWakeForceAver[0];      //rad
         eMomentumY[i] += lRWakeForceAver[1];    
         eMomentumZ[i] += lRWakeForceAver[2];        
+
+        // cout<<lRWakeForceAver[0]<<" "<<lRWakeForceAver[1]<<"    "<<lRWakeForceAver[2]<<endl;
     }
+
 }
 
 
@@ -724,8 +833,8 @@ void Bunch::GetBunchHaissinski(const ReadInputSettings &inputParameter,const Cav
     double sigmaT0        = inputParameter.ringParBasic->sigmaT0 ;
     double sigmaZ0        = sigmaT0 * CLight;   
 
-    int nz                = sigmaT0 * 50 / haissinski->dt;      // +- 50 rms bunch size as the range for haissinksi binsize=1 ps here used as default setting
-                                                                // usually is enougth, double RF and impedance increase bunch at most 10 times: sigmaT0 -> 10 * sigmaT0    
+    int nz                = floor(sigmaT0 * 20 / haissinski->dt);      // +- 20 rms bunch size as the range for haissinksi binsize=1 ps here used as default setting
+                                                                       // usually is enougth, double RF and impedance increase bunch at most 10 times: sigmaT0 -> 10 * sigmaT0    
    
     haissinski->zMax      =   nz * haissinski->dt * CLight;
     haissinski->zMin      =  -haissinski->zMax;    
@@ -740,6 +849,9 @@ void Bunch::GetBunchHaissinski(const ReadInputSettings &inputParameter,const Cav
     haissinski->wakeHamiltonian.resize(haissinski->nz);  
     haissinski->rfHamiltonian.resize(haissinski->nz);
     haissinski->totHamiltonian.resize(haissinski->nz);                      // dimensionless
+    haissinski->vRF.resize(haissinski->nz);
+    haissinski->nus.resize(haissinski->nz);
+    haissinski->actionJ.resize(haissinski->nz); 
 
 	double coef=electronNumPerBunch * 1.0/sqrt(2*PI)/sigmaZ0;
 	double temp=0;		
@@ -830,9 +942,13 @@ vector<double> Bunch::GetProfile(const ReadInputSettings &inputParameter)
         norm += profile[i] * haissinski->dz;
     }
     
+    int electronNumPerBunchTemp;
+    electronNumPerBunchTemp = electronNumPerBunch==0? 1 : electronNumPerBunch;
+    
+
     for(int i=0;i<haissinski->nz;i++)
     {
-        profile[i] =  profile[i] / norm * electronNumPerBunch; 
+        profile[i] =  profile[i] / norm * electronNumPerBunchTemp; 
     }
     /*
     ofstream fout("test.dat");
@@ -888,20 +1004,16 @@ void Bunch::GetRFHamiltonian(const ReadInputSettings &inputParameter,const Cavit
     double electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy; 
     int resHarm;  
 
-    double vb0;
      
-    // the rf voltage and phase are the same as initialized for haissinski.  
+    // the rf voltage and phase from tracking  
     for(int i=0;i<haissinski->nz;i++)
     {
         for(int j=0;j<cavityResonator.resonatorVec.size();j++)
-        {
-            vb0  =  -1 * cavityResonator.resonatorVec[j].resFre * 2 * PI * cavityResonator.resonatorVec[j].resShuntImpRs /
-                         cavityResonator.resonatorVec[j].resQualityQ0 * haissinski->dz * haissinski->bunchProfile[i] * ElectronCharge;     // [Volt]
-            
+        {          
             resHarm = cavityResonator.resonatorVec[j].resHarm;   
-            vTotRF[i] += haissinski->cavAmp[j] * cos( - 2. * PI * ringHarmH * f0 * resHarm * haissinski->bunchPosZ[i] /  ( rBeta * CLight)  + haissinski->cavPhase[j] ) 
-                       + vb0 / 2 ; // [Volt]
-        }  
+            vTotRF[i] += haissinski->cavAmp[j] * cos( - 2. * PI * ringHarmH * f0 * resHarm * haissinski->bunchPosZ[i] /  ( rBeta * CLight)  + haissinski->cavPhase[j] );            
+        }
+        haissinski->vRF[i]  = vTotRF[i] - u0;
     }    
     
     double coeffDelta = f0 / pow(rBeta,2) / electronBeamEnergy;   // 1/[V]/[s];
@@ -912,6 +1024,11 @@ void Bunch::GetRFHamiltonian(const ReadInputSettings &inputParameter,const Cavit
     {              
         haissinski->rfHamiltonian[i] = haissinski->rfHamiltonian[i-1] - ((vTotRF[i] + vTotRF[i-1]) / 2.0 -  u0 ) * coeffDelta 
                                      * (-1) *  2. * PI * ringHarmH * f0 * haissinski->dz / ( rBeta * CLight);                        // [1/s]          
+   
+
+        // haissinski->rfHamiltonian[i] = haissinski->rfHamiltonian[i-1] - (vTotRF[i-1] -  u0 ) * coeffDelta 
+        //                              * (-1) *  2. * PI * ringHarmH * f0 * haissinski->dz / ( rBeta * CLight); 
+    
     }    
     
 }
@@ -1029,36 +1146,41 @@ void Bunch::GetWakeHamiltonianFromRW(const ReadInputSettings &inputParameter, Wa
 }
 
 
-
-void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,int bunchIndex)
+void Bunch::GetParticleLongitudinalPhaseSpace1(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,int bunchIndex)
 {
+    
     tk::spline wakePotenFit, totHamiltonianFit;
     wakePotenFit.set_points(haissinski->bunchPosZ,haissinski->totWakePoten,tk::spline::cspline);           // fitting the wakePoten 1/[m]
     totHamiltonianFit.set_points(haissinski->bunchPosZ,haissinski->totHamiltonian,tk::spline::cspline);    // fitting the totHamilton 1/[m]
 
-
     double zMax = haissinski->averZ + haissinski->rmsZ * 5 + 0.1;
-    double zMin = haissinski->averZ - haissinski->rmsZ * 5 - 0.1;
-    zMax = + 0.075;
-    zMin = - 0.075;
+    double zMin = haissinski->averZ - haissinski->rmsZ * 5 - 0.09;
+    
+    // zMin = haissinski->bunchPosZ[0];
+    // zMax = haissinski->bunchPosZ.back(); 
+
+    // zMax = + 0.075;
+    // zMin = - 0.075;
     
     int nz      = 41;                               // total have 41 partilces at differet initial conditions 
     double dz   = (zMax - zMin) / nz;     
-    
+
+    // nz = haissinski->nz; 
+    // dz = haissinski->dz;
+ 
     double circRing   = inputParameter.ringParBasic->circRing;
     double eta        = inputParameter.ringParBasic->eta;
     double workQz     = inputParameter.ringParBasic->workQz;
     int turnsLongiOscilation = int(1/workQz);
     
-    
     vector<vector<vector<double> > > longiTrajZeta;
     longiTrajZeta.resize(nz);
     vector<double> actionJ(nz,0);
     vector<double> nus(nz,0); 
-    vector<double> totHamilton(nz,0); 
+    vector<double> totHamilton(nz,0);
+
     // print data and calculate the hamilotnion and action J. 
     
-
     string filename=inputParameter.ringRun->TBTBunchLongTraj + to_string(bunchIndex) + ".sdds";
     ofstream fout(filename); 
     fout<<"SDDS1"<<endl;
@@ -1066,7 +1188,7 @@ void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPara
     fout<<"&parameter name=hamilton,    units=1/s           type=float,  &end"<<endl;  // S Y L 3.36
     fout<<"&parameter name=action,      units=m,            type=float,  &end"<<endl;
     fout<<"&parameter name=nus,                             type=float,  &end"<<endl;
-    
+    fout<<"&parameter name=deltaS,      units=m,            type=float,  &end"<<endl;
 
     fout<<"&column name=turns,                              type=float,  &end"<<endl;
     fout<<"&column name=z,              units=m,            type=float,  &end"<<endl;
@@ -1087,16 +1209,20 @@ void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPara
         zeta2 = LeapFrog(inputParameter,cavityResonator,zeta0,wakePotenFit);
         p0 = zeta2[1];     
 
-        for(int k=0;k<10000*turnsLongiOscilation;k++)              
+        for(int k=0;k<100*turnsLongiOscilation;k++)              
         {            
             longiTrajZeta[i].push_back(zeta1);
             zeta2 = LeapFrog(inputParameter,cavityResonator,zeta1,wakePotenFit);                      
-            actionJ[i] +=  abs(zeta2[0] - zeta1[0]) * abs(zeta2[1] + zeta1[1]) / 2  / (2 * PI);            
-            deltaS     +=  abs(zeta2[0] - zeta1[0]) / abs(zeta2[1] + zeta1[1]) * 2  / eta ; 
+
+            // actionJ[i] +=  abs(zeta2[0] - zeta1[0]) *  abs( zeta2[1] )      / (2 * PI);            
+            // deltaS     +=  abs(zeta2[0] - zeta1[0]) /  abs( zeta2[1] )      / eta ;
+
+            actionJ[i] +=  abs(zeta2[0] - zeta1[0]) * abs(zeta2[1] + zeta1[1]) / 2  / (2 * PI);         // m   
+            deltaS     +=  abs(zeta2[0] - zeta1[0]) / abs(zeta2[1] + zeta1[1]) * 2  / eta ;             // m
             
             p1 = zeta2[1]; 
-            zeta1 =zeta2;
-            if(p0 * p1<0)    //ensure the longitudinal phase space only rotate one-trun.
+            zeta1 = zeta2;
+            if(p0 * p1<0)    //ensure the longitudinal phase space only rotate one-trun (360 degree).
             {
                 counter +=1;
                 p0=p1;
@@ -1104,16 +1230,15 @@ void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPara
             if( counter==2 ) break;                         
         }
 
-
         nus[i]     = circRing / deltaS;
         
-
         fout<<"! page number "<<i + 1<<endl;
         fout<<i*dz+zMin<<endl;
         fout<<totHamilton[i]<<endl;
         fout<<actionJ[i]<<endl;
         fout<<nus[i]<<endl;
-        fout<<longiTrajZeta[i].size()<<endl;;
+        fout<<deltaS<<endl;
+        fout<<longiTrajZeta[i].size()<<endl;
 
         for(int k=0;k<longiTrajZeta[i].size();k++)
         {
@@ -1121,9 +1246,165 @@ void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputPara
                 <<setw(15)<<left<<longiTrajZeta[i][k][0]
                 <<setw(15)<<left<<longiTrajZeta[i][k][1]
                 <<endl;
-        }      
+        }
+        haissinski->nus[i]     =  nus[i];
+        haissinski->actionJ[i] =  actionJ[i];      
     }
+
+
+    // get the average and rms longitudinal nus
+    double averNus = 0;
+    double norm=0 ;
+
+    for(int i=0;i<nz;i++)
+    {
+        norm    +=  haissinski->bunchProfile[i] * dz;
+        averNus +=  haissinski->bunchProfile[i] * nus[i] * dz; 
+    }
+    averNus /= norm;
     
+    double rmsNus  = 0;     
+    for(int i=0;i<nz;i++)
+    {
+        rmsNus  +=  haissinski->bunchProfile[i] * pow(nus[i] - averNus,2) * dz ; 
+    }
+    rmsNus = sqrt(rmsNus / norm);
+
+    haissinski->averNus = averNus;
+    haissinski->rmsNus  = rmsNus;
+
+    fout.close();        
+}
+
+
+
+
+void Bunch::GetParticleLongitudinalPhaseSpace(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,int bunchIndex)
+{
+    tk::spline wakePotenFit, totHamiltonianFit;
+    wakePotenFit.set_points(haissinski->bunchPosZ,haissinski->totWakePoten,tk::spline::cspline);           // fitting the wakePoten 1/[m]
+    totHamiltonianFit.set_points(haissinski->bunchPosZ,haissinski->totHamiltonian,tk::spline::cspline);    // fitting the totHamilton 1/[m]
+
+    double zMax = haissinski->averZ + haissinski->rmsZ * 5 + 0.1;
+    double zMin = haissinski->averZ - haissinski->rmsZ * 5 - 0.09;
+    
+    // zMin = haissinski->bunchPosZ[0];
+    // zMax = haissinski->bunchPosZ.back(); 
+
+    // zMax = + 0.075;
+    // zMin = - 0.075;
+    
+    int nz      = 41;                               // total have 41 partilces at differet initial conditions 
+    double dz   = (zMax - zMin) / nz;     
+
+    // nz = haissinski->nz; 
+    // dz = haissinski->dz;
+ 
+    double circRing   = inputParameter.ringParBasic->circRing;
+    double eta        = inputParameter.ringParBasic->eta;
+    double workQz     = inputParameter.ringParBasic->workQz;
+    int turnsLongiOscilation = int(1/workQz);
+    
+    vector<vector<vector<double> > > longiTrajZeta;
+    longiTrajZeta.resize(nz);
+    vector<double> actionJ(nz,0);
+    vector<double> nus(nz,0); 
+    vector<double> totHamilton(nz,0);
+
+    // print data and calculate the hamilotnion and action J. 
+    
+    string filename=inputParameter.ringRun->TBTBunchLongTraj + to_string(bunchIndex) + ".sdds";
+    ofstream fout(filename); 
+    fout<<"SDDS1"<<endl;
+    fout<<"&parameter name=z,           units=m             type=float,  &end"<<endl;
+    fout<<"&parameter name=hamilton,    units=1/s           type=float,  &end"<<endl;  // S Y L 3.36
+    fout<<"&parameter name=action,      units=m,            type=float,  &end"<<endl;
+    fout<<"&parameter name=nus,                             type=float,  &end"<<endl;
+    fout<<"&parameter name=deltaS,      units=m,            type=float,  &end"<<endl;
+
+    fout<<"&column name=turns,                              type=float,  &end"<<endl;
+    fout<<"&column name=z,              units=m,            type=float,  &end"<<endl;
+    fout<<"&column name=delta,          units=rad,          type=float,  &end"<<endl;
+    fout<<"&data mode=ascii, &end"<<endl;
+    
+
+    for(int i=0;i<nz;i++)
+    {
+        vector<double> zeta0={i*dz+zMin, 0};            
+        vector<double> zeta1=zeta0;
+        vector<double> zeta2(2,0);
+        totHamilton[i] = totHamiltonianFit(i*dz+zMin);          //[1/s]
+        double deltaS=0;
+        double p0,p1;
+        int counter=0;
+    
+        zeta2 = LeapFrog(inputParameter,cavityResonator,zeta0,wakePotenFit);
+        p0 = zeta2[1];     
+
+        for(int k=0;k<100*turnsLongiOscilation;k++)              
+        {            
+            longiTrajZeta[i].push_back(zeta1);
+            zeta2 = LeapFrog(inputParameter,cavityResonator,zeta1,wakePotenFit);                      
+
+            // actionJ[i] +=  abs(zeta2[0] - zeta1[0]) *  abs( zeta2[1] )      / (2 * PI);            
+            // deltaS     +=  abs(zeta2[0] - zeta1[0]) /  abs( zeta2[1] )      / eta ;
+
+            actionJ[i] +=  abs(zeta2[0] - zeta1[0]) * abs(zeta2[1] + zeta1[1]) / 2  / (2 * PI);         // m   
+            deltaS     +=  abs(zeta2[0] - zeta1[0]) / abs(zeta2[1] + zeta1[1]) * 2  / eta ;             // m
+            
+            p1 = zeta2[1]; 
+            zeta1 = zeta2;
+            if(p0 * p1<0)    //ensure the longitudinal phase space only rotate one-trun (360 degree).
+            {
+                counter +=1;
+                p0=p1;
+            }
+            if( counter==2 ) break;                         
+        }
+
+        nus[i]     = circRing / deltaS;
+        
+        fout<<"! page number "<<i + 1<<endl;
+        fout<<i*dz+zMin<<endl;
+        fout<<totHamilton[i]<<endl;
+        fout<<actionJ[i]<<endl;
+        fout<<nus[i]<<endl;
+        fout<<deltaS<<endl;
+        fout<<longiTrajZeta[i].size()<<endl;
+
+        for(int k=0;k<longiTrajZeta[i].size();k++)
+        {
+            fout<<setw(15)<<left<<k
+                <<setw(15)<<left<<longiTrajZeta[i][k][0]
+                <<setw(15)<<left<<longiTrajZeta[i][k][1]
+                <<endl;
+        }
+        haissinski->nus[i]     =  nus[i];
+        haissinski->actionJ[i] =  actionJ[i];      
+    }
+
+
+    // get the average and rms longitudinal nus
+    double averNus = 0;
+    double norm=0 ;
+
+    for(int i=0;i<nz;i++)
+    {
+        norm    +=  haissinski->bunchProfile[i] * dz;
+        averNus +=  haissinski->bunchProfile[i] * nus[i] * dz; 
+    }
+    averNus /= norm;
+    
+    double rmsNus  = 0;     
+    for(int i=0;i<nz;i++)
+    {
+        rmsNus  +=  haissinski->bunchProfile[i] * pow(nus[i] - averNus,2) * dz ; 
+    }
+    rmsNus = sqrt(rmsNus / norm);
+
+    haissinski->averNus = averNus;
+    haissinski->rmsNus  = rmsNus;
+
     fout.close();        
 }
 

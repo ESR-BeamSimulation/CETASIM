@@ -262,13 +262,13 @@ void SPBunch::BunchMomentumUpdateDueToRFMode(const ReadInputSettings &inputParam
         eMomentumZ[0] += vb0.real()/ 2.0  / electronBeamEnergy / pow(rBeta,2);
     }
 
-    resonator.vbAccum += vb0;
-
-    // the info cavity, generator and beam induced voltage bunch feels
-    bunchRFModeInfo->induceVolBunchCen[resIndex]   = resonator.vbAccum;
+    // the info cavity, generator and beam induced voltage bunch experience
+    bunchRFModeInfo->induceVolBunchCen[resIndex]   = resonator.vbAccum ;
     bunchRFModeInfo->genVolBunchAver[resIndex]     = genVoltage;               
-    bunchRFModeInfo->cavVolBunchCen[resIndex]      = cavVoltage;
+    bunchRFModeInfo->cavVolBunchCen[resIndex]      = cavVoltage + vb0/2.0;
     bunchRFModeInfo->selfLossVolBunchCen[resIndex] = vb0/2.0;
+
+    resonator.vbAccum += vb0;
 }
 
 

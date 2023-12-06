@@ -539,11 +539,40 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
 
             
         //6 initial bunch-by-bunch FB  para 
+        if(strVec[0]=="fbmode")
+        {
+          ringBBFB->mode = stod(strVec[1]);
+        }
+        if(strVec[0]=="fbnumberofsections")
+        {
+           ringBBFB->nSections=stoi(strVec[1]);
+           ringBBFB->start.resize(ringBBFB->nSections);
+           ringBBFB->end.resize(ringBBFB->nSections);
+        }
 
+        if(strVec[0]=="fbstart")
+        {
+          for(int i=0;i<ringBBFB->nSections;i++)
+          {
+              // cout<<strVec[i]<<"  "<<endl;
+              int start =  stoi(strVec[i+1]);
+              ringBBFB->start[i] = start;  
+          }
+          
+        }
+        if(strVec[0]=="fbend")
+        {
+          for(int i=0;i<ringBBFB->nSections;i++)
+          {
+              int end =  stoi(strVec[i+1]);
+              ringBBFB->end[i] = end;     
+          } 
+          
+        }
         if(strVec[0]=="fbkickstrengthkx")
         {
           ringBBFB->kickStrengthK[0] = stod(strVec[1]);
-        }  
+        }   
         if(strVec[0]=="fbkickstrengthky")
         {
           ringBBFB->kickStrengthK[1] = stod(strVec[1]);
@@ -864,10 +893,26 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
 
     }
   
+    int fberr=0;
+    for(int i=0;i<ringBBFB->end.size();i++)
+    {
+      if(ringBBFB->end[i] < ringBBFB->start[i])  fberr=1;
+    }
+    for(int i=0;i<ringBBFB->end.size()-1;i++)
+    {
+      if(ringBBFB->end[i] > ringBBFB->start[i+1])  fberr=1;
+    }
+
+    if (fberr==1)
+    {
+      cerr<<"setting star and end of feedback is wrong"<<endl;
+      exit(0);
+    }
 
   if (driveMode->driveStart > driveMode->driveStart)
   {
     cerr<<"wrong setting in DRIVEMode, driveMode->driveStart have to be less than driveMode->driveEnd"<<endl;
+    exit(0);
   }
 
 
@@ -883,19 +928,15 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     exit(0);
   } 
 
-
-
-
     // debug -- print all bunch data
-    ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;
-    ringRun->TBTBunchPrintNum = 20;
+    // ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;
+    ringRun->TBTBunchPrintNum = 1;
     ringRun->TBTBunchDisDataBunchIndex.resize(ringRun->TBTBunchPrintNum );
     for(int i=0;i<ringRun->TBTBunchPrintNum;i++)
     {
        ringRun->TBTBunchDisDataBunchIndex[i] = i; 
     }
     
-
 
     if(ringRun->TBTBunchPrintNum > ringFillPatt->totBunchNumber )
     {

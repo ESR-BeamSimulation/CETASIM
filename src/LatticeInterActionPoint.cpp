@@ -79,6 +79,8 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
     xPhaseAdv.resize(numberOfInteraction);
     yPhaseAdv.resize(numberOfInteraction);
     zPhaseAdv.resize(numberOfInteraction);
+    averBetaX.resize(numberOfInteraction);
+    averBetaY.resize(numberOfInteraction);
     
     xTransferMatrix.resize(numberOfInteraction);
     yTransferMatrix.resize(numberOfInteraction);
@@ -799,91 +801,87 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         exit(0);
     }
     
-
-
-    double betaX1;
-    double betaX2;
-    double alphaX1;
-    double alphaX2;
+    // double betaX1;
+    // double betaX2;
+    // double alphaX1;
+    // double alphaX2;
     
-    double betaY1;
-    double betaY2;
-    double alphaY1;
-    double alphaY2;
+    // double betaY1;
+    // double betaY2;
+    // double alphaY1;
+    // double alphaY2;
   
-	double betaZ1;
-    double betaZ2;
-    double alphaZ1;
-    double alphaZ2;
-  
+	// double betaZ1;
+    // double betaZ2;
+    // double alphaZ1;
+    // double alphaZ2;
+   
+    // double phaseAdvanceX;
+    // double phaseAdvanceY;
+    // double phaseAdvanceZ;
     
-    
-    double phaseAdvanceX;
-    double phaseAdvanceY;
-    double phaseAdvanceZ;
-    
-
-    for(int i=0;i<numberOfInteraction;i++)
-    {
+    // for(int i=0;i<numberOfInteraction;i++)
+    // {
 	           
-        alphaX1 = twissAlphaX[i];
-        betaX1  = twissBetaX[i];
-        alphaY1 = twissAlphaY[i];
-        betaY1  = twissBetaY[i];
-        alphaZ1 = twissAlphaZ[i];
-        betaZ1  = twissBetaZ[i];
+    //     alphaX1 = twissAlphaX[i];
+    //     betaX1  = twissBetaX[i];
+    //     alphaY1 = twissAlphaY[i];
+    //     betaY1  = twissBetaY[i];
+    //     alphaZ1 = twissAlphaZ[i];
+    //     betaZ1  = twissBetaZ[i];
 
 
-        if(i<numberOfInteraction-1)
-        {
+    //     if(i<numberOfInteraction-1)
+    //     {
 
-            alphaX2 = twissAlphaX[i+1];
-            betaX2  = twissBetaX[i+1];
-            alphaY2 = twissAlphaY[i+1];
-            betaY2  = twissBetaY[i+1];
-            alphaZ2 = twissAlphaZ[i+1];
-            betaZ2  = twissBetaZ[i+1];
+    //         alphaX2 = twissAlphaX[i+1];
+    //         betaX2  = twissBetaX[i+1];
+    //         alphaY2 = twissAlphaY[i+1];
+    //         betaY2  = twissBetaY[i+1];
+    //         alphaZ2 = twissAlphaZ[i+1];
+    //         betaZ2  = twissBetaZ[i+1];
             
-            phaseAdvanceX =   xPhaseAdv[i+1]  -   xPhaseAdv[i];
-            phaseAdvanceY =   yPhaseAdv[i+1]  -   yPhaseAdv[i]; 
-            phaseAdvanceZ =   zPhaseAdv[i+1]  -   zPhaseAdv[i]; 
+    //         phaseAdvanceX =   xPhaseAdv[i+1]  -   xPhaseAdv[i];
+    //         phaseAdvanceY =   yPhaseAdv[i+1]  -   yPhaseAdv[i]; 
+    //         phaseAdvanceZ =   zPhaseAdv[i+1]  -   zPhaseAdv[i]; 
                
-        }
-        else
-        {
+    //     }
+    //     else
+    //     {
         
-            alphaX2 = twissAlphaX[0];
-            betaX2  = twissBetaX[0];
-            alphaY2 = twissAlphaY[0];
-            betaY2  = twissBetaY[0];
-            alphaZ2 = twissAlphaZ[0];
-            betaZ2  = twissBetaZ[0];
+    //         alphaX2 = twissAlphaX[0];
+    //         betaX2  = twissBetaX[0];
+    //         alphaY2 = twissAlphaY[0];
+    //         betaY2  = twissBetaY[0];
+    //         alphaZ2 = twissAlphaZ[0];
+    //         betaZ2  = twissBetaZ[0];
          
-            phaseAdvanceX =   2*PI*workQx  -   xPhaseAdv[i];
-            phaseAdvanceY =   2*PI*workQy  -   yPhaseAdv[i];
-            phaseAdvanceZ =   2*PI*workQz  -   zPhaseAdv[i];
+    //         phaseAdvanceX =   2*PI*workQx  -   xPhaseAdv[i];
+    //         phaseAdvanceY =   2*PI*workQy  -   yPhaseAdv[i];
+    //         phaseAdvanceZ =   2*PI*workQz  -   zPhaseAdv[i];
               
-        }
+    //     }
 
-                 
+   
+              
                                              
-        xTransferMatrix[i][0]  = sqrt(betaX2 / betaX1) * (cos(phaseAdvanceX) + alphaX1 * sin(phaseAdvanceX));
-        xTransferMatrix[i][1]  = sqrt(betaX2 * betaX1) *  sin(phaseAdvanceX);
-        xTransferMatrix[i][2]  = -(1 + alphaX1 * alphaX2)/sqrt(betaX1 * betaX2) * sin(phaseAdvanceX) 
-                                 +(    alphaX1 - alphaX2)/sqrt(betaX1 * betaX2) * cos(phaseAdvanceX);
-        xTransferMatrix[i][3]  = sqrt(betaX1 / betaX2) * (cos(phaseAdvanceX) - alphaX2 * sin(phaseAdvanceX));
+        // xTransferMatrix[i][0]  = sqrt(betaX2 / betaX1) * (cos(phaseAdvanceX) + alphaX1 * sin(phaseAdvanceX));
+        // xTransferMatrix[i][1]  = sqrt(betaX2 * betaX1) *  sin(phaseAdvanceX);
+        // xTransferMatrix[i][2]  = -(1 + alphaX1 * alphaX2)/sqrt(betaX1 * betaX2) * sin(phaseAdvanceX) 
+        //                          +(    alphaX1 - alphaX2)/sqrt(betaX1 * betaX2) * cos(phaseAdvanceX);
+        // xTransferMatrix[i][3]  = sqrt(betaX1 / betaX2) * (cos(phaseAdvanceX) - alphaX2 * sin(phaseAdvanceX));
 
-        yTransferMatrix[i][0]  = sqrt(betaY2 / betaY1) * (cos(phaseAdvanceY) + alphaY1 * sin(phaseAdvanceY));
-        yTransferMatrix[i][1]  = sqrt(betaY2 * betaY1) * sin(phaseAdvanceY);
-        yTransferMatrix[i][2]  = -(1 + alphaY1 * alphaY2)/sqrt(betaY1 * betaY2) * sin(phaseAdvanceY) 
-                                 +(    alphaY1 - alphaY2)/sqrt(betaY1 * betaY2) * cos(phaseAdvanceY);
-        yTransferMatrix[i][3]  = sqrt(betaY1 / betaY2) * (cos(phaseAdvanceY) - alphaY2 * sin(phaseAdvanceY));
+        // yTransferMatrix[i][0]  = sqrt(betaY2 / betaY1) * (cos(phaseAdvanceY) + alphaY1 * sin(phaseAdvanceY));
+        // yTransferMatrix[i][1]  = sqrt(betaY2 * betaY1) * sin(phaseAdvanceY);
+        // yTransferMatrix[i][2]  = -(1 + alphaY1 * alphaY2)/sqrt(betaY1 * betaY2) * sin(phaseAdvanceY) 
+        //                          +(    alphaY1 - alphaY2)/sqrt(betaY1 * betaY2) * cos(phaseAdvanceY);
+        // yTransferMatrix[i][3]  = sqrt(betaY1 / betaY2) * (cos(phaseAdvanceY) - alphaY2 * sin(phaseAdvanceY));
 			
-        zTransferMatrix[i][0]  = sqrt(betaZ2 / betaZ1) * (cos(phaseAdvanceZ) + alphaZ1 * sin(phaseAdvanceZ));
-        zTransferMatrix[i][1]  = sqrt(betaZ2 * betaZ1) * sin(phaseAdvanceZ);
-        zTransferMatrix[i][2]  = -(1 + alphaZ1 * alphaZ2)/sqrt(betaZ1 * betaZ2) * sin(phaseAdvanceZ) 
-                                 +(    alphaZ1 - alphaZ2)/sqrt(betaZ1 * betaZ2) * cos(phaseAdvanceZ);
-        zTransferMatrix[i][3]  = sqrt(betaZ1 / betaZ2) * (cos(phaseAdvanceZ) - alphaZ2 * sin(phaseAdvanceZ));
+        // zTransferMatrix[i][0]  = sqrt(betaZ2 / betaZ1) * (cos(phaseAdvanceZ) + alphaZ1 * sin(phaseAdvanceZ));
+        // zTransferMatrix[i][1]  = sqrt(betaZ2 * betaZ1) * sin(phaseAdvanceZ);
+        // zTransferMatrix[i][2]  = -(1 + alphaZ1 * alphaZ2)/sqrt(betaZ1 * betaZ2) * sin(phaseAdvanceZ) 
+        //                          +(    alphaZ1 - alphaZ2)/sqrt(betaZ1 * betaZ2) * cos(phaseAdvanceZ);
+        // zTransferMatrix[i][3]  = sqrt(betaZ1 / betaZ2) * (cos(phaseAdvanceZ) - alphaZ2 * sin(phaseAdvanceZ));
         
         // cout<<setw(15)<<left<<zTransferMatrix[i][0]<<setw(15)<<left<<zTransferMatrix[i][1]<<endl;
         // cout<<setw(15)<<left<<zTransferMatrix[i][2]<<setw(15)<<left<<zTransferMatrix[i][3]<<endl;
@@ -895,7 +893,7 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         // cout<< inputParameter.ringBunchPara->rmsEnergySpread<<endl;      
         // getchar();
         
-    }
+    // }
 
   
     for(int k=0; k<numberOfInteraction;k++)
@@ -966,7 +964,7 @@ void LatticeInterActionPoint::IonGenerator(double rmsRx, double rmsRy, double xA
             tempx = dx(gen);
             tempy = dy(gen);
 
-            if( pow( (tempx-xAver)/rmsRx, 2)  + pow( (tempy-yAver)/rmsRy, 2) > 9.E0  ) // ions generated within 3 rms beam size.
+            if( pow( (tempx-xAver)/rmsRx, 2)  + pow( (tempy-yAver)/rmsRy, 2) > 4.E0  ) // ions generated within 3 rms beam size.
             {
                continue;
             }
@@ -1119,7 +1117,6 @@ void LatticeInterActionPoint::IonTransferDueToBunch(int bunchGap,int k, double b
     //     <<" "<<ionLossBoundary<< "  "<< bunchEffectiveSizeXMax<<"   "<<bunchEffectiveSizeYMax<<endl;
 
     GetTotIonCharge();
-
 }
 
 

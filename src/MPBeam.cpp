@@ -107,6 +107,16 @@ void MPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     {
         beamVec[i].InitialMPBunch(inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,inputParameter,i);
+        
+        // if(i==0)
+        // {
+        //     for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+        //     {
+        //         beamVec[i].ePositionZ[j] = 0.005;
+        //     }
+        //     cout<<beamVec[i].macroEleNumPerBunch<<endl;
+        // }
+
         totMacroPartNum =beamVec[i].macroEleNumPerBunch; 
     }
     // partCord = new double(6*totMacroPartNum);
@@ -238,7 +248,7 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
     complex<double> vbAccumAver1 = (0.E0,0.E0);
     complex<double> vbAccumAver2 = (0.E0,0.E0);
     complex<double> vbKickAccum = (0.E0,0.E0);
-    complex<double> vbKickAver[2];
+    complex<double> vbKickAver[resNum];
 
     int nTurns;
     int bunchHarmIndex;
@@ -313,39 +323,11 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
     for(int i=0; i<resNum;i++)
     {
-
-        if (cavityResonator.resonatorVec[i].resType==0) // passive cavity
-        {
-            cavityResonator.resonatorVec[i].resGenVol=complex<double>(0.E0,0.E0);
-        }
-        else                                           // active cavity
-        {
-            // double cavArg = arg(cavityResonator.resonatorVec[i].resCavVolReq);
-            // double cavAbs = (cavityResonator.resonatorVec[i].resCavVolReq.real() - vbKickAver[i].real()) / cos( cavArg );
-            // genAddvbAbs = abs(cavAbs);
-            // cavityResonator.resonatorVec[i].resGenVol = cavAbs * exp(li * cavArg ) - cavityResonator.resonatorVec[i].vbAccum;
-            
-            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - cavityResonator.resonatorVec[i].vbAccum;
-        }
-
-        if(cavityResonator.resonatorVec[i].resCold || cavityResonator.resonatorVec[i].resRfMode==0)   // cavity is cold or ideal cavity
-        {
-            cavityResonator.resonatorVec[i].vbAccum = complex<double>(0.E0,0.E0);
-        }
-        cavityResonator.resonatorVec[i].GetInitialResonatorGenIg();
+        cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - cavityResonator.resonatorVec[i].vbAccum;        
+        cavityResonator.resonatorVec[i].GetInitialResonatorGenIg(inputParameter);
         cavityResonator.resonatorVec[i].GetInitialResonatorPower(inputParameter);
-
-        // set initial cavity voltage, beam indcued volage for each bunch         
-        for(int j=0;j<beamVec.size();j++)
-        {
-            beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // requried voltage.
-            beamVec[j].bunchRFModeInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
-            beamVec[j].bunchRFModeInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
-            beamVec[j].bunchRFModeInfo->selfLossVolBunchCen[i] =    vbKickAver[i];
-        } 
     }
-        
-
+    
     // print out the data to show the cavity voltage buildup process. Generated voltage compansate the Vb0/2 already by amplitude feedback. 
     vb0=(0,0);
     vbAccum=(0,0);
@@ -406,7 +388,7 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
 
         fout<<"! page number "<<i+1<<endl;
         fout<<nTurns*beamVec.size()<<endl;
-
+        cavityResonator.resonatorVec[i].resGenVol = complex<double>(0.E0,0.E0);
 
         for(int n=0;n<nTurns;n++)
         {
@@ -435,11 +417,44 @@ void MPBeam::InitialcavityResonator(ReadInputSettings &inputParameter,CavityReso
                 vbAccum = vbAccum * exp(- deltaL ) * exp (li * cPsi);    // decay and rotate...  [V]-- use the voltage after decay and feed this into tracking.
             }
         }
-
-
     }
 
-    fout.close();       
+    fout.close(); 
+
+    // set the initial cavity parameter for tracking....
+    for(int i=0; i<resNum;i++)
+    {
+        if (cavityResonator.resonatorVec[i].resType==0) // passive cavity
+        {
+            cavityResonator.resonatorVec[i].resGenVol=complex<double>(0.E0,0.E0);
+        }
+        else                                           // active cavity
+        {
+            // double cavArg = arg(cavityResonator.resonatorVec[i].resCavVolReq);
+            // double cavAbs = (cavityResonator.resonatorVec[i].resCavVolReq.real() - vbKickAver[i].real()) / cos( cavArg );
+            // genAddvbAbs = abs(cavAbs);
+            // cavityResonator.resonatorVec[i].resGenVol = cavAbs * exp(li * cavArg ) - cavityResonator.resonatorVec[i].vbAccum;
+            
+            cavityResonator.resonatorVec[i].resGenVol = cavityResonator.resonatorVec[i].resCavVolReq - cavityResonator.resonatorVec[i].vbAccum - vbKickAver[i];
+        }
+
+        if(cavityResonator.resonatorVec[i].resCold || cavityResonator.resonatorVec[i].resRfMode==0)   // cavity is cold or ideal cavity
+        {
+            cavityResonator.resonatorVec[i].vbAccum = complex<double>(0.E0,0.E0);
+        }
+
+        cavityResonator.resonatorVec[i].GetInitialResonatorGenIg(inputParameter);
+        cavityResonator.resonatorVec[i].GetInitialResonatorPower(inputParameter);
+
+        // set initial cavity voltage, beam indcued volage for each bunch         
+        for(int j=0;j<beamVec.size();j++)
+        {
+            beamVec[j].bunchRFModeInfo->cavVolBunchCen[i]    =     cavityResonator.resonatorVec[i].resCavVolReq;     // requried voltage.
+            beamVec[j].bunchRFModeInfo->induceVolBunchCen[i] =     cavityResonator.resonatorVec[i].vbAccum;
+            beamVec[j].bunchRFModeInfo->genVolBunchAver[i]   =     cavityResonator.resonatorVec[i].resGenVol;
+            beamVec[j].bunchRFModeInfo->selfLossVolBunchCen[i] =    vbKickAver[i];
+        } 
+    }      
 }
 
 void MPBeam::GetQuasiWakePoten(const ReadInputSettings &inputParameter,const BoardBandImp &boardBandImp)
@@ -1019,6 +1034,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
            
         if(sRWakeFlag) SRWakeBeamIntaction(inputParameter,sRWakeFunction,latticeInterActionPoint,n);
              
+        MPBeamRMSCal(latticeInterActionPoint, 0);
         if(fIRBunchByBunchFeedbackFlag) FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
 
         if(rampFlag) ramping.RampingPara(inputParameter,latticeInterActionPoint,n);
@@ -2335,7 +2351,7 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
     }
     
 
-    // print out the speciflied bunch distribution....
+    // print out the specified bunch distribution....
     int TBTBunchPrintNum                  = inputParameter.ringRun->TBTBunchPrintNum;
     vector<int> TBTBunchDisDataBunchIndex = inputParameter.ringRun->TBTBunchDisDataBunchIndex;
 
@@ -2350,11 +2366,12 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
             if(nTurns==0)
 	        {
 	            fout1<<"SDDS1"<<endl;
-	            fout1<<"&parameter name=partNum,               type=float,  &end"<<endl;
+	            fout1<<"&parameter name=BunchHarm,             type=float,  &end"<<endl;
+                fout1<<"&parameter name=partNum,               type=float,  &end"<<endl;
 	            fout1<<"&parameter name=AverX,    units=m,     type=float,  &end"<<endl;
 	            fout1<<"&parameter name=AverY,    units=m,     type=float,  &end"<<endl;
 	            fout1<<"&parameter name=AverZ,    units=m,     type=float,  &end"<<endl;
-                fout1<<"&parameter name=AverZAnalytical,    units=m,     type=float,  &end"<<endl;
+                
 
 	            fout1<<"&parameter name=rmsEmitX, units=m*rad, type=float,  &end"<<endl;
 	            fout1<<"&parameter name=rmsEmitY, units=m*rad, type=float,  &end"<<endl;
@@ -2378,11 +2395,11 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 
             fout1<<"! page number "<<nTurns * TBTBunchPrintNum + i +1 <<endl;
 
+            fout1<<beamVec[bunchIndex].bunchHarmNum<<endl;
             fout1<<beamVec[bunchIndex].electronNumPerBunch<<endl;
             fout1<<beamVec[bunchIndex].xAver<<endl;
             fout1<<beamVec[bunchIndex].yAver<<endl;
             fout1<<beamVec[bunchIndex].zAver<<endl;
-            fout1<<beamVec[bunchIndex].zAverAnalytical<<endl;
             fout1<<beamVec[bunchIndex].emittanceX<<endl;
             fout1<<beamVec[bunchIndex].emittanceY<<endl;
             fout1<<beamVec[bunchIndex].emittanceZ<<endl;
@@ -2453,7 +2470,7 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
             
             for(int k=0;k<inputParameter.ringParRf->rfBunchBinNum;k++)
             {
-                fout2<<setw(20)<<left<<beamVec[bunchIndex].posZBins[k]
+                fout2<<setw(20)<<left<<-beamVec[bunchIndex].posZBins[k] + beamVec[bunchIndex].zMaxCurrentTurn
                      <<setw(20)<<left<<beamVec[bunchIndex].densProfVsBin[k]<<endl;
                     //  <<setw(20)<<left<<beamVec[bunchIndex].hamiltonPotenWell[k]
                     //  <<setw(20)<<left<<beamVec[bunchIndex].densProfVsBinAnalytical[k];
@@ -2518,17 +2535,22 @@ void MPBeam::BeamMomtumUpdateDueToRFTest(ReadInputSettings &inputParameter,Latti
     double tRF        = inputParameter.ringParBasic->t0 / ringHarmH; 
     double rBeta      = inputParameter.ringParBasic->rBeta;
     double t0         = inputParameter.ringParBasic->t0;
-    
-    
+    double f0         = inputParameter.ringParBasic->f0;
+
+
+        
     GetTimeDisToNextBunch(inputParameter);
     for (int j=0;j<inputParameter.ringParRf->resNum;j++)
-    {     
+    {   
+         
+        
         double oneTurnTime=0;
         if (cavityResonator.resonatorVec[j].resRfMode ==0) // rfca element ideal cavity 
         {
+           
             for(int i=0;i<beamVec.size();i++)
             {
-                beamVec[i].BunchMomentumUpdateDueToRFCA(inputParameter,cavityResonator.resonatorVec[j]);
+                beamVec[i].BunchMomentumUpdateDueToRFCA(inputParameter,cavityResonator.resonatorVec[j],j);
             }
         }
         else  // rfmode element  -- beam loading in included in the tracking
@@ -2808,7 +2830,8 @@ void MPBeam::SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
         if(nTurns==0)
         {
             fout<<"SDDS1"<<endl;
-            fout<<"&parameter name=totIonCharge, units=e, type=float,  &end"<<endl;            
+            fout<<"&parameter name=totIonCharge, units=e, type=float,  &end"<<endl; 
+            fout<<"&parameter name=tunrs,                 type=long,   &end"<<endl;              
             for(int p=0;p<latticeInterActionPoint.ionAccumuPositionX[k].size();p++)
             {
                 string col= string("parameter name=") + string("numOfMacroIon_") + to_string(p) + string(",  type=long,  &end");   
@@ -2828,6 +2851,7 @@ void MPBeam::SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
 
         fout<<"! page number "<<nTurns * numberOfInteraction + k + 1 <<endl;
         fout<<latticeInterActionPoint.totIonCharge<<endl;
+        fout<<nTurns<<endl;
         for(int p=0;p<latticeInterActionPoint.ionAccumuPositionX[k].size();p++)
         {
             fout<<latticeInterActionPoint.ionAccumuPositionX[k][p].size()<<endl;            
@@ -2858,89 +2882,116 @@ void MPBeam::SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterAction
 
 void MPBeam::FIRBunchByBunchFeedback(const ReadInputSettings &inputParameter,FIRFeedBack &firFeedBack,int nTurns)
 {
-    //y[0] = \sum_0^{N} a_k x[-k]. Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
-    double rBeta = inputParameter.ringParBasic->rBeta;
-    double eta  = firFeedBack.kickerDisp;
-    double etaP = firFeedBack.kickerDispP;
-
-    vector<double> tranAngleKicky;
-    vector<double> tranAngleKickx;
-    vector<double> energyKickU;
-
-    tranAngleKicky.resize(beamVec.size());
-    tranAngleKickx.resize(beamVec.size());
-    energyKickU.resize(beamVec.size());
-
-    int nTaps =  firFeedBack.firCoeffx.size();
-
-    vector<double> posxDataTemp(beamVec.size());
-    vector<double> posyDataTemp(beamVec.size());
-    vector<double> poszDataTemp(beamVec.size());
-
-    for(int i=0;i<beamVec.size();i++)
+    int fbflag = 0;
+    for (int i=0;i<inputParameter.ringBBFB->nSections;i++)
     {
-        posxDataTemp[i] = beamVec[i].xAver;
-        posyDataTemp[i] = beamVec[i].yAver;
-        poszDataTemp[i] = beamVec[i].zAver;
-    }
-
-    firFeedBack.posxData.erase(firFeedBack.posxData.begin());
-    firFeedBack.posyData.erase(firFeedBack.posyData.begin());
-    firFeedBack.poszData.erase(firFeedBack.poszData.begin());
-
-    firFeedBack.posxData.push_back(posxDataTemp);
-    firFeedBack.posyData.push_back(posyDataTemp);
-    firFeedBack.poszData.push_back(poszDataTemp);
-
-
-    for(int i=0;i<beamVec.size();i++)
-    {
-        tranAngleKickx[i] = 0.E0;
-        tranAngleKicky[i] = 0.E0;
-        energyKickU[i]    = 0.E0;
-    }
-
-
-    for(int i=0;i<beamVec.size();i++)
-    {
-        for(int k=0;k<nTaps;k++)
+        if(nTurns>inputParameter.ringBBFB->start[i] && nTurns<inputParameter.ringBBFB->end[i])
         {
-            tranAngleKickx[i] +=  firFeedBack.firCoeffx[nTaps-k-1] * firFeedBack.posxData[k][i];
-            tranAngleKicky[i] +=  firFeedBack.firCoeffy[nTaps-k-1] * firFeedBack.posyData[k][i];
-            energyKickU[i]    +=  firFeedBack.firCoeffz[nTaps-k-1] * firFeedBack.poszData[k][i];
-        }
-
-        tranAngleKickx[i] =  tranAngleKickx[i] *  firFeedBack.gain * firFeedBack.kickStrengthKx;
-        tranAngleKicky[i] =  tranAngleKicky[i] *  firFeedBack.gain * firFeedBack.kickStrengthKy;
-        energyKickU[i]    =  energyKickU[i]    *  firFeedBack.gain * firFeedBack.kickStrengthF;
-
-
-        if(tranAngleKickx[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
-        {
-            tranAngleKickx[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
-        }
-        if(tranAngleKicky[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
-        {
-            tranAngleKicky[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
-        }
-        if(energyKickU[i]     > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
-        {
-            energyKickU[i]    = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+            fbflag = 1;
         }
     }
 
-
-    for(int i=0;i<beamVec.size();i++)
+    if (inputParameter.ringBBFB->mode ==0)   // ideal bunch-by-bunch feedback  
     {
-        for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+        if(fbflag==1)
         {
-            beamVec[i].eMomentumX[j] = beamVec[i].eMomentumX[j] + tranAngleKickx[i];
-            beamVec[i].eMomentumY[j] = beamVec[i].eMomentumY[j] + tranAngleKicky[i];
-            beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i] / pow(rBeta,2);
+            for(int i=0;i<beamVec.size();i++)
+            {
+                for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+                {
+                    beamVec[i].eMomentumX[j] -=  beamVec[i].pxAver; 
+                    beamVec[i].eMomentumY[j] -=  beamVec[i].pyAver;
+                    beamVec[i].eMomentumZ[j] -=  beamVec[i].pzAver;
+                }
+            }
+        }
+    }
+    else  //Ref. Nakamura's paper spring 8 notation here used is the same with Nakamura's paper
+    {
+        //y[0] = \sum_0^{N} a_k x[-k]. 
+        double rBeta = inputParameter.ringParBasic->rBeta;
+        double eta  = firFeedBack.kickerDisp;
+        double etaP = firFeedBack.kickerDispP;
+
+        vector<double> tranAngleKicky;
+        vector<double> tranAngleKickx;
+        vector<double> energyKickU;
+
+        tranAngleKicky.resize(beamVec.size());
+        tranAngleKickx.resize(beamVec.size());
+        energyKickU.resize(beamVec.size());
+
+        int nTaps =  firFeedBack.firCoeffx.size();
+
+        vector<double> posxDataTemp(beamVec.size());
+        vector<double> posyDataTemp(beamVec.size());
+        vector<double> poszDataTemp(beamVec.size());
+
+        for(int i=0;i<beamVec.size();i++)
+        {
+            posxDataTemp[i] = beamVec[i].xAver;
+            posyDataTemp[i] = beamVec[i].yAver;
+            poszDataTemp[i] = beamVec[i].zAver;
         }
 
-    }
+        firFeedBack.posxData.erase(firFeedBack.posxData.begin());
+        firFeedBack.posyData.erase(firFeedBack.posyData.begin());
+        firFeedBack.poszData.erase(firFeedBack.poszData.begin());
 
+        firFeedBack.posxData.push_back(posxDataTemp);
+        firFeedBack.posyData.push_back(posyDataTemp);
+        firFeedBack.poszData.push_back(poszDataTemp);
+
+
+        for(int i=0;i<beamVec.size();i++)
+        {
+            tranAngleKickx[i] = 0.E0;
+            tranAngleKicky[i] = 0.E0;
+            energyKickU[i]    = 0.E0;
+        }
+
+        if(fbflag)
+        {
+            for(int i=0;i<beamVec.size();i++)
+            {
+                for(int k=0;k<nTaps;k++)
+                {
+                    tranAngleKickx[i] +=  firFeedBack.firCoeffx[nTaps-k-1] * firFeedBack.posxData[k][i];
+                    tranAngleKicky[i] +=  firFeedBack.firCoeffy[nTaps-k-1] * firFeedBack.posyData[k][i];
+                    energyKickU[i]    +=  firFeedBack.firCoeffz[nTaps-k-1] * firFeedBack.poszData[k][i];
+                }
+
+                tranAngleKickx[i] =  tranAngleKickx[i] *  firFeedBack.gain * firFeedBack.kickStrengthKx;
+                tranAngleKicky[i] =  tranAngleKicky[i] *  firFeedBack.gain * firFeedBack.kickStrengthKy;
+                energyKickU[i]    =  energyKickU[i]    *  firFeedBack.gain * firFeedBack.kickStrengthF;
+
+
+                if(tranAngleKickx[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
+                {
+                    tranAngleKickx[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+                }
+                if(tranAngleKicky[i]  > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
+                {
+                    tranAngleKicky[i] = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+                }
+                if(energyKickU[i]     > firFeedBack.fIRBunchByBunchFeedbackKickLimit)
+                {
+                    energyKickU[i]    = firFeedBack.fIRBunchByBunchFeedbackKickLimit;
+                }
+            }
+
+
+            for(int i=0;i<beamVec.size();i++)
+            {
+                for(int j=0;j<beamVec[i].macroEleNumPerBunch;j++)
+                {
+                    beamVec[i].eMomentumX[j] = beamVec[i].eMomentumX[j] + tranAngleKickx[i];
+                    beamVec[i].eMomentumY[j] = beamVec[i].eMomentumY[j] + tranAngleKicky[i];
+                    beamVec[i].eMomentumZ[j] = beamVec[i].eMomentumZ[j] + energyKickU[i] / pow(rBeta,2);
+                }
+            }
+        }
+    }
 }
 
 

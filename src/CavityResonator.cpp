@@ -41,6 +41,7 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
     double eta     = inputParameter.ringParBasic->eta;
     double rBeta   = inputParameter.ringParBasic->rBeta;
     double  electronBeamEnergy = inputParameter.ringParBasic->electronBeamEnergy;
+    double u0      = inputParameter.ringParBasic->u0;
     
            
     if(resNum==0) 
@@ -66,8 +67,7 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         resonatorVec[i].resHarm            = inputParameter.ringParRf-> resHarm[i];
         resonatorVec[i].resType            = inputParameter.ringParRf-> resType[i];
         resonatorVec[i].resRfMode          = inputParameter.ringParRf-> rfMode[i];
-        
-        
+             
         resonatorVec[i].resShuntImpRs      = inputParameter.ringParRf-> resShuntImpRs[i];
         resonatorVec[i].resQualityQ0       = inputParameter.ringParRf-> resQualityQ0[i];
         resonatorVec[i].resCouplingBeta    = inputParameter.ringParRf-> resCouplingBeta[i];
@@ -106,10 +106,17 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
         resonatorVec[i].tF                = 2 * resonatorVec[i].resQualityQL / (2 * PI * resonatorVec[i].resFre );  //Eq.(7.25) [s] same notation as P.B. Wilson [s]                         
         resonatorVec[i].resGenVolFB       = complex<double>(0.e0,0.e0);
 
-         
+        resonatorVec[i].resShuntImpRsL    = resonatorVec[i].resShuntImpRs / (1 + resonatorVec[i].resCouplingBeta );
+             
+        // cout<<"DC Robinson's is "<<resonatorVec[i].robinsonDCCurThreshold<<endl;
+        // cout<<resonatorVec[i].resDeTunePsi <<endl;
+
+        // cout<<resonatorVec[i].resHarm<<endl; 
     }
+
+
         
-    double  u0 = inputParameter.ringParBasic->u0;
+    
 
     if(resNum==1)   // single cavity case, the default syn phase setting ensure to compensate the one turn loss
     {                
@@ -125,10 +132,11 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
     }
 
     
-    if ((tempU0-u0)>1.e5)
-        cerr<<"initial settins: \sum resCavVolReq.real() - U0 > 0.1MeV " <<endl;
-    
-
+    if (abs(tempU0-u0)>1.e5)
+    {   
+        cerr<<"initial settings: \sum resCavVolReq.real() - U0 > 0.1MeV " <<endl;
+        cerr<< tempU0<< " - " <<  u0 <<" = " <<tempU0 - u0 <<endl;
+    }
     /*
     // assume that the first cavity is active -- change it into cos covention. 
 
@@ -166,11 +174,11 @@ void CavityResonator::Initial(ReadInputSettings &inputParameter)
 }
 
 
-void CavityResonator::GetIntialGenIg()
+void CavityResonator::GetIntialGenIg(ReadInputSettings &inputParameter)
 {
     for(int i=0;i<resonatorVec.size();i++)
     {
-        resonatorVec[i].GetInitialResonatorGenIg();
+        resonatorVec[i].GetInitialResonatorGenIg(inputParameter);
     }
 }
 
