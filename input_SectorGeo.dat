@@ -1,5 +1,0 @@
-radiusX(m)  radiusY(m)     length(m)      betaX(m)    betaY(m)   number   matSigma[1/m/ohm]
-0.0035       0.0035        10             6.08         6.08         5     2.5e+7                  !superID
-0.0025       0.0025        5              3.14         3.14         4     2.5e+7                  !5mmID
-0.003        0.003         5              3.14         3.14        17     2.5e+7                  !6mmID
-0.01         0.01          2149           2.71         4.25         1     5.9e+7                  !ring               
