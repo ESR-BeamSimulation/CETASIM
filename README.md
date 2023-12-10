@@ -31,8 +31,8 @@ If the user working with the Linux system, supplying the right path (LIBFLGS) in
 
 
 # MoreInfo
-This work is supported by the European Union’s Horizon 2020 research and innovation program under grant agreement No. 871072
-Any problems, please contact the author li.chao@desy.de, supperli.imp@gmail.com.
+This work is supported by the European Union’s Horizon 2020 research and innovation program under grant agreement No. 871072.
+Any problems, please contact the author li.chao@desy.de
 
 
 
