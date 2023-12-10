@@ -5,7 +5,7 @@ CETASIm is an open-source C++ code for beam collective effect simulation in elec
 
 # Copyright Notice
 
-*Copyright (c) 2020 IHEP, Copyright (c) 2021 DESY.
+*Copyright (c) 2020 IHEP, Copyright (c) 2023 DESY.
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License*
 
