@@ -2,6 +2,9 @@
 
 CETASIm is an open-source C++ code for beam collective effect simulation in electron rings. 
 
+# Acknowledgments 
+*This work is supported by the European Union’s Horizon 2020 research and innovation program under grant agreement No. 871072.*
+
 
 # Copyright Notice
 
@@ -29,9 +32,8 @@ If the user working with the Linux system, supplying the right path (LIBFLGS) in
 ./make
 
 
+# Help Info
 
-# MoreInfo
-This work is supported by the European Union’s Horizon 2020 research and innovation program under grant agreement No. 871072.
 Any problems, please contact the author li.chao@desy.de
 
 
