@@ -167,7 +167,13 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         if(strVec[0]=="ringcoupling")
         {
             ringParBasic->couplingfactorXY = stod(strVec[1]);
-        }     
+        }
+
+        if(strVec[0]=="ringtwiss")
+        {
+            ringParBasic->twissInput = strVec[1];
+        }
+           
               
         //----------------------------------------------------------------
          
@@ -956,6 +962,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
       }
     }
     
+    ringIonEffPara->twissInput = ringParBasic->twissInput;
 
 
 

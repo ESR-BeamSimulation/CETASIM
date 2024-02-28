@@ -15,7 +15,7 @@
 #include "WakeFunction.h"
 #include "BoardBandImp.h"
 #include "Ramping.h"
-#include "CUDAFunction.cuh"
+// #include "CUDAFunction.cuh"
 #include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1190,9 +1190,9 @@ void MPBeam::BeamTransferPerTurnR66AndSynRadGPU(const ReadInputSettings &inputPa
     int  oneTurnMatrixParaNum = sizeof(latticeInterActionPoint.latticeParaForOneTurnMap)/sizeof(latticeInterActionPoint.latticeParaForOneTurnMap[0]);
     
     CopyPartCordToGPU(partCord,totalPartiNum);
-    GPU_PartiOneTurnTransferAndSynRad(totalPartiNum,partCord,oneTurnMatrixParaNum,latticeInterActionPoint.latticeParaForOneTurnMap,
-                                                                                  latticeInterActionPoint.latticeSynRadBRH,
-                                                                                  latticeInterActionPoint.latticeSynRadCoff);
+    // GPU_PartiOneTurnTransferAndSynRad(totalPartiNum,partCord,oneTurnMatrixParaNum,latticeInterActionPoint.latticeParaForOneTurnMap,
+                                                                                //   latticeInterActionPoint.latticeSynRadBRH,
+                                                                                //   latticeInterActionPoint.latticeSynRadCoff);
     CopyPartCordFromGPU(partCord);
 
 }

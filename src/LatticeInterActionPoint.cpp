@@ -715,6 +715,7 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
     double xAperture = inputParameter.ringParBasic->pipeAperature[1];
     double yAperture = inputParameter.ringParBasic->pipeAperature[2];
     
+
     ifstream fin(inputParameter.ringIonEffPara->twissInput);
     if (! fin.is_open())
     {

@@ -63,6 +63,7 @@ public:
 
         double emitNat[3];        // x y z
         double dampingPartJ[3];   // x y z
+        string twissInput = "twiss.dat"; 
 
 
     };

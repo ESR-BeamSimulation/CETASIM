@@ -26,10 +26,10 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_histogram.h>
 #include <gsl/gsl_blas.h>
-#include <cuda_runtime.h>
-#include <cufftXt.h>
-#include <cufft.h>
-#include "CUDAFunction.cuh"
+// #include <cuda_runtime.h>
+// #include <cufftXt.h>
+// #include <cufft.h>
+// #include "CUDAFunction.cuh"
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_eigen.h>
 #include <gsl/gsl_complex.h>
@@ -211,36 +211,37 @@ void Bunch::BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterAct
 
 
 
-void Bunch::BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint)
-{
+// void Bunch::BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint)
+// {
     
-    // prepare the data to munted to GPU 
-    int dimPart6 = macroEleNumPerBunch * 6;   
-    double partCord[dimPart6];
-    for(int i=0;i<macroEleNumPerBunch;i++)
-    {
-        partCord[6*i  ] =  ePositionX[i];
-        partCord[6*i+1] =  eMomentumX[i];
-        partCord[6*i+2] =  ePositionY[i];
-        partCord[6*i+3] =  eMomentumY[i];
-        partCord[6*i+4] =  ePositionZ[i];
-        partCord[6*i+5] =  eMomentumZ[i];        
-    }
+//     // prepare the data to munted to GPU 
+//     int dimPart6 = macroEleNumPerBunch * 6;   
+//     double partCord[dimPart6];
+//     for(int i=0;i<macroEleNumPerBunch;i++)
+//     {
+//         partCord[6*i  ] =  ePositionX[i];
+//         partCord[6*i+1] =  eMomentumX[i];
+//         partCord[6*i+2] =  ePositionY[i];
+//         partCord[6*i+3] =  eMomentumY[i];
+//         partCord[6*i+4] =  ePositionZ[i];
+//         partCord[6*i+5] =  eMomentumZ[i];        
+//     }
   
-    int  paraNum = sizeof(latticeInterActionPoint.latticeParaForOneTurnMap)/sizeof(latticeInterActionPoint.latticeParaForOneTurnMap[0]);
-    GPU_PartiOneTurnTransfer(macroEleNumPerBunch,partCord,paraNum,latticeInterActionPoint.latticeParaForOneTurnMap);
+//     int  paraNum = sizeof(latticeInterActionPoint.latticeParaForOneTurnMap)/sizeof(latticeInterActionPoint.latticeParaForOneTurnMap[0]);
+//     GPU_PartiOneTurnTransfer(macroEleNumPerBunch,partCord,paraNum,latticeInterActionPoint.latticeParaForOneTurnMap);
     
-    for(int i=0;i<macroEleNumPerBunch;i++)
-    {
-        ePositionX[i]   = partCord[6*i  ];
-        eMomentumX[i]   = partCord[6*i+1]  ;
-        ePositionY[i]   = partCord[6*i+2]  ;
-        eMomentumY[i]   = partCord[6*i+3]  ;
-        ePositionZ[i]   = partCord[6*i+4]  ;
-        eMomentumZ[i]   = partCord[6*i+5]  ;        
-    }
+//     for(int i=0;i<macroEleNumPerBunch;i++)
+//     {
+//         ePositionX[i]   = partCord[6*i  ];
+//         eMomentumX[i]   = partCord[6*i+1]  ;
+//         ePositionY[i]   = partCord[6*i+2]  ;
+//         eMomentumY[i]   = partCord[6*i+3]  ;
+//         ePositionZ[i]   = partCord[6*i+4]  ;
+//         eMomentumZ[i]   = partCord[6*i+5]  ;        
+//     }
 
-}
+// }
+
 void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
 {
     // get the twiss parameters of from lattice
