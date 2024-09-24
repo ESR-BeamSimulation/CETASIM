@@ -36,6 +36,11 @@
 #include <gsl/gsl_complex_math.h>
 
 
+using namespace std;
+//using std::vector;
+//using std::complex;
+
+
 Bunch::Bunch()
 {
 }
@@ -242,6 +247,10 @@ void Bunch::BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterAct
 
 // }
 
+
+
+
+
 void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
 {
     // get the twiss parameters of from lattice
@@ -259,7 +268,10 @@ void Bunch::BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputPa
     double *alphac = inputParameter.ringParBasic->alphac;
     double *aDTX  = inputParameter.ringParBasic->aDTX;
     double *aDTY  = inputParameter.ringParBasic->aDTY;
-    double *aDTXY = inputParameter.ringParBasic->aDTXY;
+    
+    //double *aDTXY = inputParameter.ringParBasic->aDTXY;
+    
+    double aDTXY[2]; 
     
     double circRing = inputParameter.ringParBasic->circRing;
     double nux = inputParameter.ringParBasic->workQx;
@@ -483,6 +495,148 @@ void Bunch::BunchLongPosTransferOneTurn(const ReadInputSettings &inputParameter)
         ePositionZ[i] -= circRing * (alphac[0] * eMomentumZ[i]  + alphac[1] * pow( eMomentumZ[i] ,2) + alphac[2] * pow( eMomentumZ[i], 3) ) ;
 }
 
+
+
+
+void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k)
+{
+
+	double etax   = latticeInterActionPoint.twissDispX[k];
+    double etaxp  = latticeInterActionPoint.twissDispPX[k];  // \frac{disP}{ds} 
+    double etay   = latticeInterActionPoint.twissDispY[k];
+    double etayp  = latticeInterActionPoint.twissDispPY[k];  // \frac{disP}{ds} 
+	double alphax = latticeInterActionPoint.twissAlphaX[k];
+    double alphay = latticeInterActionPoint.twissAlphaY[k];
+    double betax  = latticeInterActionPoint.twissBetaX[k];
+    double betay  = latticeInterActionPoint.twissBetaY[k];
+    
+    double gammax = (1 + pow(alphax,2))/betax;
+    double gammay = (1 + pow(alphay,2))/betay;
+	
+    double *alphac = inputParameter.ringParBasic->alphac;
+    // dnux/dAx dnux/dAy dnux^2/dAx^2 dnux^2/dAy^2 dnux^2/dAxdAy 
+    // dnuy/dAx dnuy/dAy dnuy^2/dAx^2 dnuy^2/dAy^2 dnuy^2/dAxdAy
+    
+    double *aDTX  = inputParameter.ringParBasic->aDTX;
+    double *aDTY  = inputParameter.ringParBasic->aDTY;
+    
+    double circRing = inputParameter.ringParBasic->circRing;
+    double nux    = inputParameter.ringParBasic->workQx;
+    double nuy 	  = inputParameter.ringParBasic->workQy;
+    double chromx = inputParameter.ringParBasic->chrom[0];
+    double chromy = inputParameter.ringParBasic->chrom[1];
+    double t0     = inputParameter.ringParBasic->t0;
+    double eta    = inputParameter.ringParBasic->eta;
+
+	double phaseAdvX = latticeInterActionPoint.phaseAdvX12[k];
+	double phaseAdvY = latticeInterActionPoint.phaseAdvY12[k];
+
+	double weighX = phaseAdvX / (2 * PI * nux);
+	double weighY = phaseAdvY / (2 * PI * nuy);
+	
+	double x,px,y,py,ampX,ampY,phiX,phiY;
+	
+	gsl_matrix *matRotat = gsl_matrix_alloc (6, 6);
+	gsl_matrix *vecX     = gsl_matrix_alloc (6, 1);
+	gsl_matrix *vecX1    = gsl_matrix_alloc (6, 1);  
+	
+	gsl_matrix *B1H1 = latticeInterActionPoint.symplecticMapB1H1[k].mat2D;
+	gsl_matrix *H2B2 = latticeInterActionPoint.symplecticMapInvH2InvB2[k].mat2D;
+
+	
+	for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        if(eSurive[i]!=0) continue;
+        // elegant ILMATRIX Eq(56), only keeo the first order here. -- notice the unit of \frac{d eta}/{d delta}
+   	
+		x  = ePositionX[i] - etax  * eMomentumZ[i]; // [m] 
+		px = eMomentumX[i] - etaxp * eMomentumZ[i]; // [rad]
+		y  = ePositionY[i] - etay  * eMomentumZ[i]; // [m] 
+		py = eMomentumY[i] - etayp * eMomentumZ[i]; // [rad]
+
+        ampX   = ( pow(x,2) + pow( alphax * x + betax * px,2) ) / betax;  //[m]
+        ampY   = ( pow(y,2) + pow( alphay * y + betay * py,2) ) / betay;  //[m]
+
+        phiX = phaseAdvX + (chromx * eMomentumZ[i] + aDTX[0] * ampX + aDTX[1] * ampY + aDTX[2] * pow(ampX,2)/2 + aDTX[3] * pow(ampY,2)/2 + aDTX[4] * ampX * ampY ) * weighX;
+        phiY = phaseAdvY + (chromy * eMomentumZ[i] + aDTY[0] * ampX + aDTY[1] * ampY + aDTY[2] * pow(ampX,2)/2 + aDTY[3] * pow(ampY,2)/2 + aDTY[4] * ampX * ampY ) * weighY;
+    	
+    	gsl_matrix_set_zero(matRotat);
+    	
+    	gsl_matrix_set(matRotat,0,0, cos(phiX)); gsl_matrix_set(matRotat,0,1, sin(phiX)); gsl_matrix_set(matRotat,1,0, -sin(phiX)); gsl_matrix_set(matRotat,1,1, cos(phiX));
+    	gsl_matrix_set(matRotat,2,2, cos(phiY)); gsl_matrix_set(matRotat,2,3, sin(phiY)); gsl_matrix_set(matRotat,3,2, -sin(phiY)); gsl_matrix_set(matRotat,3,3, cos(phiY));
+    	gsl_matrix_set(matRotat,4,4, 1		  );																					gsl_matrix_set(matRotat,5,5, 		1 );
+    	
+        vecX->data[0 * vecX->tda] = ePositionX[i];
+        vecX->data[1 * vecX->tda] = eMomentumX[i];
+        vecX->data[2 * vecX->tda] = ePositionY[i];
+        vecX->data[3 * vecX->tda] = eMomentumY[i];
+        vecX->data[4 * vecX->tda] = ePositionZ[i]; 
+        vecX->data[5 * vecX->tda] = eMomentumZ[i]; 
+    	
+		
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,vecX,0.0,vecX1);		
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matRotat,vecX1,0.0,vecX);	
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,H2B2,vecX,0.0,vecX1);
+		
+		ePositionX[i] =  gsl_matrix_get(vecX1,0,0);
+		eMomentumX[i] =  gsl_matrix_get(vecX1,1,0);
+		ePositionY[i] =  gsl_matrix_get(vecX1,2,0);
+		eMomentumY[i] =  gsl_matrix_get(vecX1,3,0);
+		ePositionZ[i] =  gsl_matrix_get(vecX1,4,0);
+		eMomentumZ[i] =  gsl_matrix_get(vecX1,5,0);
+	}
+	
+	gsl_matrix_free (matRotat);
+	gsl_matrix_free (vecX);
+	gsl_matrix_free (vecX1);
+	B1H1 = NULL;
+	H2B2 = NULL;	
+}
+
+void Bunch::BunchTransferDuetoSkewQuad(const ReadInputSettings &inputParameter)
+{
+	gsl_matrix *skewQuad  = gsl_matrix_alloc (6, 6);
+	gsl_matrix_set_identity(skewQuad);
+    gsl_matrix_set(skewQuad,1,2,inputParameter.ringParBasic->skewQuadK);
+    gsl_matrix_set(skewQuad,3,0,inputParameter.ringParBasic->skewQuadK);
+   
+    gsl_matrix *vecX     = gsl_matrix_alloc (6, 1);
+    gsl_matrix *vecX1    = gsl_matrix_alloc (6, 1);
+    gsl_matrix_set_zero(vecX);
+    gsl_matrix_set_zero(vecX1);
+    
+    
+	for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        if(eSurive[i]!=0) continue;
+		
+        vecX->data[0 * vecX->tda] = ePositionX[i];
+        vecX->data[1 * vecX->tda] = eMomentumX[i];
+        vecX->data[2 * vecX->tda] = ePositionY[i];
+        vecX->data[3 * vecX->tda] = eMomentumY[i];
+        vecX->data[4 * vecX->tda] = ePositionZ[i]; 
+        vecX->data[5 * vecX->tda] = eMomentumZ[i]; 
+		
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,skewQuad,vecX,0.0,vecX1);	
+		
+		ePositionX[i] =  gsl_matrix_get(vecX1,0,0);
+		eMomentumX[i] =  gsl_matrix_get(vecX1,1,0);
+		ePositionY[i] =  gsl_matrix_get(vecX1,2,0);
+		eMomentumY[i] =  gsl_matrix_get(vecX1,3,0);
+		ePositionZ[i] =  gsl_matrix_get(vecX1,4,0);
+		eMomentumZ[i] =  gsl_matrix_get(vecX1,5,0);
+	}
+	
+	
+	gsl_matrix_free (skewQuad);
+	gsl_matrix_free (vecX);
+	gsl_matrix_free (vecX1);
+
+}
+
+
+
+
 void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
 
@@ -490,7 +644,6 @@ void Bunch::BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,c
     double *alphac = inputParameter.ringParBasic->alphac;
     double nux = inputParameter.ringParBasic->workQx;
     double nuy = inputParameter.ringParBasic->workQy;
-    // can be updated to include chrom effect and the dispersion effect.... (not correct at this moment) 
     
     double betaX1, betaX2, alphaX1, alphaX2, phiX0, etaX, etaXP, chromX;
     double betaY1, betaY2, alphaY1, alphaY2, phiY0, etaY, etaYP, chromY;
@@ -635,10 +788,13 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
     {
         synchRadDampTime[i] = inputParameter.ringParBasic->synchRadDampTime[i];   
     }
+	
+	gsl_matrix *B1H1 = latticeInterActionPoint.symplecticMapB1H1[0].mat2D;
+	gsl_matrix *H1B1 = latticeInterActionPoint.symplecticMapInvH1InvB1[0].mat2D;
 
-    gsl_matrix * cordTransfer     = gsl_matrix_alloc (6, 6);
-    gsl_matrix * invCordTransfer  = gsl_matrix_alloc (6, 6);
-
+	/*
+	gsl_matrix * B1H1  = gsl_matrix_alloc (6, 6);
+    gsl_matrix * H2B2  = gsl_matrix_alloc (6, 6);
     for(int i=0;i<6;i++)
     {
         for(int j=0;j<6;j++)
@@ -647,7 +803,8 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
             gsl_matrix_set(invCordTransfer,i,j,latticeInterActionPoint.latticeSynRadBRH[6*i+j+36]);
         }
     }
-
+	*/
+		
     double lambda[3];
     double coeff[3];
 
@@ -683,8 +840,8 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         vecX->data[3 * vecX->tda] = eMomentumY[i];
         vecX->data[4 * vecX->tda] = ePositionZ[i];
         vecX->data[5 * vecX->tda] = eMomentumZ[i];      
-		// gsl_matrix_mul(cordTransfer,vecX,vecNX);
-        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,cordTransfer,vecX,0.0,vecNX);   
+		
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,vecX,0.0,vecNX);   
               
         vecNX->data[0 * vecNX->tda] *= lambda[0];
         vecNX->data[1 * vecNX->tda] *= lambda[0];
@@ -707,8 +864,8 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         }
 
 		//(2) transfer X to x,  Eq(11)
-        // gsl_matrix_mul(invCordTransfer,vecNX,vecX);
-        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,invCordTransfer,vecNX,0.0,vecX); 
+        
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,H1B1,vecNX,0.0,vecX); 
       
         ePositionX[i] = gsl_matrix_get(vecX,0,0);
         eMomentumX[i] = gsl_matrix_get(vecX,1,0);
@@ -718,36 +875,11 @@ void Bunch::BunchSynRadDamping(const ReadInputSettings &inputParameter,const Lat
         eMomentumZ[i] = gsl_matrix_get(vecX,5,0);
     }
 
- 
-    gsl_matrix_free (cordTransfer);
-    gsl_matrix_free (invCordTransfer);
+    H1B1 = NULL;
+    B1H1 = NULL;
+        
     gsl_matrix_free (vecX);
     gsl_matrix_free (vecNX);
-
-
-    // gsl_matrix * A  = gsl_matrix_alloc (2, 2);
-    // gsl_matrix * B  = gsl_matrix_alloc (2, 1);
-    // gsl_matrix * C  = gsl_matrix_alloc (2, 1);
-
-    // for(int i=0;i<2;i++)
-    // {
-    //     for(int j=0;j<2;j++)
-    //     {
-    //         A->data[i * A->tda+j] = 1;
-    //         cout<<setw(15)<<left<<A->data[i * A->tda+j]<<endl;
-    //     }        
-    //     B->data[i * B->tda+0] = 1.E0;
-    // }
-    // for(int i=0;i<2;i++) cout<<setw(15)<<left<<B->data[i * B->tda]<<endl;
-
-    // gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,2.0,A,B,0.1,C);
-     
-    // for(int i=0;i<2;i++) cout<<setw(15)<<left<<C->data[i * C->tda];
-    // cout<<endl;
-    // getchar();
-    // gsl_matrix_free (A);
-    // gsl_matrix_free (B);
-    // gsl_matrix_free (C);
 
 }
 

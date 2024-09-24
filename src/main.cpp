@@ -52,17 +52,18 @@ int main(int argc,char *argv[])
 
 
    
-
-
-
     struct timeval t0;
     gettimeofday(&t0, NULL); 
 
     ReadInputSettings inputParameter;
+
     inputParameter.ParamRead(argc, argv);
- 
+
+
     LatticeInterActionPoint latticeInterActionPoint;
+    
     latticeInterActionPoint.Initial(inputParameter);
+    
     latticeInterActionPoint.SetLatticeParaForOneTurnMap(inputParameter);
     latticeInterActionPoint.GetTransLinearCouplingCoef(inputParameter);
     latticeInterActionPoint.SetLatticeBRHForSynRad(inputParameter);
@@ -76,8 +77,10 @@ int main(int argc,char *argv[])
     if(inputParameter.ringRun->calSetting==1 && inputParameter.ringBunchPara->macroEleNumPerBunch==1)   // bunch is rigid represneted by only single particle...
     {        
         SPBeam spbeam;
+        
         spbeam.Initial(train,latticeInterActionPoint,inputParameter);
         spbeam.InitialcavityResonator(inputParameter,cavityResonator); 
+       
         spbeam.Run(train,latticeInterActionPoint,inputParameter,cavityResonator);   
     
     }

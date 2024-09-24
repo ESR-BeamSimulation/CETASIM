@@ -17,18 +17,15 @@
 #include <sstream>
 #include <cstring>
 
-
+using namespace std;
 using std::complex;
 using std::vector;
-using namespace std;
+
+
 
 int         numProcess;
 int         myRank;
 double TrackingTime=0.E0;
-
-//double      Omegas;               //sychronous revolution frequency Hz
-//double      T0;                   //evolution period [s]
-//int         Harmonics;     
 
 
 double cpuSecond()
@@ -173,6 +170,12 @@ void gsl_matrix_inv(gsl_matrix *a)
         gsl_matrix_free(inverse);
     }
 }
+
+void GetInvMatrix(vector<vector<double>> &mat)
+{
+		
+}
+
 
 double get_det(gsl_matrix *A)
 {

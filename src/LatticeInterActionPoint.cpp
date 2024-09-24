@@ -17,7 +17,7 @@
 #include <random>
 #include<string>
 #include<iomanip>
-
+#include <gsl/gsl_matrix.h>
 
 
 LatticeInterActionPoint::LatticeInterActionPoint()
@@ -71,6 +71,7 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
     pipeAperatureY.resize(numberOfInteraction);
     
     
+    
     twissDispX .resize(numberOfInteraction);				
     twissDispPX.resize(numberOfInteraction);;          
     twissDispY .resize(numberOfInteraction);;				
@@ -88,7 +89,6 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
     
     transferMatrix.resize(numberOfInteraction);
     
-
     // in current assumption the 6*6 transfer matrix does not includes couling between either two degrees of freedom   
     for(int i=0;i<numberOfInteraction;i++)
     {
@@ -96,9 +96,16 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
         yTransferMatrix[i].resize(4);
         zTransferMatrix[i].resize(4);
     }
-    
     // end
+    
 
+	// set the symplectic tracking map with dispersion, Twiss and rotation matrix
+	symplecticMapB1H1.resize(numberOfInteraction);
+	symplecticMapInvH1InvB1.resize(numberOfInteraction);
+    symplecticMapInvH2InvB2.resize(numberOfInteraction);
+    phaseAdvX12.resize(numberOfInteraction);
+    phaseAdvY12.resize(numberOfInteraction);
+    phaseAdvZ12.resize(numberOfInteraction);
    
     //2.1) ion data at kth interaction point
     temperature      .resize(numberOfInteraction);
@@ -133,6 +140,11 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
     ionAccumuAverY.resize(numberOfInteraction);
     ionAccumuRMSX .resize(numberOfInteraction);
     ionAccumuRMSY .resize(numberOfInteraction); 
+    allIonAccumuRMSX.resize(numberOfInteraction);
+    allIonAccumuRMSY.resize(numberOfInteraction);
+    allIonAccumuAverX.resize(numberOfInteraction);
+    allIonAccumuAverY.resize(numberOfInteraction);
+
     ionAccumuAverVelX.resize(numberOfInteraction); 
     ionAccumuAverVelY.resize(numberOfInteraction); 
 
@@ -166,10 +178,263 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
         ionAccumuAverVelY[i].resize(gasSpec);                                                 
     }
     
-    InitialLattice(inputParameter);   
+    InitialLattice(inputParameter);
+    InitialLatticeIonInfo(inputParameter);
+    InitialLatticeSympMat(inputParameter); 
+}
 
+
+void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParameter)
+{
+
+    double workQx = inputParameter.ringParBasic->workQx;
+    double workQy = inputParameter.ringParBasic->workQy;
+    double workQz = inputParameter.ringParBasic->workQz;
+    double xAperture = inputParameter.ringParBasic->pipeAperature[1];
+    double yAperture = inputParameter.ringParBasic->pipeAperature[2];
+    
+
+    ifstream fin(inputParameter.ringIonEffPara->twissInput);
+    if (! fin.is_open())
+    {
+        cerr<< "Error opening file "<<inputParameter.ringIonEffPara->twissInput<<endl;
+        exit (1);
+    }
+
+    
+    string str;
+    vector<string> strVec;
+    
+    int index = 0;
+    int i=0;
+    while (!fin.eof())
+    {
+        getline(fin,str);
+
+        if(index<=4)
+        {
+            index++;
+            continue;
+        }
+        
+
+        string stringTest;
+        for(int i=0;i<str.size();i++)
+        {
+           stringTest.push_back(' ');		
+        }		
+        if(stringTest == str )  continue;
+                    
+        StringSplit2(str, strVec);
+                
+        twissBetaX[i]  = stod(strVec[1]);           
+        twissAlphaX[i] = stod(strVec[2]);
+        xPhaseAdv[i]   = stod(strVec[3]);
+        twissDispX[i]  = stod(strVec[4]);  
+        twissDispPX[i] = stod(strVec[5]);                    
+        pipeAperatureX[i] = stod(strVec[6]);
+                        
+        twissBetaY[i]  = stod(strVec[7]);            
+        twissAlphaY[i] = stod(strVec[8]);
+        yPhaseAdv[i]   = stod(strVec[9]);
+        twissDispY[i]  = stod(strVec[10]);
+        twissDispPY[i] = stod(strVec[11]);
+        pipeAperatureY[i] = stod(strVec[12]);
+        interactionLength[i] = stod(strVec[13]);
+        vacuumPressure[i] =  stod(strVec[14])* 1.0E-9 * 133.3224;               // Torr to Pascals    
+        temperature[i] = stod(strVec[15]) ;
+ 
+
+        twissBetaZ[i]  = inputParameter.ringParBasic->naturalBunchLength / inputParameter.ringParBasic->sdelta0;   //ref. Zhang Yuan's paper, have to equibrium value.  
+        twissAlphaZ[i] = 0.0;
+        zPhaseAdv[i]   = interactionLength[i] * 2 * PI * workQz;   
+   
+        xAperture>pipeAperatureX[i] ? (pipeAperatureX[i]=pipeAperatureX[i]) : (pipeAperatureX[i]=xAperture);
+        yAperture>pipeAperatureY[i] ? (pipeAperatureY[i]=pipeAperatureY[i]) : (pipeAperatureY[i]=yAperture);
+
+        i++;
+        index++;    	
+    }
+
+    fin.close();
+
+
+    vector<double> intLengthTemp = interactionLength;    
+    for (int i=0; i<interactionLength.size();i++)
+    {
+        if(i != interactionLength.size()-1 )
+        {
+            interactionLength[i] = (intLengthTemp[i+1] - intLengthTemp[i]) * circRing ;        
+        }
+        else
+        {
+            interactionLength[i] = (1.0                - intLengthTemp[i]) * circRing ;  
+        }                    
+    }
+    
+
+    if((i)!=numberOfInteraction)
+    {
+        cerr<<"data of numberofIonBeamInterPoint in input.dat and InterPointParameter.dat files does not match";
+        exit(0);
+    }     
+}
+
+
+void LatticeInterActionPoint::InitialLatticeIonInfo(const ReadInputSettings &inputParameter)
+{
+	 for(int k=0; k<numberOfInteraction;k++)
+		{
+		    for(int j=0;j<gasSpec;j++)
+		    {        
+		        macroIonNumber[k][j]=inputParameter.ringIonEffPara->macroIonNumberGeneratedPerIP;          // at each interaction point, macroIonNumber[k] macroIon are generated 
+			}
+		}
+
+		for(int k=0;k<numberOfInteraction;k++)
+		{
+		    for(int j=0;j<gasSpec;j++)
+		    {
+		        ionPositionX[k][j].resize(macroIonNumber[k][j]);
+		        ionPositionY[k][j].resize(macroIonNumber[k][j]);
+		        ionVelocityX[k][j].resize(macroIonNumber[k][j]);
+		        ionVelocityY[k][j].resize(macroIonNumber[k][j]);
+		    }
+		}       
+
+
+		for(int k=0;k<numberOfInteraction;k++)     
+		{
+		    for (int j=0;j<gasSpec;j++)
+		    {
+		        vacuumPressureEachGas[k][j] = gasPercent[j] * vacuumPressure[k];  // related to the gasPercent  settings.
+		        //cout<< gasPercent[j] <<"    "<<vacuumPressureEachGas[k][j]<<endl;
+		    }
+		}   
 
 }
+
+void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inputParameter)
+{
+	double alphaX1,betaX1,phiX1,etaX1,etaXp1,alphaY1,betaY1,phiY1,etaY1,etaYp1,betaZ1; 
+	double alphaX2,betaX2,phiX2,etaX2,etaXp2,alphaY2,betaY2,phiY2,etaY2,etaYp2,betaZ2;
+ 	double phiX21,phiY21,phiZ21;
+ 		
+ 	for(int i=0;i<numberOfInteraction;i++)
+ 	{
+ 		symplecticMapB1H1[i].Mat2DCreate(6,6);
+ 		symplecticMapInvH1InvB1[i].Mat2DCreate(6,6);
+ 		symplecticMapInvH2InvB2[i].Mat2DCreate(6,6);	
+ 	}
+ 	
+	for(int i=0;i<numberOfInteraction;i++)
+	{           
+		alphaX1 = twissAlphaX[i];
+		betaX1  = twissBetaX[i];
+		alphaY1 = twissAlphaY[i];
+		betaY1  = twissBetaY[i];
+		phiX1   = xPhaseAdv[i];
+		phiY1   = yPhaseAdv[i];
+		etaX1   = twissDispX[i];
+		etaXp1  = twissDispPX[i];
+		etaY1   = twissDispY[i];
+		etaYp1  = twissDispPY[i];
+		betaZ1  = twissBetaZ[i];
+		
+
+		if(i<numberOfInteraction-1)
+		{
+			alphaX2 = twissAlphaX[i+1];
+			betaX2  = twissBetaX[i+1];
+			alphaY2 = twissAlphaY[i+1];
+			betaY2  = twissBetaY[i+1];
+			phiX2 	= xPhaseAdv[i+1]; 			
+			phiY2   = yPhaseAdv[i+1];
+			etaX2   = twissDispX[i+1];
+			etaXp2  = twissDispPX[i+1];
+			etaY2   = twissDispY[i+1];
+			etaYp2  = twissDispPY[i+1];
+			betaZ2  = twissBetaZ[i+1];           
+		}
+		else
+		{
+			alphaX2 = twissAlphaX[0];
+			betaX2  = twissBetaX[0];
+			alphaY2 = twissAlphaY[0];
+			betaY2  = twissBetaY[0];
+			phiX2   = 2 * PI * inputParameter.ringParBasic->workQx; 			
+			phiY2   = 2 * PI * inputParameter.ringParBasic->workQy;
+			etaX2   = twissDispX[0];
+			etaXp2  = twissDispPX[0];
+			etaY2   = twissDispY[0];
+			etaYp2  = twissDispPY[0];
+			betaZ2  = twissBetaZ[0];           
+		}
+				
+		phaseAdvX12[i] = phiX2 - phiX1;
+		phaseAdvY12[i] = phiY2 - phiY1;
+		
+		gsl_matrix *matH1  	  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_identity(matH1);
+		gsl_matrix *matInvH1  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_identity(matInvH1);
+		gsl_matrix *matInvH2  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_identity(matInvH2);
+		gsl_matrix *matB1  	  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_zero(matB1);
+		gsl_matrix *matInvB1  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_zero(matInvB1);
+		gsl_matrix *matInvB2  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_zero(matInvB2);
+
+		
+		// set H1 and InvH1 and InvH2		
+		// set H1
+		gsl_matrix_set(matH1,0,5,-etaX1);   gsl_matrix_set(matH1,1,5,-etaXp1); gsl_matrix_set(matH1,2,5,-etaY1);   gsl_matrix_set(matH1,3,5,-etaYp1); 	
+		gsl_matrix_set(matH1,4,0, etaXp1);  gsl_matrix_set(matH1,4,1,-etaX1);  gsl_matrix_set(matH1,4,2, etaYp1);  gsl_matrix_set(matH1,4,3,-etaY1); 	
+		
+		// set InvH1 		
+		gsl_matrix_set(matInvH1,0,5, etaX1);   gsl_matrix_set(matInvH1,1,5, etaXp1); gsl_matrix_set(matInvH1,2,5, etaY1);    gsl_matrix_set(matInvH1,3,5, etaYp1); 	
+		gsl_matrix_set(matInvH1,4,0,-etaXp1);  gsl_matrix_set(matInvH1,4,1, etaX1);  gsl_matrix_set(matInvH1,4,2, -etaYp1);  gsl_matrix_set(matInvH1,4,3, etaY1); 
+		
+		// set InvH2 	
+		gsl_matrix_set(matInvH2,0,5, etaX2);   gsl_matrix_set(matInvH2,1,5, etaXp2); gsl_matrix_set(matInvH2,2,5, etaY2);    gsl_matrix_set(matInvH2,3,5, etaYp2); 	
+		gsl_matrix_set(matInvH2,4,0,-etaXp2);  gsl_matrix_set(matInvH2,4,1, etaX2);  gsl_matrix_set(matInvH2,4,2,-etaYp2);   gsl_matrix_set(matInvH2,4,3, etaY2); 	
+		
+		
+		// set B1 and InvB1 and InvB2
+		// set B1
+		gsl_matrix_set(matB1,0,0, 1 / sqrt(betaX1)); gsl_matrix_set(matB1,1,0,alphaX1 / sqrt(betaX1) );  gsl_matrix_set(matB1,1,1,sqrt(betaX1));
+		gsl_matrix_set(matB1,2,2, 1 / sqrt(betaY1)); gsl_matrix_set(matB1,3,2,alphaY1 / sqrt(betaY1) );  gsl_matrix_set(matB1,3,3,sqrt(betaY1));
+		gsl_matrix_set(matB1,4,4, 1 / sqrt(betaZ1)); 													 gsl_matrix_set(matB1,5,5,sqrt(betaZ1));
+		
+		// set invB1
+		gsl_matrix_set(matInvB1,0,0, sqrt(betaX1)); gsl_matrix_set(matInvB1,1,0,- alphaX1 / sqrt(betaX1)); gsl_matrix_set(matInvB1,1,1,1 / sqrt(betaX1));
+		gsl_matrix_set(matInvB1,2,2, sqrt(betaY1)); gsl_matrix_set(matInvB1,3,2,- alphaY1 / sqrt(betaY1)); gsl_matrix_set(matInvB1,3,3,1 / sqrt(betaY1));
+		gsl_matrix_set(matInvB1,4,4, sqrt(betaZ1)); 													   gsl_matrix_set(matInvB1,5,5,1 / sqrt(betaZ1));		
+		
+		// set invB2
+		gsl_matrix_set(matInvB2,0,0, sqrt(betaX2)); gsl_matrix_set(matInvB2,1,0,- alphaX2 / sqrt(betaX2)); gsl_matrix_set(matInvB2,1,1,1 / sqrt(betaX2));
+		gsl_matrix_set(matInvB2,2,2, sqrt(betaY2)); gsl_matrix_set(matInvB2,3,2,- alphaY2 / sqrt(betaY2)); gsl_matrix_set(matInvB2,3,3,1 / sqrt(betaY2));
+		gsl_matrix_set(matInvB2,4,4, sqrt(betaZ2)); 													   gsl_matrix_set(matInvB2,5,5,1 / sqrt(betaZ2));	
+
+		
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matB1,   matH1,   0.0,symplecticMapB1H1[i].mat2D);
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matInvH1,matInvB1,0.0,symplecticMapInvH1InvB1[i].mat2D);
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matInvH2,matInvB2,0.0,symplecticMapInvH2InvB2[i].mat2D);
+		
+		
+
+      	//PrintGSLMatrix(symplecticMapB1H1[i].mat2D);
+      	//PrintGSLMatrix(symplecticMapInvH2InvB2[i].mat2D);
+          	
+      	gsl_matrix_free(matH1);
+      	gsl_matrix_free(matInvH2);
+      	gsl_matrix_free(matB1);
+      	gsl_matrix_free(matInvB2);
+      	gsl_matrix_free(matInvH1);
+      	gsl_matrix_free(matInvB1);
+      	    			                   
+     }   
+		
+}
+
+
+
 
 void LatticeInterActionPoint::SetLatticeBRHForSynRad(const ReadInputSettings &inputParameter)
 {
@@ -698,7 +963,7 @@ void LatticeInterActionPoint::SetLatticeParaForOneTurnMap(const ReadInputSetting
     latticeParaForOneTurnMap[18]= inputParameter.ringParBasic->alphac[0]; latticeParaForOneTurnMap[19]= inputParameter.ringParBasic->alphac[1]; 
     latticeParaForOneTurnMap[20]= inputParameter.ringParBasic->alphac[2];
     latticeParaForOneTurnMap[21]= inputParameter.ringParBasic->circRing;
-  
+ 
     // for(int i=0;i<22;i++)
     //     cout<<i<<"  "<<latticeParaForOneTurnMap[i]<<endl;
 
@@ -706,229 +971,6 @@ void LatticeInterActionPoint::SetLatticeParaForOneTurnMap(const ReadInputSetting
 }
 
 
-void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParameter)
-{
-
-    double workQx = inputParameter.ringParBasic->workQx;
-    double workQy = inputParameter.ringParBasic->workQy;
-    double workQz = inputParameter.ringParBasic->workQz;
-    double xAperture = inputParameter.ringParBasic->pipeAperature[1];
-    double yAperture = inputParameter.ringParBasic->pipeAperature[2];
-    
-
-    ifstream fin(inputParameter.ringIonEffPara->twissInput);
-    if (! fin.is_open())
-    {
-        cerr<< "Error opening file "<<inputParameter.ringIonEffPara->twissInput<<endl;
-        exit (1);
-    }
-
-    
-    string str;
-    vector<string> strVec;
-    
-    int index = 0;
-    int i=0;
-    while (!fin.eof())
-    {
-        getline(fin,str);
-
-        if(index<=4)
-        {
-            index++;
-            continue;
-        }
-        
-
-        string stringTest;
-        for(int i=0;i<str.size();i++)
-        {
-           stringTest.push_back(' ');		
-        }		
-        if(stringTest == str )  continue;
-                    
-        StringSplit2(str, strVec);
-                
-        twissBetaX[i]  = stod(strVec[1]);           
-        twissAlphaX[i] = stod(strVec[2]);
-        xPhaseAdv[i]   = stod(strVec[3]);
-        twissDispX[i]  = stod(strVec[4]);  
-        twissDispPX[i] = stod(strVec[5]);                    
-        pipeAperatureX[i] = stod(strVec[6]);
-                        
-        twissBetaY[i]  = stod(strVec[7]);            
-        twissAlphaY[i] = stod(strVec[8]);
-        yPhaseAdv[i]   = stod(strVec[9]);
-        twissDispY[i]  = stod(strVec[10]);
-        twissDispPY[i] = stod(strVec[11]);
-        pipeAperatureY[i] = stod(strVec[12]);
-        interactionLength[i] = stod(strVec[13]);
-        vacuumPressure[i] =  stod(strVec[14])* 1.0E-9 * 133.3224;               // Torr to Pascals    
-        temperature[i] = stod(strVec[15]) ;
- 
-
-        twissBetaZ[i]  = inputParameter.ringParBasic->naturalBunchLength / inputParameter.ringParBasic->sdelta0;   //ref. Zhang Yuan's paper, have to equibrium value.  
-        twissAlphaZ[i] = 0.0;
-        zPhaseAdv[i]   = interactionLength[i] * 2 * PI * workQz;   
-   
-        xAperture>pipeAperatureX[i] ? (pipeAperatureX[i]=pipeAperatureX[i]) : (pipeAperatureX[i]=xAperture);
-        yAperture>pipeAperatureY[i] ? (pipeAperatureY[i]=pipeAperatureY[i]) : (pipeAperatureY[i]=yAperture);
-
-        i++;
-        index++;
-    }
-
-
-    fin.close();
-
-
-    vector<double> intLengthTemp=interactionLength;    
-    for (int i=0; i<interactionLength.size();i++)
-    {
-        if(i != interactionLength.size()-1 )
-        {
-            interactionLength[i] = (intLengthTemp[i+1] - intLengthTemp[i]) * circRing ;        
-        }
-        else
-        {
-            interactionLength[i] = (1.0                - intLengthTemp[i]) * circRing ;  
-        }                      
-    }
- 
-    
-    if((i)!=numberOfInteraction)
-    {
-        cerr<<"data of numberofIonBeamInterPoint in input.dat and InterPointParameter.dat files does not match";
-        exit(0);
-    }
-    
-    // double betaX1;
-    // double betaX2;
-    // double alphaX1;
-    // double alphaX2;
-    
-    // double betaY1;
-    // double betaY2;
-    // double alphaY1;
-    // double alphaY2;
-  
-	// double betaZ1;
-    // double betaZ2;
-    // double alphaZ1;
-    // double alphaZ2;
-   
-    // double phaseAdvanceX;
-    // double phaseAdvanceY;
-    // double phaseAdvanceZ;
-    
-    // for(int i=0;i<numberOfInteraction;i++)
-    // {
-	           
-    //     alphaX1 = twissAlphaX[i];
-    //     betaX1  = twissBetaX[i];
-    //     alphaY1 = twissAlphaY[i];
-    //     betaY1  = twissBetaY[i];
-    //     alphaZ1 = twissAlphaZ[i];
-    //     betaZ1  = twissBetaZ[i];
-
-
-    //     if(i<numberOfInteraction-1)
-    //     {
-
-    //         alphaX2 = twissAlphaX[i+1];
-    //         betaX2  = twissBetaX[i+1];
-    //         alphaY2 = twissAlphaY[i+1];
-    //         betaY2  = twissBetaY[i+1];
-    //         alphaZ2 = twissAlphaZ[i+1];
-    //         betaZ2  = twissBetaZ[i+1];
-            
-    //         phaseAdvanceX =   xPhaseAdv[i+1]  -   xPhaseAdv[i];
-    //         phaseAdvanceY =   yPhaseAdv[i+1]  -   yPhaseAdv[i]; 
-    //         phaseAdvanceZ =   zPhaseAdv[i+1]  -   zPhaseAdv[i]; 
-               
-    //     }
-    //     else
-    //     {
-        
-    //         alphaX2 = twissAlphaX[0];
-    //         betaX2  = twissBetaX[0];
-    //         alphaY2 = twissAlphaY[0];
-    //         betaY2  = twissBetaY[0];
-    //         alphaZ2 = twissAlphaZ[0];
-    //         betaZ2  = twissBetaZ[0];
-         
-    //         phaseAdvanceX =   2*PI*workQx  -   xPhaseAdv[i];
-    //         phaseAdvanceY =   2*PI*workQy  -   yPhaseAdv[i];
-    //         phaseAdvanceZ =   2*PI*workQz  -   zPhaseAdv[i];
-              
-    //     }
-
-   
-              
-                                             
-        // xTransferMatrix[i][0]  = sqrt(betaX2 / betaX1) * (cos(phaseAdvanceX) + alphaX1 * sin(phaseAdvanceX));
-        // xTransferMatrix[i][1]  = sqrt(betaX2 * betaX1) *  sin(phaseAdvanceX);
-        // xTransferMatrix[i][2]  = -(1 + alphaX1 * alphaX2)/sqrt(betaX1 * betaX2) * sin(phaseAdvanceX) 
-        //                          +(    alphaX1 - alphaX2)/sqrt(betaX1 * betaX2) * cos(phaseAdvanceX);
-        // xTransferMatrix[i][3]  = sqrt(betaX1 / betaX2) * (cos(phaseAdvanceX) - alphaX2 * sin(phaseAdvanceX));
-
-        // yTransferMatrix[i][0]  = sqrt(betaY2 / betaY1) * (cos(phaseAdvanceY) + alphaY1 * sin(phaseAdvanceY));
-        // yTransferMatrix[i][1]  = sqrt(betaY2 * betaY1) * sin(phaseAdvanceY);
-        // yTransferMatrix[i][2]  = -(1 + alphaY1 * alphaY2)/sqrt(betaY1 * betaY2) * sin(phaseAdvanceY) 
-        //                          +(    alphaY1 - alphaY2)/sqrt(betaY1 * betaY2) * cos(phaseAdvanceY);
-        // yTransferMatrix[i][3]  = sqrt(betaY1 / betaY2) * (cos(phaseAdvanceY) - alphaY2 * sin(phaseAdvanceY));
-			
-        // zTransferMatrix[i][0]  = sqrt(betaZ2 / betaZ1) * (cos(phaseAdvanceZ) + alphaZ1 * sin(phaseAdvanceZ));
-        // zTransferMatrix[i][1]  = sqrt(betaZ2 * betaZ1) * sin(phaseAdvanceZ);
-        // zTransferMatrix[i][2]  = -(1 + alphaZ1 * alphaZ2)/sqrt(betaZ1 * betaZ2) * sin(phaseAdvanceZ) 
-        //                          +(    alphaZ1 - alphaZ2)/sqrt(betaZ1 * betaZ2) * cos(phaseAdvanceZ);
-        // zTransferMatrix[i][3]  = sqrt(betaZ1 / betaZ2) * (cos(phaseAdvanceZ) - alphaZ2 * sin(phaseAdvanceZ));
-        
-        // cout<<setw(15)<<left<<zTransferMatrix[i][0]<<setw(15)<<left<<zTransferMatrix[i][1]<<endl;
-        // cout<<setw(15)<<left<<zTransferMatrix[i][2]<<setw(15)<<left<<zTransferMatrix[i][3]<<endl;
-        // cout<<setw(15)<<left<<yTransferMatrix[i][0]<<setw(15)<<left<<yTransferMatrix[i][1]<<endl;
-        // cout<<setw(15)<<left<<yTransferMatrix[i][2]<<setw(15)<<left<<yTransferMatrix[i][3]<<endl;
-        // cout<<setw(15)<<left<<xTransferMatrix[i][0]<<setw(15)<<left<<xTransferMatrix[i][1]<<endl;
-        // cout<<setw(15)<<left<<xTransferMatrix[i][2]<<setw(15)<<left<<xTransferMatrix[i][3]<<endl;        
-        // cout<< inputParameter.ringBunchPara->rmsBunchLength<<endl;
-        // cout<< inputParameter.ringBunchPara->rmsEnergySpread<<endl;      
-        // getchar();
-        
-    // }
-
-  
-    for(int k=0; k<numberOfInteraction;k++)
-    {
-        for(int j=0;j<gasSpec;j++)
-        {        
-            macroIonNumber[k][j]=inputParameter.ringIonEffPara->macroIonNumberGeneratedPerIP;          // at each interaction point, macroIonNumber[k] macroIon are generated 
-	    }
-	}
-
-    for(int k=0;k<numberOfInteraction;k++)
-    {
-        for(int j=0;j<gasSpec;j++)
-        {
-            ionPositionX[k][j].resize(macroIonNumber[k][j]);
-            ionPositionY[k][j].resize(macroIonNumber[k][j]);
-            ionVelocityX[k][j].resize(macroIonNumber[k][j]);
-            ionVelocityY[k][j].resize(macroIonNumber[k][j]);
-        }
-    }       
-
-
-    for(int k=0;k<numberOfInteraction;k++)     
-    {
-        for (int j=0;j<gasSpec;j++)
-        {
-            vacuumPressureEachGas[k][j] = gasPercent[j] * vacuumPressure[k];  // related to the gasPercent  settings.
-            //cout<< gasPercent[j] <<"    "<<vacuumPressureEachGas[k][j]<<endl;
-        }
-    }   
-
-
-    
-}
 
 
 
@@ -937,7 +979,7 @@ void LatticeInterActionPoint::GetIonNumberPerInterAction(double electronNumPerBu
 
     for(int p=0;p<gasSpec;p++)
     {
-        ionLineDensity[k][p] = corssSectionEI[p] * vacuumPressureEachGas[k][p] / temperature[k] /Boltzmann * electronNumPerBunch;
+        ionLineDensity[k][p] = corssSectionEI[p] * vacuumPressureEachGas[k][p] / temperature[k] /Boltzmann * electronNumPerBunch;        
         ionNumber[k][p]      = ionLineDensity[k][p] * interactionLength[k];
     }
 }
@@ -1014,9 +1056,61 @@ void LatticeInterActionPoint::IonsUpdate(int k)
 
 void LatticeInterActionPoint::IonRMSCal(int k)
 {
+    
     for(int p=0; p<gasSpec;p++)
     {
         IonRMSCal(k, p);
+    }
+
+    int totIonNum = 0;
+    double xSum = 0.E0;
+    double ySum = 0.E0;
+
+    for(int p=0; p<gasSpec;p++)
+    {
+        totIonNum += ionAccumuNumber[k][p] ;
+        
+        for(int i=0;i<ionAccumuNumber[k][p];i++)
+        {
+            xSum += ionAccumuPositionX[k][p][i];
+            ySum += ionAccumuPositionY[k][p][i];
+        }
+    }
+
+    if(totIonNum!=0)
+    {
+        allIonAccumuAverX[k] = xSum / totIonNum;
+        allIonAccumuAverY[k] = ySum / totIonNum;
+    }
+    else
+    {
+        allIonAccumuAverX[k] = 0 ;
+        allIonAccumuAverY[k] = 0 ;
+    }
+
+    double x2Sum = 0;
+    double y2Sum = 0;
+
+    for(int p=0; p<gasSpec;p++)
+    {
+        totIonNum += ionAccumuNumber[k][p] ;
+        
+        for(int i=0;i<ionAccumuNumber[k][p];i++)
+        {
+            x2Sum += pow(ionAccumuPositionX[k][p][i] - allIonAccumuAverX[k],2) ;
+            y2Sum += pow(ionAccumuPositionY[k][p][i] - allIonAccumuAverY[k],2) ;
+        }
+    }
+
+    if(totIonNum!=0)
+    {
+        allIonAccumuRMSX[k]  = sqrt( x2Sum / totIonNum ) ;
+        allIonAccumuRMSY[k]  = sqrt( y2Sum / totIonNum ) ;
+    }
+    else
+    {
+        allIonAccumuRMSX[k] = 0;
+        allIonAccumuRMSY[k] = 0;
     }
 }
 

@@ -134,18 +134,17 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
 
         if(strVec[0]=="ringadtx")
         {
-          ringParBasic->aDTX[0] = stod(strVec[1]);
-          ringParBasic->aDTX[1] = stod(strVec[2]);
+          for(int i=0;i<5;i++)
+          {
+          	ringParBasic->aDTX[i] = stod(strVec[i+1]);
+          }
         }
         if(strVec[0]=="ringadty")
         {
-          ringParBasic->aDTY[0] = stod(strVec[1]);
-          ringParBasic->aDTY[1] = stod(strVec[2]);
-        }
-        if(strVec[0]=="ringadtxy")
-        {
-          ringParBasic->aDTXY[0] = stod(strVec[1]);
-          ringParBasic->aDTXY[1] = stod(strVec[2]);
+          for(int i=0;i<5;i++)
+          {
+          	ringParBasic->aDTY[i] = stod(strVec[i+1]);
+          }
         }
 
         if(strVec[0]=="ringu0")
@@ -936,7 +935,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
 
     // debug -- print all bunch data
     // ringRun->TBTBunchPrintNum = ringFillPatt->totBunchNumber;
-    ringRun->TBTBunchPrintNum = 1;
+    // ringRun->TBTBunchPrintNum = 1;
     ringRun->TBTBunchDisDataBunchIndex.resize(ringRun->TBTBunchPrintNum );
     for(int i=0;i<ringRun->TBTBunchPrintNum;i++)
     {
@@ -962,9 +961,8 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
       }
     }
     
+    
     ringIonEffPara->twissInput = ringParBasic->twissInput;
-
-
 
     //1) data from ringPaBbasic
     double  circRing           = ringParBasic->circRing;
@@ -979,7 +977,6 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     double  f0                 = 1 / t0;
     double  omega0             = 2 * PI * f0;
 
- 
 
     
     //2) data from ringParRF    
@@ -1018,7 +1015,8 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     ringParBasic->harmonics = harmonics;
     ringParBasic->sigmaT0 = sigmaT0;
     ringParBasic->workQz = workQz;
- 
+  
+
 
     ringParBasic->eta = eta;
     // ringParBasic->ringCurrent = ringBunchPara->current * ringFillPatt->totBunchNumber;

@@ -39,7 +39,9 @@
 #include <fftw3.h>
 #include <complex.h>
 
-
+using namespace std;
+using std::vector;
+using std::complex;
 
 MPBunch::MPBunch()
 {

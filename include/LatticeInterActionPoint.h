@@ -10,10 +10,12 @@
 
 
 #include "Global.h"
+#include "MatrixDef2D.h"
 #include <vector>
 #include "ReadInputSettings.h"
+#include <gsl/gsl_matrix.h>
 
-using namespace std;
+//using namespace std;
 using std::vector;
 using std::complex;
 
@@ -92,7 +94,20 @@ public:
 
     vector<vector<double> >ionAccumuRMSX;                    // p type ions at ith interaction point 
     vector<vector<double> >ionAccumuRMSY; 
-    
+    vector<double> allIonAccumuRMSX;                         // rms size of all ions 
+    vector<double> allIonAccumuRMSY;
+    vector<double> allIonAccumuAverX;                        // aver size of all ions 
+    vector<double> allIonAccumuAverY;
+	
+	
+	// to store the H matrix, B matrix, M(rototion matrix)
+	vector<MatrixDef2D> symplecticMapB1H1;
+	vector<MatrixDef2D> symplecticMapInvH1InvB1;
+	vector<MatrixDef2D> symplecticMapInvH2InvB2;
+	vector<double> phaseAdvX12;
+	vector<double> phaseAdvY12;
+	vector<double> phaseAdvZ12;
+			
     vector<vector<vector<double> > >ionAccumuFx;             
     vector<vector<vector<double> > >ionAccumuFy;             
       
@@ -125,6 +140,8 @@ public:
 
     void Initial(const ReadInputSettings &inputParameter);
     void InitialLattice(const ReadInputSettings &inputParameter);
+    void InitialLatticeIonInfo(const ReadInputSettings &inputParameter);
+    void InitialLatticeSympMat(const ReadInputSettings &inputParameter);
     void IonGenerator(double rmsRx, double rmsRy, double xAver,double yAver, int k);
     void IonsUpdate(int k);
     void IonRMSCal(int k);

@@ -192,7 +192,7 @@ void Resonator::GetInitialResonatorPower(const ReadInputSettings &inputParameter
     resBeamPower  = beamCurr * cavVoltage.real();  
     
     // Ref. Eq. (4.1.2 P. B. Wilson)
-    double coef  = pow(abs(cavVoltage),2) / 2.0 / resShuntImpRs * pow(1.0 + resCouplingBeta,2) / 4.0 / resCouplingBeta / pow(cos(resDeTunePsi),2);
+    double coef  = resCavPower * pow(1.0 + resCouplingBeta,2) / 4.0 / resCouplingBeta / pow(cos(resDeTunePsi),2);
     double coef0 = 2 * beamCurr * resShuntImpRs / abs(cavVoltage)  / (1.0 + resCouplingBeta);
     double term1 = cos(arg(cavVoltage)) + coef0 * cos(resDeTunePsi) * cos(resDeTunePsi);
     double term2 = sin(arg(cavVoltage)) + coef0 * cos(resDeTunePsi) * sin(resDeTunePsi);

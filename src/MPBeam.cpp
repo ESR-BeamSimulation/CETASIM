@@ -35,6 +35,8 @@
 #include <cstring>
 #include <fftw3.h>
 #include <complex.h>
+#include <vector>
+#include <numeric>
 
 
 
@@ -1018,10 +1020,16 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
         {
             // BeamTransferPerTurnDueToLatticeT(inputParameter,latticeInterActionPoint);
             // BeamTransferPerTurnR66AndSynRadGPU(inputParameter,latticeInterActionPoint);
-            BeamTransferPerTurnDueToLatticeTOneTurnR66(inputParameter,latticeInterActionPoint);
+            // BeamTransferPerTurnDueToLatticeTOneTurnR66(inputParameter,latticeInterActionPoint);
+            BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,0); 
             MPBeamRMSCal(latticeInterActionPoint, 0);
         }
-
+		
+		if(inputParameter.ringParBasic->skewQuadK!=0)
+        {
+        	BeamTransferDueToSkewQuad(inputParameter);
+        }		
+		
         // BeamMomtumUpdateDueToRF(inputParameter,latticeInterActionPoint,cavityResonator);
         BeamMomtumUpdateDueToRFTest(inputParameter,latticeInterActionPoint,cavityResonator);
         BeamLongiPosTransferOneTurn(inputParameter);
@@ -1153,6 +1161,14 @@ void MPBeam::BeamLongiPosTransferOneTurn(const ReadInputSettings &inputParameter
 {
     for(int i=0;i<beamVec.size();i++) 
         beamVec[i].BunchLongPosTransferOneTurn(inputParameter);
+}
+
+void MPBeam::BeamTransferDueToSkewQuad(const ReadInputSettings &inputParameter)
+{
+	for(int i=0;i<beamVec.size();i++)
+    {
+    	beamVec[i].BunchTransferDuetoSkewQuad(inputParameter);
+    }
 }
 
 
@@ -2521,7 +2537,8 @@ void MPBeam::BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSetting
 {
     for(int j=0;j<beamVec.size();j++)
     {
-        beamVec[j].BunchTransferDueToLatticeT(inputParameter,latticeInterActionPoint,k);
+        //beamVec[j].BunchTransferDueToLatticeT(inputParameter,latticeInterActionPoint,k);
+    	beamVec[j].BunchTransferDueToLatticeTSymplectic(inputParameter,latticeInterActionPoint,k);
     }
 }
 

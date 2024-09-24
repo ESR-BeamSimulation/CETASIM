@@ -15,6 +15,7 @@
 #include "LatticeInterActionPoint.h"
 #include "ReadInputSettings.h"
 #include "Spline.h"
+
 using namespace std;
 using std::vector;
 using std::complex;

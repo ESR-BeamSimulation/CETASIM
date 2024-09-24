@@ -19,7 +19,8 @@
 #include <vector>
 #include <complex>
 #include "CavityResonator.h" 
-
+#include <iostream>
+#include <iomanip>
 
 
 using namespace std;
@@ -151,6 +152,8 @@ public:
     void BeamLongiPosTransferOneTurn(const ReadInputSettings &inputParameter); 
     void BeamEnergyLossOneTurn(const ReadInputSettings &inputParameter);
     void PrintHaissinski(ReadInputSettings &inputParameter);
+    void BeamTransferDueToSkewQuad(const ReadInputSettings &inputParameter);
+    
 
     // void BeamTransferPerTurnDueToLattice(LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter,CavityResonator &cavityResonator,int turns);
     // void BeamTransferPerTurnDueToLatticeT(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);

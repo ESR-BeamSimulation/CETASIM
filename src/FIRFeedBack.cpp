@@ -13,9 +13,9 @@
 #include "FIRFeedBack.h"
 #include <vector>
 #include <iostream>
-#include<numeric>
+#include <numeric>
 #include <fstream>
- #include<iomanip>
+#include <iomanip>
 
 
 using namespace std;
@@ -56,7 +56,7 @@ void FIRFeedBack::Initial(ReadInputSettings &inputParameter)
     firCoeffz  = inputParameter.ringBBFB->firCoeffz;
     firCoeffxy = inputParameter.ringBBFB->firCoeffxy;
 
-
+  
     int firOrder = delay + taps;
     posxData.resize(firOrder);
     posyData.resize(firOrder);

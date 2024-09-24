@@ -147,6 +147,7 @@ public:
     void GetTimeDisToNextBunch(const ReadInputSettings &inputParameter);
     void BeamEnergyLossOneTurn(const ReadInputSettings &inputParameter); 
     void BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
+    void BeamTransferDueToSkewQuad(const ReadInputSettings &inputParameter);
     void BeamTransferPerTurnR66AndSynRadGPU(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);  
     void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);

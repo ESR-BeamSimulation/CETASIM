@@ -39,6 +39,8 @@ const double Cq                     = 3.83E-13;                  // m SYL Eq 4.1
 const double FactorGaussSI        = VaccumZ0 * CLight / (4 * PI); //[ohm] [m/s]
 const  complex<double> li(0,1);
 
+
+
 extern double TrackingTime;
 extern int      numProcess;
 extern int      myRank;
@@ -46,6 +48,7 @@ extern int      myRank;
 
 double cpuSecond();
 double Gaussrand(double rms, double aver,double randomIndex);
+
 void gsl_matrix_mul(gsl_matrix *a,gsl_matrix *b,gsl_matrix *c);
 void gsl_matrix_inv(gsl_matrix *a);
 double gsl_get_trace(gsl_matrix * A);
@@ -58,6 +61,8 @@ void sddsplot();
 double vectorDisNorm2(vector<double> a,vector<double> b);
 string convertToString(char* a, int size);
 void PrintGSLMatrix(gsl_matrix *mat);
+
+void GetInvMatrix(vector<vector<double>> &mat); 
 
 
 #endif

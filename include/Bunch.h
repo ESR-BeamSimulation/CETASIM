@@ -19,7 +19,8 @@
 #include "WakeFunction.h"
 #include "Resonator.h"
 #include "Spline.h"
-using namespace std;
+
+
 using std::vector;
 using std::complex;
 
@@ -146,7 +147,10 @@ public:
     void GaussianField(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy);
     void BunchTransferDueToIon(const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeT(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k);
+    void BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
+	void BunchTransferDuetoSkewQuad(const ReadInputSettings &inputParameter);
+    
     // void BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint);
     void BunchLongPosTransferOneTurn(const ReadInputSettings &inputParameter);
     void SetBunchPosHistoryDataWithinWindow();

@@ -18,6 +18,7 @@
 #include "Bunch.h"
 #include "WakeFunction.h"
 #include "Spline.h"
+
 using namespace std;
 using std::vector;
 using std::complex;

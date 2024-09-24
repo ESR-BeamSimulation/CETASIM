@@ -8,13 +8,13 @@
 #ifndef READINPUTSETTINGS_H
 #define READINPUTSETTINGS_H
 
-#include<string>
-#include<iostream>
-#include<vector>
-
+#include <string>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 using std::vector;
+
 
 class ReadInputSettings
 {
@@ -37,9 +37,9 @@ public:
         double pipeAperature[3];
         double chrom[2]; 
         double alphac[3];
-        double aDTX[2];
-        double aDTY[2];
-        double aDTXY[2];
+        double aDTX[5];
+        double aDTY[5];
+        double aDTXY[5];
         double sdelta0;
         double couplingfactorXY;
         double naturalEmit;
