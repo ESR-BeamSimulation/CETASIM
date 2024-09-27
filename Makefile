@@ -1,8 +1,8 @@
-CXX:= g++ -std=c++11  -w
-INCFLAG:= -I  -I/usr/include -I ./include -I/software/gsl/2.7.1/include   #/usr/local/cuda-10.1/targets/x86_64-linux/include 
-LIBFLAGS:= -lgsl -lgslcblas -lm  -lm -lfftw3 -lfftw  /software/gsl/2.7.1/lib/libgsl.a   #  -lcuda -lcufft -lcufftw  -lfftw3_omp  -lfftw3
+CXX:=g++ -std=c++11  -w 
+INCFLAG:= -I  /usr/include -I ./include -I/software/gsl/2.8/include   #/usr/local/cuda-10.1/targets/x86_64-linux/include 
+LIBFLAGS:= -lgsl -lgslcblas -lm  -lm -lfftw3 -lfftw  #/software/gsl/2.8/lib/libgsl.a   #  -lcuda -lcufft -lcufftw  -lfftw3_omp  -lfftw3
 #CXXFLAGS:= -arch=sm_30 
-#CXXFLAGS:=  -arch=sm_30 -std=gnu++11
+CXXFLAGS:= -std=gnu++11
 source = src/*.cpp  #src/*.cu 
 
 OBJDIR = obj
