@@ -49,21 +49,15 @@ int main(int argc,char *argv[])
     }
     getchar();
     */
-
-
    
     struct timeval t0;
     gettimeofday(&t0, NULL); 
 
     ReadInputSettings inputParameter;
-
     inputParameter.ParamRead(argc, argv);
 
-
     LatticeInterActionPoint latticeInterActionPoint;
-    
     latticeInterActionPoint.Initial(inputParameter);
-    
     latticeInterActionPoint.SetLatticeParaForOneTurnMap(inputParameter);
     latticeInterActionPoint.GetTransLinearCouplingCoef(inputParameter);
     latticeInterActionPoint.SetLatticeBRHForSynRad(inputParameter);

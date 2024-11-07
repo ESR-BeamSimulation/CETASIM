@@ -39,7 +39,6 @@ BoardBandImp::~BoardBandImp()
 
 }
 
-
 void BoardBandImp::ReadInImp(const  ReadInputSettings &inputParameter)
 {    
     string fileName = inputParameter.ringBBImp->impedInput;

@@ -33,7 +33,7 @@ class SPBeam
 public:
     SPBeam();
     ~SPBeam();
-    
+    int currentTurnNum = 0;
     // rms of all bunches...
     struct WeakStrongBeamInfo{
         

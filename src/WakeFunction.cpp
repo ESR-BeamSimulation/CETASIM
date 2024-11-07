@@ -538,14 +538,14 @@ vector<double> WakeFunction::GetBBRWakeFun(double tau)     // requires tau < 0;
         omegab =  sqrt( pow(txOmega[i],2) - pow(alpha,2) );
         coeff  =  CLight * txRs[i] * txOmega[i] / txQ[i] / omegab  * exp( alpha * tau ) * sin ( omegab * tau  ) ; //[m/s] * [ohm]/[m^2] ->  [ohm]/[m s] -> [V/C/m]
     
-        wakeFun[0] +=  coeff * betaFunAver[0] / betaFunIntPoint[0];                                                    // [V/C/m]           
-
+        wakeFun[0] +=  coeff / betaFunIntPoint[0];                                                    // [V/C/m]           
+		
         // for y wakes
         alpha  =  tyOmega[i] / 2.0 / tyQ[i];
         omegab =  sqrt( pow(tyOmega[i],2) - pow(alpha,2) );
         coeff  =  CLight * tyRs[i] * tyOmega[i] / tyQ[i] / omegab  * exp( alpha * tau ) * sin ( omegab * tau  ) ; //[m/s] * [ohm]/[m^2] ->  [ohm]/[m s] -> [V/C/m]
      
-        wakeFun[1] +=  coeff * betaFunAver[1] / betaFunIntPoint[1];                                                    // [V/C/m]           
+        wakeFun[1] +=  coeff / betaFunIntPoint[1];                                                    // [V/C/m]           
     
     }
     

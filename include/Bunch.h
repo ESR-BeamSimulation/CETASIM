@@ -23,6 +23,10 @@
 
 using std::vector;
 using std::complex;
+using v1i= vector<int> ;
+using v1d= vector<double> ;
+using v2d= vector<vector<double> > ;
+using v3d= vector<vector<vector<double> > > ;
 
 class Bunch
 {
@@ -31,7 +35,8 @@ class Bunch
 public:
     Bunch();
     ~Bunch();
-        
+
+    int currentTurnNum = 0;    
     int    bunchGap;                // the number of rf period needed for the coming bunch
     int    bunchHarmNum;    
 
@@ -45,6 +50,9 @@ public:
     vector<double> eFyDueToIon;
     vector<double> eFzDueToIon;
     vector<int> eSurive;         // if not Surive--throw out loss infomation
+    vector<vector<double> > accPhaseAdvX;    // phaseAdvX[np][3], 0 1
+    vector<vector<double> > accPhaseAdvY;    // accumulated phase advance of each particle for tune-spread simulation
+    vector<vector<double> > accPhaseAdvZ;    // accumulated phase advance of each particle for tune-spread simulation       
 
     double xAver=0.E0;
     double yAver=0.E0;
@@ -95,6 +103,8 @@ public:
     double eigenEmitX,eigenEmitY;
     double emitXY4D=0;
     double xyCouplingAlpha=0;  //rms value in x-y space
+    int latticeSetionPassedCount = 0;
+
 
     struct BunchRFModeInfo{
         vector<complex<double> > induceVolBunchCen;
@@ -150,6 +160,7 @@ public:
     void BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k);
     void BunchTransferDueToLatticeOneTurnT66(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint);
 	void BunchTransferDuetoSkewQuad(const ReadInputSettings &inputParameter);
+    void InitialAccumPhaseAdV(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter );
     
     // void BunchTransferDueToLatticeOneTurnT66GPU(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint);
     void BunchLongPosTransferOneTurn(const ReadInputSettings &inputParameter);
@@ -177,6 +188,7 @@ public:
     void GetParticleLongitudinalPhaseSpace1(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,int bunchIndex);
     vector<double> LeapFrog(const ReadInputSettings &inputParameter,const CavityResonator &cavityResonator,vector<double> z,const tk::spline &wakePotenFit);
 
+    void GetAccumuPhaseAdv(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter);
 
 private:
 

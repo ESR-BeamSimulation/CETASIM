@@ -69,8 +69,8 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
     electronNumPerBunch = current  / inputParameter.ringParBasic->f0  / ElectronCharge;  // [dimmenless]
     macroEleCharge      = electronNumPerBunch / macroEleNumPerBunch;                     // [dimmenless]
 
-    lRWakeForceAver.resize(3,0E0);
     
+    eSurive.resize(macroEleNumPerBunch,0);  
     ePositionX.resize(macroEleNumPerBunch,0E0);
     ePositionY.resize(macroEleNumPerBunch,0E0);
     ePositionZ.resize(macroEleNumPerBunch,0E0);
@@ -80,9 +80,12 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
     eFxDueToIon.resize(macroEleNumPerBunch,0E0);
     eFyDueToIon.resize(macroEleNumPerBunch,0E0);
     eFzDueToIon.resize(macroEleNumPerBunch,0E0);
-    eSurive.resize(macroEleNumPerBunch,0);
     
-    
+    lRWakeForceAver.resize(3,0E0);
+    accPhaseAdvX = v2d(macroEleNumPerBunch,v1d(3,0.E0));
+    accPhaseAdvY = v2d(macroEleNumPerBunch,v1d(3,0.E0));
+    accPhaseAdvZ = v2d(macroEleNumPerBunch,v1d(3,0.E0));
+
     bunchRFModeInfo->cavVolBunchCen.resize(inputParameter.ringParRf->resNum);
     bunchRFModeInfo->genVolBunchAver.resize(inputParameter.ringParRf->resNum);
     bunchRFModeInfo->induceVolBunchCen.resize(inputParameter.ringParRf->resNum);
@@ -109,6 +112,8 @@ void Bunch::Initial(const  ReadInputSettings &inputParameter)
         xyzHistoryDataToFit[i].resize(inputParameter.ringRun->bunchInfoPrintInterval);    
     }
 }
+
+
 
 
 void Bunch::BassettiErskine1(double posx,double posy,double rmsRxTemp, double rmsRyTemp,double &tempFx,double &tempFy)
@@ -496,12 +501,131 @@ void Bunch::BunchLongPosTransferOneTurn(const ReadInputSettings &inputParameter)
 }
 
 
+void Bunch::InitialAccumPhaseAdV(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter)
+{
+    int k = 0;
+	gsl_matrix *vecX     = gsl_matrix_alloc (6, 1);
+	gsl_matrix *vecX1    = gsl_matrix_alloc (6, 1);
+    gsl_matrix *averVecX   = gsl_matrix_alloc (6, 1);
+	gsl_matrix *avervecX1  = gsl_matrix_alloc (6, 1);   
+	gsl_matrix *B1H1 = latticeInterActionPoint.symplecticMapB1H1[k].mat2D;
+
+    averVecX->data[0 * averVecX->tda] = xAver;
+    averVecX->data[1 * averVecX->tda] = pxAver;
+    averVecX->data[2 * averVecX->tda] = yAver;
+    averVecX->data[3 * averVecX->tda] = pyAver;
+    averVecX->data[4 * averVecX->tda] = zAver;
+    averVecX->data[5 * averVecX->tda] = pzAver;
+
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,averVecX,0.0,avervecX1);
+
+    double phaseAdvXMean = atan2(gsl_matrix_get(averVecX,1,0),gsl_matrix_get(averVecX,0,0));
+    double phaseAdvYMean = atan2(gsl_matrix_get(averVecX,3,0),gsl_matrix_get(averVecX,2,0)); 
+
+    double nux = inputParameter.ringParBasic->workQx;
+    double nuy = inputParameter.ringParBasic->workQy;
+    nux -= floor(nux);
+    nuy -= floor(nuy);
+
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        vecX->data[0 * vecX->tda] = ePositionX[i];
+        vecX->data[1 * vecX->tda] = eMomentumX[i];
+        vecX->data[2 * vecX->tda] = ePositionY[i];
+        vecX->data[3 * vecX->tda] = eMomentumY[i];
+        vecX->data[4 * vecX->tda] = ePositionZ[i]; 
+        vecX->data[5 * vecX->tda] = eMomentumZ[i]; 
+    	
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,vecX,0.0,vecX1);
+
+        accPhaseAdvX[i][0] = atan2(gsl_matrix_get(vecX1,1,0),gsl_matrix_get(vecX1,0,0));
+        accPhaseAdvY[i][0] = atan2(gsl_matrix_get(vecX1,3,0),gsl_matrix_get(vecX1,2,0));
+        accPhaseAdvZ[i][0] = atan2(gsl_matrix_get(vecX1,5,0),gsl_matrix_get(vecX1,4,0));
+        // accPhaseAdvX[i][0] = atan2(gsl_matrix_get(vecX1,1,0),gsl_matrix_get(vecX1,0,0)) - phaseAdvXMean;
+        // accPhaseAdvY[i][0] = atan2(gsl_matrix_get(vecX1,1,0),gsl_matrix_get(vecX1,0,0)) - phaseAdvYMean;
+    }
+
+	gsl_matrix_free (vecX);      
+	gsl_matrix_free (vecX1); 
+    gsl_matrix_free (averVecX);
+	gsl_matrix_free (avervecX1);
+    B1H1 = NULL;   
+}
+
+void Bunch::GetAccumuPhaseAdv(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter)
+{
+    // not used 
+    int k = 0;
+	gsl_matrix *vecX       = gsl_matrix_alloc (6, 1);
+	gsl_matrix *vecX1      = gsl_matrix_alloc (6, 1); 
+    gsl_matrix *averVecX   = gsl_matrix_alloc (6, 1);
+	gsl_matrix *avervecX1  = gsl_matrix_alloc (6, 1); 
+	gsl_matrix *B1H1 = latticeInterActionPoint.symplecticMapB1H1[k].mat2D;
+
+    averVecX->data[0 * averVecX->tda] = xAver;
+    averVecX->data[1 * averVecX->tda] = pxAver;
+    averVecX->data[2 * averVecX->tda] = yAver;
+    averVecX->data[3 * averVecX->tda] = pyAver;
+    averVecX->data[4 * averVecX->tda] = zAver;
+    averVecX->data[5 * averVecX->tda] = pzAver;
+
+    gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,averVecX,0.0,avervecX1);
+
+    double phaseAdvXMean = atan2(gsl_matrix_get(averVecX,1,0),gsl_matrix_get(averVecX,0,0));
+    double phaseAdvYMean = atan2(gsl_matrix_get(averVecX,3,0),gsl_matrix_get(averVecX,2,0)); 
+
+    double nux = inputParameter.ringParBasic->workQx;
+    double nuy = inputParameter.ringParBasic->workQy;
+    nux -= floor(nux);
+    nuy -= floor(nuy);
+    double tmpx,tmpy;
+
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        vecX->data[0 * vecX->tda] = ePositionX[i] - xAver;
+        vecX->data[1 * vecX->tda] = eMomentumX[i] - pxAver;
+        vecX->data[2 * vecX->tda] = ePositionY[i] - yAver;
+        vecX->data[3 * vecX->tda] = eMomentumY[i] - pyAver;
+        vecX->data[4 * vecX->tda] = ePositionZ[i] - zAver; 
+        vecX->data[5 * vecX->tda] = eMomentumZ[i] - pzAver; 
+
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,vecX,0.0,vecX1);
+        // here to get the phase advances reference to the bunch center 
+        accPhaseAdvX[i][1] = atan2(gsl_matrix_get(vecX1,1,0),gsl_matrix_get(vecX1,0,0)) - phaseAdvXMean;
+        accPhaseAdvY[i][1] = atan2(gsl_matrix_get(vecX1,3,0),gsl_matrix_get(vecX1,2,0)) - phaseAdvYMean;
+
+        tmpx = accPhaseAdvX[i][0] - accPhaseAdvX[i][1];
+        tmpy = accPhaseAdvY[i][0] - accPhaseAdvY[i][1]; 
+        accPhaseAdvX[i][2] += tmpx >= 0? tmpx : tmpx + 2 * PI;
+        accPhaseAdvY[i][2] += tmpy >= 0? tmpy : tmpy + 2 * PI;
+
+        cout<<setw(15)<<i;
+        for(int j=0;j<3;++j)
+        {
+            cout<<setw(15)<<accPhaseAdvX[i][j];
+        }
+        cout<<endl;
+
+        accPhaseAdvX[i][0] = accPhaseAdvX[i][1];
+        accPhaseAdvY[i][0] = accPhaseAdvY[i][1];
+
+    }
+    
+	gsl_matrix_free (vecX);
+	gsl_matrix_free (vecX1);
+    gsl_matrix_free (averVecX);
+	gsl_matrix_free (avervecX1);
+    B1H1 = NULL;  
+    cout<<__LINE__<<__FILE__<<endl;
+    getchar();
+}
+
 
 
 void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
-
-	double etax   = latticeInterActionPoint.twissDispX[k];
+	latticeSetionPassedCount = currentTurnNum * inputParameter.ringParBasic->ringSectNum + k;
+    double etax   = latticeInterActionPoint.twissDispX[k];
     double etaxp  = latticeInterActionPoint.twissDispPX[k];  // \frac{disP}{ds} 
     double etay   = latticeInterActionPoint.twissDispY[k];
     double etayp  = latticeInterActionPoint.twissDispPY[k];  // \frac{disP}{ds} 
@@ -543,7 +667,9 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
 	gsl_matrix *B1H1 = latticeInterActionPoint.symplecticMapB1H1[k].mat2D;
 	gsl_matrix *H2B2 = latticeInterActionPoint.symplecticMapInvH2InvB2[k].mat2D;
 
-	
+    double tmpx,tmpy,tmpz;
+    double vec0[2],vec1[2];
+
 	for(int i=0;i<macroEleNumPerBunch;i++)
     {
         if(eSurive[i]!=0) continue;
@@ -573,9 +699,30 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
         vecX->data[4 * vecX->tda] = ePositionZ[i]; 
         vecX->data[5 * vecX->tda] = eMomentumZ[i]; 
     	
-		
-		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,vecX,0.0,vecX1);		
-		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matRotat,vecX1,0.0,vecX);	
+		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,vecX,0.0,vecX1);
+        gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matRotat,vecX1,0.0,vecX);
+
+        // here to get the phase advances based on turn-by-trun data 
+        if(k==inputParameter.ringParBasic->ringSectNum-1)
+        {
+            accPhaseAdvX[i][1] = atan2(gsl_matrix_get(vecX,1,0),gsl_matrix_get(vecX,0,0));
+            accPhaseAdvY[i][1] = atan2(gsl_matrix_get(vecX,3,0),gsl_matrix_get(vecX,2,0));
+            accPhaseAdvZ[i][1] = atan2(gsl_matrix_get(vecX,5,0),gsl_matrix_get(vecX,4,0));
+            
+            tmpx = accPhaseAdvX[i][0] - accPhaseAdvX[i][1];
+            tmpy = accPhaseAdvY[i][0] - accPhaseAdvY[i][1];
+            tmpz = accPhaseAdvZ[i][0] - accPhaseAdvZ[i][1];
+            
+            accPhaseAdvX[i][2] += tmpx >= 0? tmpx : tmpx + 2 * PI;
+            accPhaseAdvY[i][2] += tmpy >= 0? tmpy : tmpy + 2 * PI;
+            accPhaseAdvZ[i][2] += tmpz >= 0? tmpz : tmpz + 2 * PI;
+
+            accPhaseAdvX[i][0] = accPhaseAdvX[i][1];
+            accPhaseAdvY[i][0] = accPhaseAdvY[i][1];
+            accPhaseAdvZ[i][0] = accPhaseAdvZ[i][1];
+
+        }
+
 		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,H2B2,vecX,0.0,vecX1);
 		
 		ePositionX[i] =  gsl_matrix_get(vecX1,0,0);
@@ -586,11 +733,14 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
 		eMomentumZ[i] =  gsl_matrix_get(vecX1,5,0);
 	}
 	
-	gsl_matrix_free (matRotat);
 	gsl_matrix_free (vecX);
 	gsl_matrix_free (vecX1);
 	B1H1 = NULL;
-	H2B2 = NULL;	
+	H2B2 = NULL;
+    matRotat = NULL;	
+
+    // getchar();
+    
 }
 
 void Bunch::BunchTransferDuetoSkewQuad(const ReadInputSettings &inputParameter)
@@ -604,7 +754,6 @@ void Bunch::BunchTransferDuetoSkewQuad(const ReadInputSettings &inputParameter)
     gsl_matrix *vecX1    = gsl_matrix_alloc (6, 1);
     gsl_matrix_set_zero(vecX);
     gsl_matrix_set_zero(vecX1);
-    
     
 	for(int i=0;i<macroEleNumPerBunch;i++)
     {
@@ -628,9 +777,9 @@ void Bunch::BunchTransferDuetoSkewQuad(const ReadInputSettings &inputParameter)
 	}
 	
 	
-	gsl_matrix_free (skewQuad);
-	gsl_matrix_free (vecX);
-	gsl_matrix_free (vecX1);
+	gsl_matrix_free(skewQuad);
+	gsl_matrix_free(vecX);
+	gsl_matrix_free(vecX1);
 
 }
 

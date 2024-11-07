@@ -172,7 +172,11 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         {
             ringParBasic->twissInput = strVec[1];
         }
-           
+
+        if(strVec[0]=="ringsectnum")
+        {
+            ringParBasic->ringSectNum = stoi(strVec[1]);
+        }   
               
         //----------------------------------------------------------------
          
@@ -521,7 +525,7 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         
         if(strVec[0]=="ioncalnumberofionbeaminterpoint")
         {
-          ringIonEffPara->numberofIonBeamInterPoint = stoi(strVec[1]);
+          ringIonEffPara->numberofIonBeamInterPoint =  ringParBasic->ringSectNum;
         } 
         
         if(strVec[0]=="ioncalmacroionnumbergeneratedperip")
@@ -538,7 +542,11 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         }   
         if(strVec[0]=="ioncaltwissinput")
         {
-            ringIonEffPara->twissInput = strVec[1];
+            ringIonEffPara->twissInput = ringParBasic->twissInput;
+        }
+        if(strVec[0]=="ioncalscmethod")
+        {
+            ringIonEffPara->ionCalSCMethod = stoi(strVec[1]);
         } 
         //----------------------------------------------------------------------  
 
@@ -862,6 +870,15 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
           }          
         }
 
+        if(strVec[0]=="runspacecharge")
+        {
+          ringRun->spaceChargeFlag = stoi(strVec[1]);
+          ringRun->scMeshNum[0] = stoi(strVec[2]);
+          ringRun->scMeshNum[1] = stoi(strVec[3]);
+          ringRun->scMeshNum[2] = stoi(strVec[4]); 
+        }
+
+
         if(strVec[0]=="runramping")
         {
           ringRun->rampFlag = stoi(strVec[1]);
@@ -961,8 +978,10 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
       }
     }
     
-    
+    ringIonEffPara->numberofIonBeamInterPoint =ringParBasic->ringSectNum;
     ringIonEffPara->twissInput = ringParBasic->twissInput;
+
+    
 
     //1) data from ringPaBbasic
     double  circRing           = ringParBasic->circRing;
@@ -1051,7 +1070,6 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
     ringParBasic->radIntegral[3] = circRing * (alpha[2] - 2 * alpha[0]) / (ElecClassicRadius * CLight * pow(rGamma,3));
     ringParBasic->radIntegral[2] = (2 * ringParBasic->radIntegral[1] + ringParBasic->radIntegral[3] ) * pow(sdelta0,2) / (Cq * pow(rGamma,2));
     ringParBasic->radIntegral[4] = ringParBasic->emitNat[0] *  (ringParBasic->radIntegral[1] - ringParBasic->radIntegral[3] ) / (Cq * pow(rGamma,2));
-
 
     fin.close();    
 

@@ -19,6 +19,11 @@
 #include<iomanip>
 #include <gsl/gsl_matrix.h>
 
+using v1i= vector<int> ;
+using v2i= vector<vector<int> > ;
+using v1d= vector<double> ;
+using v2d= vector<vector<double> > ;
+using v3d= vector<vector<vector<double> > > ;
 
 LatticeInterActionPoint::LatticeInterActionPoint()
 {
@@ -35,6 +40,7 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
 {
 
     //0) get the input from the inputParameter 
+   
     numberOfInteraction       = inputParameter.ringIonEffPara->numberofIonBeamInterPoint;             
     ionMaxNumberOneInterPoint = inputParameter.ringIonEffPara->ionMaxNumber;
     ionLossBoundary           = inputParameter.ringIonEffPara->ionLossBoundary;
@@ -57,130 +63,118 @@ void LatticeInterActionPoint::Initial(const ReadInputSettings &inputParameter)
         cerr<<"non 100 percent gas"<<endl;
         exit(0);
     }
-    
-
-   
+       
     //1) twiss parameter is divided by number of interaction points    
-    twissAlphaX.resize(numberOfInteraction);
-    twissBetaX .resize(numberOfInteraction);
-    twissAlphaY.resize(numberOfInteraction);
-    twissBetaY .resize(numberOfInteraction);
-    twissAlphaZ.resize(numberOfInteraction);
-    twissBetaZ .resize(numberOfInteraction);
-    pipeAperatureX.resize(numberOfInteraction);
-    pipeAperatureY.resize(numberOfInteraction);
+    twissAlphaX = v1d(numberOfInteraction);
+    twissBetaX = v1d(numberOfInteraction);
+    twissAlphaY = v1d(numberOfInteraction);
+    twissBetaY = v1d(numberOfInteraction);
+    twissAlphaZ = v1d(numberOfInteraction);
+    twissBetaZ = v1d(numberOfInteraction);
+    pipeAperatureX = v1d(numberOfInteraction);
+    pipeAperatureY = v1d(numberOfInteraction);
     
-    
-    
-    twissDispX .resize(numberOfInteraction);				
-    twissDispPX.resize(numberOfInteraction);;          
-    twissDispY .resize(numberOfInteraction);;				
-    twissDispPY.resize(numberOfInteraction);;             
+    twissDispX = v1d(numberOfInteraction);				
+    twissDispPX= v1d(numberOfInteraction);;          
+    twissDispY = v1d(numberOfInteraction);;				
+    twissDispPY= v1d(numberOfInteraction);;             
 
-    xPhaseAdv.resize(numberOfInteraction);
-    yPhaseAdv.resize(numberOfInteraction);
-    zPhaseAdv.resize(numberOfInteraction);
-    averBetaX.resize(numberOfInteraction);
-    averBetaY.resize(numberOfInteraction);
+    xPhaseAdv= v1d(numberOfInteraction);
+    yPhaseAdv= v1d(numberOfInteraction);
+    zPhaseAdv= v1d(numberOfInteraction);
+    averBetaX= v1d(numberOfInteraction);
+    averBetaY= v1d(numberOfInteraction);
+    phaseAdvX12= v1d(numberOfInteraction);
+    phaseAdvY12= v1d(numberOfInteraction);
+    phaseAdvZ12= v1d(numberOfInteraction);
+    temperature      = v1d(numberOfInteraction);
+    vacuumPressure   = v1d(numberOfInteraction); 
+    interactionLength= v1d(numberOfInteraction);
+    elemPos          = v1d(numberOfInteraction);
     
+    // set transfer matrix, plane-by-plane and not coupling is included here
     xTransferMatrix.resize(numberOfInteraction);
     yTransferMatrix.resize(numberOfInteraction);
     zTransferMatrix.resize(numberOfInteraction);
-    
     transferMatrix.resize(numberOfInteraction);
-    
-    // in current assumption the 6*6 transfer matrix does not includes couling between either two degrees of freedom   
     for(int i=0;i<numberOfInteraction;i++)
     {
         xTransferMatrix[i].resize(4);
         yTransferMatrix[i].resize(4);
         zTransferMatrix[i].resize(4);
     }
-    // end
+    // end of setting
     
-
 	// set the symplectic tracking map with dispersion, Twiss and rotation matrix
+    // the element of the vec is MatrixDef2D onject.
 	symplecticMapB1H1.resize(numberOfInteraction);
 	symplecticMapInvH1InvB1.resize(numberOfInteraction);
     symplecticMapInvH2InvB2.resize(numberOfInteraction);
-    phaseAdvX12.resize(numberOfInteraction);
-    phaseAdvY12.resize(numberOfInteraction);
-    phaseAdvZ12.resize(numberOfInteraction);
-   
-    //2.1) ion data at kth interaction point
-    temperature      .resize(numberOfInteraction);
-    vacuumPressure   .resize(numberOfInteraction); 
-    interactionLength.resize(numberOfInteraction);
-    totMacroIonsAtInterPoint.resize(numberOfInteraction);
-    totIonChargeAtInterPoint.resize(numberOfInteraction);
+    // end
 
+    //2.1) ion data at kth interaction point
+    totMacroIonsAtInterPoint = v1i(numberOfInteraction);
+    totIonChargeAtInterPoint = v1d(numberOfInteraction);
 
     //2.2) ion data at kth interaction point and pth ion species
-    vacuumPressureEachGas.resize(numberOfInteraction); 
-    ionLineDensity   .resize(numberOfInteraction);        
-    macroIonNumber.resize(numberOfInteraction);
-    ionNumber     .resize(numberOfInteraction);
-    macroIonCharge.resize(numberOfInteraction);
-    
-    ionPositionX.resize(numberOfInteraction);
-    ionPositionY.resize(numberOfInteraction);
-    ionVelocityX.resize(numberOfInteraction);
-    ionVelocityY.resize(numberOfInteraction);
-    
-    ionAccumuFx.resize(numberOfInteraction);
-    ionAccumuFy.resize(numberOfInteraction);
-    
-    ionAccumuNumber   .resize(numberOfInteraction);
-    ionAccumuPositionX.resize(numberOfInteraction);
-    ionAccumuPositionY.resize(numberOfInteraction);
-    ionAccumuVelocityX.resize(numberOfInteraction);
-    ionAccumuVelocityY.resize(numberOfInteraction);
-    
-    ionAccumuAverX.resize(numberOfInteraction);
-    ionAccumuAverY.resize(numberOfInteraction);
-    ionAccumuRMSX .resize(numberOfInteraction);
-    ionAccumuRMSY .resize(numberOfInteraction); 
-    allIonAccumuRMSX.resize(numberOfInteraction);
-    allIonAccumuRMSY.resize(numberOfInteraction);
-    allIonAccumuAverX.resize(numberOfInteraction);
-    allIonAccumuAverY.resize(numberOfInteraction);
+    allIonAccumuRMSX  = v1d(numberOfInteraction);
+    allIonAccumuRMSY  = v1d(numberOfInteraction);
+    allIonAccumuAverX = v1d(numberOfInteraction);
+    allIonAccumuAverY = v1d(numberOfInteraction);
 
-    ionAccumuAverVelX.resize(numberOfInteraction); 
-    ionAccumuAverVelY.resize(numberOfInteraction); 
-
-    for(int i=0;i<numberOfInteraction;i++)
-    {
-        vacuumPressureEachGas[i].resize(gasSpec);
-        ionLineDensity[i]       .resize(gasSpec);
-        ionNumber[i]            .resize(gasSpec);
-        macroIonNumber[i]       .resize(gasSpec);
-        macroIonCharge[i]       .resize(gasSpec);
-
-        ionPositionX[i].resize(gasSpec);
-        ionPositionY[i].resize(gasSpec);
-        ionVelocityX[i].resize(gasSpec);
-        ionVelocityY[i].resize(gasSpec);
-
-        ionAccumuFx[i].resize(gasSpec);
-        ionAccumuFy[i].resize(gasSpec);
-        
-        ionAccumuNumber[i].resize(gasSpec);
-        ionAccumuPositionX[i].resize(gasSpec);
-        ionAccumuPositionY[i].resize(gasSpec);
-        ionAccumuVelocityX[i].resize(gasSpec);
-        ionAccumuVelocityY[i].resize(gasSpec);   
-        
-        ionAccumuAverX[i].resize(gasSpec);
-        ionAccumuAverY[i].resize(gasSpec);
-        ionAccumuRMSX[i].resize(gasSpec);
-        ionAccumuRMSY[i].resize(gasSpec);  
-        ionAccumuAverVelX[i].resize(gasSpec);
-        ionAccumuAverVelY[i].resize(gasSpec);                                                 
-    }
+    vacuumPressureEachGas = v2d(numberOfInteraction, v1d(gasSpec) );
+    macroIonNumber   = v2i(numberOfInteraction, v1i(gasSpec) );
+    ionNumber        = v2d(numberOfInteraction, v1d(gasSpec) );
+    ionLineDensity   = v2d(numberOfInteraction, v1d(gasSpec) );       
+    macroIonCharge   = v2d(numberOfInteraction, v1d(gasSpec) );
     
+    ionAccumuNumber   = v2i(numberOfInteraction, v1i(gasSpec) );
+    ionAccumuAverX    = v2d(numberOfInteraction, v1d(gasSpec) );
+    ionAccumuAverY    = v2d(numberOfInteraction, v1d(gasSpec) );
+    ionAccumuAverVelX = v2d(numberOfInteraction, v1d(gasSpec) );  
+    ionAccumuAverVelY = v2d(numberOfInteraction, v1d(gasSpec) ); 
+    ionAccumuRMSX     = v2d(numberOfInteraction, v1d(gasSpec) );
+    ionAccumuRMSY     = v2d(numberOfInteraction, v1d(gasSpec) ); 
+
+    ionPositionX       = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionPositionY       = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionVelocityX       = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionVelocityY       = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionAccumuFx        = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionAccumuFy        = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionAccumuPositionX = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionAccumuPositionY = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionAccumuVelocityX = v3d(numberOfInteraction, v2d(gasSpec) );
+    ionAccumuVelocityY = v3d(numberOfInteraction, v2d(gasSpec) );
+
+    // ionPositionX.resize(numberOfInteraction);
+    // ionPositionY.resize(numberOfInteraction);
+    // ionVelocityX.resize(numberOfInteraction);
+    // ionVelocityY.resize(numberOfInteraction);
+    // ionAccumuFx.resize(numberOfInteraction);
+    // ionAccumuFy.resize(numberOfInteraction);
+    // ionAccumuPositionX.resize(numberOfInteraction);
+    // ionAccumuPositionY.resize(numberOfInteraction);
+    // ionAccumuVelocityX.resize(numberOfInteraction);
+    // ionAccumuVelocityY.resize(numberOfInteraction);
+
+
+    // for(int i=0;i<numberOfInteraction;i++)
+    // {
+    //     ionPositionX[i].resize(gasSpec);
+    //     ionPositionY[i].resize(gasSpec);
+    //     ionVelocityX[i].resize(gasSpec);
+    //     ionVelocityY[i].resize(gasSpec);
+    //     ionAccumuFx[i].resize(gasSpec);
+    //     ionAccumuFy[i].resize(gasSpec);  
+    //     ionAccumuPositionX[i].resize(gasSpec);
+    //     ionAccumuPositionY[i].resize(gasSpec);
+    //     ionAccumuVelocityX[i].resize(gasSpec);
+    //     ionAccumuVelocityY[i].resize(gasSpec);                                                    
+    // }
     InitialLattice(inputParameter);
     InitialLatticeIonInfo(inputParameter);
-    InitialLatticeSympMat(inputParameter); 
+    InitialLatticeSympMat(inputParameter);
 }
 
 
@@ -201,7 +195,6 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         exit (1);
     }
 
-    
     string str;
     vector<string> strVec;
     
@@ -219,6 +212,7 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         
 
         string stringTest;
+        
         for(int i=0;i<str.size();i++)
         {
            stringTest.push_back(' ');		
@@ -226,7 +220,8 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
         if(stringTest == str )  continue;
                     
         StringSplit2(str, strVec);
-                
+
+        elemPos[i]     = stod(strVec[0]); 
         twissBetaX[i]  = stod(strVec[1]);           
         twissAlphaX[i] = stod(strVec[2]);
         xPhaseAdv[i]   = stod(strVec[3]);
@@ -251,33 +246,44 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
    
         xAperture>pipeAperatureX[i] ? (pipeAperatureX[i]=pipeAperatureX[i]) : (pipeAperatureX[i]=xAperture);
         yAperture>pipeAperatureY[i] ? (pipeAperatureY[i]=pipeAperatureY[i]) : (pipeAperatureY[i]=yAperture);
-
+    
         i++;
         index++;    	
     }
 
     fin.close();
 
+    if(interactionLength.size()==0)
+    {
+        interactionLength[0] = circRing;
+        phaseAdvX12[0]       = 2 * PI * workQx;
+        phaseAdvY12[0]       = 2 * PI * workQy;         
+    }
+   
 
-    vector<double> intLengthTemp = interactionLength;    
+    vector<double> intLengthTemp = elemPos;    
     for (int i=0; i<interactionLength.size();i++)
     {
         if(i != interactionLength.size()-1 )
         {
-            interactionLength[i] = (intLengthTemp[i+1] - intLengthTemp[i]) * circRing ;        
+            interactionLength[i] = (elemPos[i+1] - elemPos[i]);
+            phaseAdvX12[i]       =  xPhaseAdv[i+1] - xPhaseAdv[i];
+            phaseAdvY12[i]       =  yPhaseAdv[i+1] - yPhaseAdv[i];  
         }
         else
         {
-            interactionLength[i] = (1.0                - intLengthTemp[i]) * circRing ;  
-        }                    
+            interactionLength[i] = (circRing     - elemPos[i]  + elemPos[0]);
+            phaseAdvX12[i]       = 2 * PI * workQx -  xPhaseAdv[i] + xPhaseAdv[0];
+            phaseAdvY12[i]       = 2 * PI * workQy -  yPhaseAdv[i] + yPhaseAdv[0];  
+        }              
     }
-    
 
     if((i)!=numberOfInteraction)
     {
-        cerr<<"data of numberofIonBeamInterPoint in input.dat and InterPointParameter.dat files does not match";
+        cerr<<"data of rintSecNum in input.dat and InterPointParameter.dat files does not match";
         exit(0);
     }     
+
 }
 
 
@@ -333,23 +339,18 @@ void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inp
 		betaX1  = twissBetaX[i];
 		alphaY1 = twissAlphaY[i];
 		betaY1  = twissBetaY[i];
-		phiX1   = xPhaseAdv[i];
-		phiY1   = yPhaseAdv[i];
 		etaX1   = twissDispX[i];
 		etaXp1  = twissDispPX[i];
 		etaY1   = twissDispY[i];
 		etaYp1  = twissDispPY[i];
 		betaZ1  = twissBetaZ[i];
 		
-
 		if(i<numberOfInteraction-1)
 		{
 			alphaX2 = twissAlphaX[i+1];
 			betaX2  = twissBetaX[i+1];
 			alphaY2 = twissAlphaY[i+1];
 			betaY2  = twissBetaY[i+1];
-			phiX2 	= xPhaseAdv[i+1]; 			
-			phiY2   = yPhaseAdv[i+1];
 			etaX2   = twissDispX[i+1];
 			etaXp2  = twissDispPX[i+1];
 			etaY2   = twissDispY[i+1];
@@ -362,8 +363,6 @@ void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inp
 			betaX2  = twissBetaX[0];
 			alphaY2 = twissAlphaY[0];
 			betaY2  = twissBetaY[0];
-			phiX2   = 2 * PI * inputParameter.ringParBasic->workQx; 			
-			phiY2   = 2 * PI * inputParameter.ringParBasic->workQy;
 			etaX2   = twissDispX[0];
 			etaXp2  = twissDispPX[0];
 			etaY2   = twissDispY[0];
@@ -371,9 +370,6 @@ void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inp
 			betaZ2  = twissBetaZ[0];           
 		}
 				
-		phaseAdvX12[i] = phiX2 - phiX1;
-		phaseAdvY12[i] = phiY2 - phiY1;
-		
 		gsl_matrix *matH1  	  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_identity(matH1);
 		gsl_matrix *matInvH1  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_identity(matInvH1);
 		gsl_matrix *matInvH2  = gsl_matrix_alloc (6, 6); 	gsl_matrix_set_identity(matInvH2);
@@ -394,8 +390,7 @@ void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inp
 		// set InvH2 	
 		gsl_matrix_set(matInvH2,0,5, etaX2);   gsl_matrix_set(matInvH2,1,5, etaXp2); gsl_matrix_set(matInvH2,2,5, etaY2);    gsl_matrix_set(matInvH2,3,5, etaYp2); 	
 		gsl_matrix_set(matInvH2,4,0,-etaXp2);  gsl_matrix_set(matInvH2,4,1, etaX2);  gsl_matrix_set(matInvH2,4,2,-etaYp2);   gsl_matrix_set(matInvH2,4,3, etaY2); 	
-		
-		
+				
 		// set B1 and InvB1 and InvB2
 		// set B1
 		gsl_matrix_set(matB1,0,0, 1 / sqrt(betaX1)); gsl_matrix_set(matB1,1,0,alphaX1 / sqrt(betaX1) );  gsl_matrix_set(matB1,1,1,sqrt(betaX1));
@@ -411,14 +406,12 @@ void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inp
 		gsl_matrix_set(matInvB2,0,0, sqrt(betaX2)); gsl_matrix_set(matInvB2,1,0,- alphaX2 / sqrt(betaX2)); gsl_matrix_set(matInvB2,1,1,1 / sqrt(betaX2));
 		gsl_matrix_set(matInvB2,2,2, sqrt(betaY2)); gsl_matrix_set(matInvB2,3,2,- alphaY2 / sqrt(betaY2)); gsl_matrix_set(matInvB2,3,3,1 / sqrt(betaY2));
 		gsl_matrix_set(matInvB2,4,4, sqrt(betaZ2)); 													   gsl_matrix_set(matInvB2,5,5,1 / sqrt(betaZ2));	
-
-		
+	
 		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matB1,   matH1,   0.0,symplecticMapB1H1[i].mat2D);
 		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matInvH1,matInvB1,0.0,symplecticMapInvH1InvB1[i].mat2D);
 		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matInvH2,matInvB2,0.0,symplecticMapInvH2InvB2[i].mat2D);
 		
 		
-
       	//PrintGSLMatrix(symplecticMapB1H1[i].mat2D);
       	//PrintGSLMatrix(symplecticMapInvH2InvB2[i].mat2D);
           	
@@ -429,7 +422,7 @@ void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inp
       	gsl_matrix_free(matInvH1);
       	gsl_matrix_free(matInvB1);
       	    			                   
-     }   
+     }
 		
 }
 
@@ -976,7 +969,6 @@ void LatticeInterActionPoint::SetLatticeParaForOneTurnMap(const ReadInputSetting
 
 void LatticeInterActionPoint::GetIonNumberPerInterAction(double electronNumPerBunch, int k)
 {
-
     for(int p=0;p<gasSpec;p++)
     {
         ionLineDensity[k][p] = corssSectionEI[p] * vacuumPressureEachGas[k][p] / temperature[k] /Boltzmann * electronNumPerBunch;        
@@ -1173,7 +1165,6 @@ void LatticeInterActionPoint::IonTransferDueToBunch(int bunchGap,int k, double b
             ionAccumuPositionX[k][p][i] +=  ionAccumuVelocityX[k][p][i] * circRing/harmonics*bunchGap/CLight;
             ionAccumuPositionY[k][p][i] +=  ionAccumuVelocityY[k][p][i] * circRing/harmonics*bunchGap/CLight;
         }
-    
     }
 
     // after tracking -- remove the lost ions here. 

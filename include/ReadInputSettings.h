@@ -63,9 +63,8 @@ public:
 
         double emitNat[3];        // x y z
         double dampingPartJ[3];   // x y z
+        int    ringSectNum;        // how many section the ring is cutted  
         string twissInput = "twiss.dat"; 
-
-
     };
     RingParBasic *ringParBasic = new RingParBasic;
    
@@ -152,7 +151,8 @@ public:
         double ionMaxNumber;
         int numberofIonBeamInterPoint;
         int macroIonNumberGeneratedPerIP;
-        int   ionInfoPrintInterval; 
+        int   ionInfoPrintInterval;
+        int ionCalSCMethod; 
         string ionDisWriteTo;
         string twissInput="twiss.dat"; 
     };
@@ -243,6 +243,8 @@ public:
         int sRWakeFlag;
         int TBTBunchPrintNum;
         int rampFlag;
+        int spaceChargeFlag = 0;
+        int scMeshNum[3] = {32,32,33};
         vector<int> TBTBunchDisDataBunchIndex;
         string TBTBunchAverData;
         string TBTBunchDisData;
@@ -250,6 +252,7 @@ public:
         string TBTBunchHaissinski;
         string TBTBunchLongTraj;
         string runCBMGR;
+        
 
         
         int bunchInfoPrintInterval;

@@ -15,6 +15,8 @@
 #include "WakeFunction.h"
 #include "BoardBandImp.h"
 #include "Ramping.h"
+#include "PIC3D.h"
+#include "BeamIon2DPIC.h"
 // #include "CUDAFunction.cuh"
 #include <fstream>
 #include <stdlib.h>
@@ -37,6 +39,7 @@
 #include <complex.h>
 #include <vector>
 #include <numeric>
+
 
 
 
@@ -109,6 +112,7 @@ void MPBeam::Initial(Train &train, LatticeInterActionPoint &latticeInterActionPo
     {
         beamVec[i].InitialMPBunch(inputParameter);
         beamVec[i].DistriGenerator(latticeInterActionPoint,inputParameter,i);
+        beamVec[i].InitialAccumPhaseAdV(latticeInterActionPoint,inputParameter);
         
         // if(i==0)
         // {
@@ -832,6 +836,9 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     int ionInfoPrintInterval        = inputParameter.ringIonEffPara->ionInfoPrintInterval;
     int bunchInfoPrintInterval      = inputParameter.ringRun->bunchInfoPrintInterval;
     int rampFlag                    = inputParameter.ringRun->rampFlag;
+    int scFlag                      = inputParameter.ringRun->spaceChargeFlag;
+    int ionCalSCMethod              = inputParameter.ringIonEffPara->ionCalSCMethod;
+    double electronBeamEnergy       = inputParameter.ringParBasic->electronBeamEnergy;
 
     // prepare the ramping class
     Ramping ramping;
@@ -872,6 +879,7 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     // -----------------longRange wake function ---------------    
     WakeFunction lRWakeFunction;
     WakeFunction sRWakeFunction;
+    
     if(lRWakeFlag)
     {            
         lRWakeFunction.InitialLRWake(inputParameter,latticeInterActionPoint);
@@ -880,7 +888,15 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     {            
         sRWakeFunction.InitialSRWake(inputParameter,latticeInterActionPoint);
     }
-     
+
+    // 3D electron beam space charge
+    PIC3D picBeam3D;
+    if(scFlag==2)           picBeam3D.InitialSC3D(inputParameter); 
+    // 2d beam-ion effect
+    BeamIon2DPIC beamIon2DPIC;
+    if(ionCalSCMethod==2)   beamIon2DPIC.InitialPIC2D(); 
+    
+
     //-----------------------------------------------------------              
     // turn by turn data-- average of bunches 
     ofstream fout ("result.sdds",ios::out);
@@ -995,17 +1011,23 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     {
         if(n%10==0) cout<<n<<"  turns, bunch_0 transmission: "<<beamVec[0].transmission <<endl;
 
+        currentTurnNum = n;
         MPBeamRMSCal(latticeInterActionPoint, 0);
         MPGetBeamInfo();
-                
+     
+        /*  original setting, updated to be more general
         if(beamIonFlag) 
         {
             for (int k=0;k<inputParameter.ringIonEffPara->numberofIonBeamInterPoint;k++)
             {
                 MPBeamRMSCal(latticeInterActionPoint, k);
                 MPGetBeamInfo();
-                SSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, n, k);
+                SSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, n, k, beamIon2DPIC);                
                 BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,k);             //transverse transfor per interaction point                
+                if(scFlag==2)
+                {
+                    BeamTransferDueToSpaceChargePIC(picBeam3D,latticeInterActionPoint,k);
+                }
             }
 
             MPBeamRMSCal(latticeInterActionPoint,0);
@@ -1023,28 +1045,48 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             // BeamTransferPerTurnDueToLatticeTOneTurnR66(inputParameter,latticeInterActionPoint);
             BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,0); 
             MPBeamRMSCal(latticeInterActionPoint, 0);
+            
+            // 2.5D space charge from PIC if defined. longitudinal sc is not included.
+            if(scFlag==2) BeamTransferDueToSpaceChargePIC(picBeam3D,latticeInterActionPoint,0);
+            // 2.5D basseti formular or linear approximation-- longitudinal sc is not included yet
+            if(scFlag==1||scFlag==3) BeamTransferDueToSpaceChargeAnalytical(latticeInterActionPoint,0,inputParameter);
+
         }
-		
-		if(inputParameter.ringParBasic->skewQuadK!=0)
+
+        */
+
+        // section-by-section tracking
+        for (int k=0;k<inputParameter.ringIonEffPara->numberofIonBeamInterPoint;k++)
         {
-        	BeamTransferDueToSkewQuad(inputParameter);
-        }		
-		
+            MPBeamRMSCal(latticeInterActionPoint, k);
+            MPGetBeamInfo();
+            // both ion and space charge only update beam momentrum, transient bunch size does not change
+            if(beamIonFlag) SSBeamIonEffectOneInteractionPoint(inputParameter,latticeInterActionPoint, n, k, beamIon2DPIC);                
+            if(scFlag==2) BeamTransferDueToSpaceChargePIC(picBeam3D,latticeInterActionPoint,k);
+            if(scFlag==1||scFlag==3) BeamTransferDueToSpaceChargeAnalytical(latticeInterActionPoint,k,inputParameter);
+
+            BeamTransferPerInteractionPointDueToLatticeT(inputParameter,latticeInterActionPoint,k);             //transverse transfor per interaction point                
+            MPBeamRMSCal(latticeInterActionPoint,k);   
+        }
+        // print ion information
+        if(beamIonFlag && ionInfoPrintInterval && (n%ionInfoPrintInterval==0)) SSIonDataPrint(inputParameter,latticeInterActionPoint, n);
+        
+		// skeq quadrupole if defined
+		if(inputParameter.ringParBasic->skewQuadK!=0) 	BeamTransferDueToSkewQuad(inputParameter);
+        		
         // BeamMomtumUpdateDueToRF(inputParameter,latticeInterActionPoint,cavityResonator);
         BeamMomtumUpdateDueToRFTest(inputParameter,latticeInterActionPoint,cavityResonator);
         BeamLongiPosTransferOneTurn(inputParameter);
         BeamEnergyLossOneTurn(inputParameter);
-
+        if(synRadDampingFlag==1) BeamSynRadDamping(inputParameter,latticeInterActionPoint);
+        
         // Subroutine in below only change the momentum 
         if(bBImpFlag)  BBImpBeamInteraction(inputParameter,boardBandImp,latticeInterActionPoint);
-
         if(lRWakeFlag) LRWakeBeamIntaction(inputParameter,lRWakeFunction,latticeInterActionPoint);
-           
         if(sRWakeFlag) SRWakeBeamIntaction(inputParameter,sRWakeFunction,latticeInterActionPoint,n);
              
         MPBeamRMSCal(latticeInterActionPoint, 0);
         if(fIRBunchByBunchFeedbackFlag) FIRBunchByBunchFeedback(inputParameter,firFeedBack,n);
-
         if(rampFlag) ramping.RampingPara(inputParameter,latticeInterActionPoint,n);
 
 
@@ -1053,12 +1095,9 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
             BeamTransferDuetoDriveMode(inputParameter,n);
         }
 
-        // update the eign emittnace for SR simulation
-       
-        if(synRadDampingFlag==1) BeamSynRadDamping(inputParameter,latticeInterActionPoint);
-        
-        MarkParticleLostInBunch(inputParameter,latticeInterActionPoint);   
 
+
+        MarkParticleLostInBunch(inputParameter,latticeInterActionPoint);   
         MPBeamRMSCal(latticeInterActionPoint, 0);
         MPGetBeamInfo();
 
@@ -1147,6 +1186,11 @@ void MPBeam::Run(Train &train, LatticeInterActionPoint &latticeInterActionPoint,
     //     cout<<"Haissinski and longitudinal phase space trajectory"<<endl;
     // } 
 
+}
+
+void MPBeam::MPGetAccumuPhaseAdv(const LatticeInterActionPoint &latticeInterActionPoint,const ReadInputSettings &inputParameter)
+{
+    for(int i=0;i<beamVec.size();i++) beamVec[i].GetAccumuPhaseAdv(latticeInterActionPoint,inputParameter);
 }
 
 
@@ -2387,7 +2431,6 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 	            fout1<<"&parameter name=AverX,    units=m,     type=float,  &end"<<endl;
 	            fout1<<"&parameter name=AverY,    units=m,     type=float,  &end"<<endl;
 	            fout1<<"&parameter name=AverZ,    units=m,     type=float,  &end"<<endl;
-                
 
 	            fout1<<"&parameter name=rmsEmitX, units=m*rad, type=float,  &end"<<endl;
 	            fout1<<"&parameter name=rmsEmitY, units=m*rad, type=float,  &end"<<endl;
@@ -2404,6 +2447,9 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
 	            fout1<<"&column name=xp,             units=rad,   type=float,  &end"<<endl;
 	            fout1<<"&column name=yp,             units=rad,   type=float,  &end"<<endl;
 	            fout1<<"&column name=zp,             units=rad,   type=float,  &end"<<endl;
+                fout1<<"&column name=nux,                         type=float,  &end"<<endl;
+	            fout1<<"&column name=nuy,                         type=float,  &end"<<endl;
+                fout1<<"&column name=nus,                         type=float,  &end"<<endl;
 	            fout1<<"&data mode=ascii, &end"<<endl;
 	        }
 
@@ -2434,6 +2480,9 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
                      <<setw(20)<<left<<beamVec[bunchIndex].eMomentumX[j]
                      <<setw(20)<<left<<beamVec[bunchIndex].eMomentumY[j]
                      <<setw(20)<<left<<beamVec[bunchIndex].eMomentumZ[j]
+                     <<setw(20)<<left<<beamVec[bunchIndex].accPhaseAdvX[j][2]  / (2 * PI) / (nTurns+1)
+                     <<setw(20)<<left<<beamVec[bunchIndex].accPhaseAdvY[j][2]  / (2 * PI) / (nTurns+1)
+                     <<setw(20)<<left<<1 - beamVec[bunchIndex].accPhaseAdvZ[j][2]  / (2 * PI) / (nTurns+1)
                      <<endl;
             }
 
@@ -2511,13 +2560,31 @@ void MPBeam::MPBeamDataPrintPerTurn(int nTurns, LatticeInterActionPoint &lattice
             fout2.close();
         }
     }
-    
-
-
 }
 
-void MPBeam::SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k)
+void MPBeam::BeamTransferDueToSpaceChargePIC(PIC3D &picBeam3D,LatticeInterActionPoint &latticeInterActionPoint, int k)
 {
+    int totBunchNum = beamVec.size();
+    for(int j=0;j<totBunchNum;j++)
+    {
+        beamVec[j].BunchMomentumUpdateDueToSpaceChargePIC(picBeam3D,latticeInterActionPoint,k);
+    }
+}
+
+void MPBeam::BeamTransferDueToSpaceChargeAnalytical(LatticeInterActionPoint &latticeInterActionPoint, int k, ReadInputSettings &inputParameter)
+{
+    int totBunchNum = beamVec.size();
+    for(int j=0;j<totBunchNum;j++)
+    {
+        beamVec[j].BunchMomentumUpdateDueToSpaceChargeAnalytical(latticeInterActionPoint,k,inputParameter);
+    }
+}
+
+
+
+void MPBeam::SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k, BeamIon2DPIC &beamIon2DPIC)
+{
+    
     int totBunchNum = beamVec.size();
 
     for(int j=0;j<totBunchNum;j++)
@@ -2526,9 +2593,19 @@ void MPBeam::SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParamete
         latticeInterActionPoint.IonGenerator(beamVec[j].rmsRx,beamVec[j].rmsRy,beamVec[j].xAver,beamVec[j].yAver,k);        
         latticeInterActionPoint.IonsUpdate(k);
         latticeInterActionPoint.IonRMSCal(k);
-        beamVec[j].SSIonBunchInteraction(latticeInterActionPoint,k);
+        
+        if( inputParameter.ringIonEffPara->ionCalSCMethod == 2)        
+        {
+            beamVec[j].SSIonBunchInteractionPIC(beamIon2DPIC,latticeInterActionPoint,k);          
+        }
+        else
+        {
+            beamVec[j].SSIonBunchInteraction(latticeInterActionPoint,k);
+        }
+        
         beamVec[j].BunchTransferDueToIon(latticeInterActionPoint,k);
         latticeInterActionPoint.IonTransferDueToBunch(beamVec[j].bunchGap,k,strongStrongBunchInfo->bunchSizeXMax,strongStrongBunchInfo->bunchSizeYMax);
+       
     }
 
 }
@@ -2538,7 +2615,8 @@ void MPBeam::BeamTransferPerInteractionPointDueToLatticeT(const ReadInputSetting
     for(int j=0;j<beamVec.size();j++)
     {
         //beamVec[j].BunchTransferDueToLatticeT(inputParameter,latticeInterActionPoint,k);
-    	beamVec[j].BunchTransferDueToLatticeTSymplectic(inputParameter,latticeInterActionPoint,k);
+    	beamVec[j].currentTurnNum = currentTurnNum;
+        beamVec[j].BunchTransferDueToLatticeTSymplectic(inputParameter,latticeInterActionPoint,k);
     }
 }
 

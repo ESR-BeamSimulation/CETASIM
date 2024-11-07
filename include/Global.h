@@ -23,7 +23,7 @@ using std::vector;
 using namespace std;
 
 
-const double Epsilon 				= 8.854187817E-12;
+const double Epsilon 				= 8.854187817E-12;             // F/m -> C^2 / (N m^2) - >  C / (EField m^2) -> C / (V m)
 const double CLight 				= 299792458;                  // m/s
 const double ElectronCharge         = 1.602017733e-19;            // C 
 const double ElectronMass           = 9.10938215E-31;             // KG 

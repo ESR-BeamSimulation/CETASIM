@@ -42,6 +42,11 @@
 using namespace std;
 using std::vector;
 using std::complex;
+using v1d= vector<double> ;
+using v2d= vector<vector<double> > ;
+using v3d= vector<vector<vector<double> > >;
+using v1i= vector<int> ;
+using v2i= vector<vector<int> > ;
 
 MPBunch::MPBunch()
 {
@@ -77,7 +82,16 @@ void MPBunch::InitialMPBunch(const  ReadInputSettings &inputParameter)
         cavVolInfoVsLongBins[i].resize(bunchBinNumberZ+1);
         cavForceInfoVsLongBins[i].resize(bunchBinNumberZ+1);
     }
-   
+
+    // for space charge simulation
+    // vector<vector<vector<double> > > slicedPIC2DBeam
+    // slicedBunchDisInfo.resize(11);
+    // slicedBunchChargeInfo.resize(11);
+    // slicedBunchPartiIndex.resize(11);
+    // for (int i=0;i<slicedBunchDisInfo.size();i++)
+    // {
+    //     slicedBunchDisInfo[i].resize(6);   
+    // }
 }
 
 
@@ -263,6 +277,7 @@ void MPBunch::DistriGenerator(const LatticeInterActionPoint &latticeInterActionP
 	}
 
     GetMPBunchRMS(latticeInterActionPoint, 0);
+    
     
     rmsBunchLengthLastTurn =  rmsBunchLength;
     zAverLastTurn          =  zAver;
@@ -642,6 +657,439 @@ void MPBunch::GetEigenEmit(const LatticeInterActionPoint &latticeInterActionPoin
     }
 }
 
+void MPBunch::SetSlicedBunchInfo(int const nz)
+{   
+     //(1) set the slicedBuncDisInfo, 2.5D PIC model (-5 simgaz, 5*simgaz) 11 slices as default.   
+    slicedBunchDisInfo    = v3d(nz,v2d(6,v1d()));  
+    slicedBunchChargeInfo = v2d(nz,v1d());
+    slicedBunchPartiIndex = v2i(nz,v1i());
+
+    GetZMinMax();  
+    double zMin = zMinCurrentTurn;
+    double zMax = zMaxCurrentTurn;  
+    double dz = (zMax - zMin) /  (nz - 1);
+
+    //int range = 10;
+    //double dz = 2 * range * rmsBunchLength / (nz - 1);
+    
+    int sliceIndex;
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        //sliceIndex =  floor( (ePositionZ[i] -  (zAver - range * rmsBunchLength)) / dz);
+        sliceIndex =  floor( (ePositionZ[i] -  zMin) / dz);
+        sliceIndex = sliceIndex < 0    ? 0    :  sliceIndex;
+        sliceIndex = sliceIndex > nz-1 ? nz-1 :  sliceIndex; 
+			
+        slicedBunchDisInfo[sliceIndex][0].push_back(ePositionX[i]);
+        slicedBunchDisInfo[sliceIndex][1].push_back(ePositionY[i]);
+        slicedBunchDisInfo[sliceIndex][2].push_back(ePositionZ[i]);
+        slicedBunchDisInfo[sliceIndex][3].push_back(eMomentumX[i]);
+        slicedBunchDisInfo[sliceIndex][4].push_back(eMomentumY[i]);
+        slicedBunchDisInfo[sliceIndex][5].push_back(eMomentumZ[i]);
+        slicedBunchChargeInfo[sliceIndex].push_back(macroEleCharge * ElectronCharge / dz);  // [C/m]
+        slicedBunchPartiIndex[sliceIndex].push_back(i);
+    }
+
+}
+
+void MPBunch::UpdateTransverseMomentumBEModel(vector<vector<double>>  &particles, vector<double> eCharge, const double ds)
+{
+    int dims = 2; 
+    vector<double> beamCen(dims,0.E0);
+    vector<double> beamRms(dims,0.E0);
+    for (int plane=0; plane<dims;plane++)
+    { 
+        vector<double> pos = particles[plane];
+        beamCen[plane] = accumulate(pos.begin(), pos.end(), 0.E0) / pos.size();
+        beamRms[plane] = 0.E0;
+        for(int i = 0; i<pos.size();i++ )
+        {
+            beamRms[plane] += pow(pos[i] - beamCen[plane] ,2);
+        }
+        beamRms[plane] =  sqrt(beamRms[plane] / pos.size() );
+    }
+    double posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy;
+    rmsRxTemp = beamRms[0];
+    rmsRyTemp = beamRms[1];
+    
+    double lambda = accumulate(eCharge.begin(), eCharge.end(), 0.E0); // [C/m] 
+    
+    vector<vector<double>> partExEyField(2,v1d(particles[0].size(),0.E0));
+    //(1) get the exEy field 
+    for(int i=0;i<particles[0].size();++i)
+    {
+        posx = particles[0][i] - beamCen[0] ;  // reference to the center of the beam
+        posy = particles[1][i] - beamCen[1] ;  // reference to the center of the beam
+
+        if( (rmsRxTemp - rmsRyTemp) / rmsRyTemp > 1.e-4) 
+        {
+            BassettiErskine1(posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy);
+        }
+        else if ( (rmsRxTemp - rmsRyTemp)/rmsRyTemp < -1.e-4 )
+        {
+            BassettiErskine1(posy,posx,rmsRyTemp,rmsRxTemp,tempFy,tempFx); //tempFx, [1/m]
+        }
+        else
+        {
+            GaussianField(posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy);    //tempFx, [1/m]
+        }
+        partExEyField[0][i] = -lambda / PI / 2.0 / Epsilon * tempFx;          // [C/m] /  (C / (V m)) * [1/m] -> [V/m]
+        partExEyField[1][i] = -lambda / PI / 2.0 / Epsilon * tempFy;          // [V/m]
+    }
+
+    //(2) kick beam transversely  
+    double gamma0 = electronEnergy / ElectronMassEV; 
+    double beta0  = sqrt(1 - 1 / pow(gamma0, 2));
+    double p0     = beta0 * gamma0;
+    double px,py,pz,p,gamma,beta,deltaPx,deltaPy;
+    
+    // ofstream fout("testBE.sdds");
+    for(int i=0;i<particles[0].size();++i)
+    {
+        pz = (1 + particles[5][i]) * p0;
+        px = pz * particles[1][i];
+        py = pz * particles[3][i];
+        p = sqrt(pow(pz,2) + pow(px,2) + pow(py,2) );
+        gamma = sqrt(1 + pow(p,2) );
+        beta  = p / gamma;
+
+        deltaPx =  partExEyField[0][i] / pow(gamma,2) * ElectronCharge * ds / (beta * CLight) / (ElectronMass * p * CLight );
+        deltaPy =  partExEyField[1][i] / pow(gamma,2) * ElectronCharge * ds / (beta * CLight) / (ElectronMass * p * CLight );
+
+        particles[3][i] += deltaPx;
+        particles[4][i] += deltaPy;
+
+        // fout<<setw(15)<< particles[0][i] 
+        //     <<setw(15)<< particles[1][i]
+        //     <<setw(15)<< deltaPx
+        //     <<setw(15)<< deltaPy
+        //     <<endl; 
+    }
+
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+}
+
+
+void MPBunch::UpdateTransverseMomentumLinear(vector<vector<double>>  &particles, vector<double> eCharge, const double ds)
+{
+    int dims = 2; 
+    vector<double> beamCen(dims,0.E0);
+    vector<double> beamRms(dims,0.E0);
+    for (int plane=0; plane<dims;plane++)
+    { 
+        vector<double> pos = particles[plane];
+        beamCen[plane] = accumulate(pos.begin(), pos.end(), 0.E0) / pos.size();
+        beamRms[plane] = 0.E0;
+        for(int i = 0; i<pos.size();i++ )
+        {
+            beamRms[plane] += pow(pos[i] - beamCen[plane] ,2);
+        }
+        beamRms[plane] =  sqrt(beamRms[plane] / pos.size() );
+    }
+    double posx,posy,rmsRxTemp,rmsRyTemp,tempFx,tempFy;
+    rmsRxTemp = beamRms[0];   // assume unifrom in (-2,2) rms beam size // same idea as KV linear approximation
+    rmsRyTemp = beamRms[1];   
+    
+    double lambda = accumulate(eCharge.begin(), eCharge.end(), 0.E0); // [C/m] 
+    
+    vector<vector<double>> partExEyField(2,v1d(particles[0].size(),0.E0));
+    //(1) get the exEy field 
+    for(int i=0;i<particles[0].size();++i)
+    {
+        posx = particles[0][i] - beamCen[0] ;  // reference to the center of the beam
+        posy = particles[1][i] - beamCen[1] ;  // reference to the center of the beam
+
+        tempFx = posx / (rmsRxTemp * (rmsRxTemp + rmsRyTemp));
+        tempFy = posy / (rmsRyTemp * (rmsRxTemp + rmsRyTemp));  
+
+        partExEyField[0][i] = lambda / PI / Epsilon * tempFx;          // [C/m] /  (C / (V m)) * [1/m] -> [V/m]
+        partExEyField[1][i] = lambda / PI / Epsilon * tempFy;          // [V/m]
+    }
+
+
+    //(2) kick beam transversely  
+    double gamma0 = electronEnergy / ElectronMassEV; 
+    double beta0  = sqrt(1 - 1 / pow(gamma0, 2));
+    double p0     = beta0 * gamma0;
+    double px,py,pz,p,gamma,beta,deltaPx,deltaPy;
+    
+    // ofstream fout("testLinar.sdds");
+    for(int i=0;i<particles[0].size();++i)
+    {
+        pz = (1 + particles[5][i]) * p0;
+        px = pz * particles[1][i];
+        py = pz * particles[3][i];
+        p = sqrt(pow(pz,2) + pow(px,2) + pow(py,2) );
+        gamma = sqrt(1 + pow(p,2) );
+        beta  = p / gamma;
+
+        deltaPx =  partExEyField[0][i] / pow(gamma,2) * ElectronCharge * ds / (beta * CLight) / (ElectronMass * p * CLight );
+        deltaPy =  partExEyField[1][i] / pow(gamma,2) * ElectronCharge * ds / (beta * CLight) / (ElectronMass * p * CLight );
+
+        particles[3][i] += deltaPx;
+        particles[4][i] += deltaPy;
+
+        // fout<<setw(15)<< particles[0][i] 
+        //     <<setw(15)<< particles[1][i]
+        //     <<setw(15)<< deltaPx
+        //     <<setw(15)<< deltaPy
+        //     <<endl; 
+    }
+
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+}
+
+
+
+
+void MPBunch::BunchMomentumUpdateDueToSpaceChargeAnalytical(LatticeInterActionPoint &latticeInterActionPoint, int k, const ReadInputSettings &inputParameter)
+{
+    // 2.5D model for simulaiton with the ideal model
+    int nz = inputParameter.ringRun->scMeshNum[2];
+    int scFlag = inputParameter.ringRun->spaceChargeFlag;
+    SetSlicedBunchInfo(nz);
+    vector<vector<double> > particles(6,v1d());
+    vector<double> eCharge;
+    vector<int> partiIndexInSlice;
+    double ds = latticeInterActionPoint.interactionLength[k];
+
+    for (int slice = 0; slice<slicedBunchDisInfo.size(); ++slice )
+    {
+        particles =  slicedBunchDisInfo[slice];
+        eCharge   =  slicedBunchChargeInfo[slice];
+        partiIndexInSlice = slicedBunchPartiIndex[slice];             
+        if(particles[0].size()<2) continue;
+        
+        if(scFlag==1) UpdateTransverseMomentumBEModel(particles,eCharge,ds);
+        if(scFlag==3) UpdateTransverseMomentumLinear(particles,eCharge,ds);
+
+        int partIndex;
+        for(int i=0; i<partiIndexInSlice.size(); ++i)
+        {
+            partIndex = partiIndexInSlice[i];
+            eMomentumX[partIndex] = particles[3][i];
+            eMomentumY[partIndex] = particles[4][i];
+        } 
+    }
+    // clear the slicebunchInfo
+    for (int slice=0; slice< slicedBunchDisInfo.size(); ++slice )
+    {
+        slicedBunchChargeInfo[slice].clear();
+        slicedBunchPartiIndex[slice].clear();
+        for(int i=0; i<6; ++i)  slicedBunchDisInfo[slice][i].clear();
+    }   
+
+
+}
+
+void MPBunch::BunchMomentumUpdateDueToSpaceChargePIC(PIC3D &picSCBeam3D,LatticeInterActionPoint &latticeInterActionPoint, int k)
+{
+    // generate the mesh according to the rms beam size, and keep mesh size for in each slice. 
+    double rmsXY[2]  = {rmsRx,rmsRy};
+    // double rmsXY[2]  = {1.E-4,1.E-4};
+    double averXY[2] = {xAver,yAver};
+    if(rmsXY[0]==0 || rmsXY[1]==0)
+    {
+        cerr<<"rms beam size is zero, not able to generate mesh. RMSX:"<<rmsXY[0]<<"RMSY:"<<rmsXY[1]<<endl;
+        exit(0);
+    }
+
+    // 2.5D model for simulaiton--since sigmaz~1.E-3, sigmax~1.E-5, sigmay~1.E-6, very un-symmetryic 
+    vector<vector<double> > particles(6,v1d());
+    vector<double> eCharge;
+    vector<int> partiIndexInSlice;
+    // mesh is generatote in XY accoding the rms beam size.
+    picSCBeam3D.slicedBunchPIC2D->Set2DMesh(rmsXY,averXY);
+    int nz = picSCBeam3D.numberOfGrid[2];
+    SetSlicedBunchInfo(nz);  // sliced longitudianl bunch profile
+
+    double ds = latticeInterActionPoint.interactionLength[k];
+
+    for (int slice = 0; slice<slicedBunchDisInfo.size(); ++slice )
+    {
+        particles =  slicedBunchDisInfo[slice];
+        eCharge   =  slicedBunchChargeInfo[slice];
+        partiIndexInSlice = slicedBunchPartiIndex[slice];
+             
+        if(particles[0].size()<2) continue;
+        picSCBeam3D.slicedBunchPIC2D->Set2DRho(particles,eCharge);
+        picSCBeam3D.slicedBunchPIC2D->Set2DPhi(); 
+        picSCBeam3D.slicedBunchPIC2D->Set2DEField();
+        picSCBeam3D.slicedBunchPIC2D->SetPartSCField();
+        picSCBeam3D.slicedBunchPIC2D->UpdateTransverseMomentum(particles, ds);
+
+        // update the particle momentum
+        int partIndex;
+        for(int i=0; i<partiIndexInSlice.size(); ++i)
+        {
+            partIndex = partiIndexInSlice[i];
+            eMomentumX[partIndex] = particles[3][i];
+            eMomentumY[partIndex] = particles[4][i];
+        } 
+    }
+    
+    // // clear the slicebunchInfo
+    for (int slice=0; slice< slicedBunchDisInfo.size(); ++slice )
+    {
+        slicedBunchChargeInfo[slice].clear();
+        slicedBunchPartiIndex[slice].clear();
+        for(int i=0; i<6; ++i)  slicedBunchDisInfo[slice][i].clear();
+    }    
+
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+
+
+
+    // 3D solver directly 
+    // double ds = latticeInterActionPoint.interactionLength[k];
+    // vector<vector<double> > particles(6,vector<double>() ) ;
+    // for(int i=0;i<macroEleNumPerBunch;i++)
+    // {
+    //     if(eSurive[i]!=0) continue;  // only surive particles are set for PIC solver
+    //     particles[0].push_back(ePositionX[i]);
+    //     particles[1].push_back(ePositionY[i]);
+    //     particles[2].push_back(ePositionZ[i]);
+    //     particles[3].push_back(eMomentumX[i]); // px / p0
+    //     particles[4].push_back(eMomentumY[i]); // py / p0
+    //     particles[5].push_back(eMomentumZ[i]); // deltaP / p0;
+    // }
+    
+
+    // cout<<macroEleCharge * ElectronCharge * macroEleNumPerBunch<<endl;
+    // picSCBeam3D.Set3DMesh(particles);
+    // picSCBeam3D.Set3DRho(particles, macroEleCharge * ElectronCharge);
+    // picSCBeam3D.Set3DPhi1();
+    // picSCBeam3D.Set3DEField();
+    // picSCBeam3D.SetPartSCField(particles);
+    // picSCBeam3D.UpdatMomentum(particles,ds);
+
+
+
+    // // copy coodinates banck to member variables momentum
+    // int j=0;
+    // for(int i=0;i<particles[0].size();i++)
+    // {
+    //     if(eSurive[i]!=0)
+    //     {
+    //         j++;
+    //         continue;  // reset the momentum of the particiles.
+    //     } 
+    //     eMomentumX[i+j] = particles[3][i];
+    //     eMomentumY[i+j] = particles[4][i];
+    //     eMomentumZ[i+j] = particles[5][i];
+    // }   
+}
+
+void MPBunch::SSIonBunchInteractionPIC(BeamIon2DPIC &beamIon2DPIC, LatticeInterActionPoint &latticeInterActionPoint, int k)
+{
+    // (1) get the E fiel from electron beam
+    double ds = latticeInterActionPoint.interactionLength[k];
+    double circRing = latticeInterActionPoint.circRing;
+    vector<vector<double> > particles(4,vector<double>()) ;  // [x,y,px,py]
+    vector<double> eCharge;
+
+    for(int i=0;i<macroEleNumPerBunch;i++)
+    {
+        if(eSurive[i]!=0) continue;  // only surive particles are set for PIC solver
+        particles[0].push_back(ePositionX[i]);
+        particles[1].push_back(ePositionY[i]);
+        // particles[2].push_back(eMomentumX[i]); // px / p0
+        // particles[3].push_back(eMomentumY[i]); // py / p0
+        eCharge.push_back(macroEleCharge * ElectronCharge / circRing);   // [C/m] 2D electron beam line density
+    }
+
+    beamIon2DPIC.pic2DBeam.Set2DMesh(particles);
+    beamIon2DPIC.pic2DBeam.Set2DRho(particles,eCharge); 
+    beamIon2DPIC.pic2DBeam.Set2DPhi(); 
+    beamIon2DPIC.pic2DBeam.Set2DEField();
+
+    // here to compare with result from BasstiErskine formular 
+    // int nx = beamIon2DPIC.pic2DBeam.numberOfGrid[0];
+    // int ny = beamIon2DPIC.pic2DBeam.numberOfGrid[1]; 
+    // cout<<nx<<" "<<ny<<endl;   
+    // ofstream fout("test1.sdds");
+    // double a = beamIon2DPIC.pic2DBeam.beamrmssize[0] ;
+    // double b = beamIon2DPIC.pic2DBeam.beamrmssize[1] ;
+    // double x,y,tempFx,tempFy;
+    // for(int i=0;i<beamIon2DPIC.pic2DBeam.numberOfGrid[0];i++)
+    // {
+    //     for(int j=0;j<beamIon2DPIC.pic2DBeam.numberOfGrid[1];j++)
+    //     {
+    //         x = beamIon2DPIC.pic2DBeam.meshx[0] + i * beamIon2DPIC.pic2DBeam.meshWidth[0];
+    //         y = beamIon2DPIC.pic2DBeam.meshy[0] + j * beamIon2DPIC.pic2DBeam.meshWidth[1];
+            
+    //         BassettiErskine1(x,y,a,b,tempFx,tempFy);
+
+    //         fout<<setw(15)<< x / a
+    //             <<setw(15)<< y / b
+    //             <<setw(15)<< beamIon2DPIC.pic2DBeam.rho[i][j]
+    //             <<setw(15)<< beamIon2DPIC.pic2DBeam.phi[i][j]
+    //             <<setw(15)<< beamIon2DPIC.pic2DBeam.ex[i][j]
+    //             <<setw(15)<< beamIon2DPIC.pic2DBeam.ey[i][j]
+    //             <<setw(15)<< -tempFx * eCharge[0] * macroEleNumPerBunch / 2 / PI / Epsilon   
+    //             <<setw(15)<< -tempFy * eCharge[0] * macroEleNumPerBunch / 2 / PI / Epsilon  
+    //             <<endl;
+    //     }
+    // }
+    // cout<<__LINE__<<__FILE__<<endl;
+    // getchar();
+
+    
+    // (2) get the E fiel from ions on the mesh  
+    vector<vector<double> > ions(4,vector<double>()) ;
+    vector<double> ionCharge;
+    for(int p=0;p<latticeInterActionPoint.gasSpec;p++)
+    {
+        for(int j=0;j<latticeInterActionPoint.ionAccumuNumber[k][p];j++)
+        {
+            ions[0].push_back(latticeInterActionPoint.ionAccumuPositionX[k][p][j]);
+            ions[1].push_back(latticeInterActionPoint.ionAccumuPositionY[k][p][j]);
+            // ions[2].push_back(latticeInterActionPoint.macroIonCharge[k][p] * ElectronCharge)
+            // ions[3].push_back(latticeInterActionPoint.ionMassNumber[p]);
+            ionCharge.push_back(latticeInterActionPoint.macroIonCharge[k][p] * ElectronCharge);   // [C] 
+        }
+    }
+
+    beamIon2DPIC.pic2DIon.Set2DMesh(ions);
+    beamIon2DPIC.pic2DIon.Set2DRho(ions,ionCharge);
+    beamIon2DPIC.pic2DIon.Set2DPhi();
+    beamIon2DPIC.pic2DIon.Set2DEField();
+
+    // to be updated...
+    //(3) Get the momentum kick of electron due to ions 
+    vector<vector<double> > eFieldPart = beamIon2DPIC.pic2DIon.GetPartSCField(particles);
+    int j;
+    for(int i=0;i<particles[0].size();i++)
+    {
+        if(eSurive[i]!=0)
+        {
+            j++;
+            continue;  // reset the momentum of the particiles.
+        } 
+        eFxDueToIon[i+j] = eFieldPart[0][i];
+        eFxDueToIon[i+j] = eFieldPart[1][i];
+    }   
+    
+    //(4) Get the momentum kick of ions due to elecrons
+    vector<vector<double> > eFieldIons = beamIon2DPIC.pic2DBeam.GetPartSCField(ions);
+    int count = 0;
+    for(int p=0;p<latticeInterActionPoint.gasSpec;p++)
+    {
+        for(int j=0;j<latticeInterActionPoint.ionAccumuNumber[k][p];j++)
+        {            
+            latticeInterActionPoint.ionAccumuFx[k][p][j]= eFieldIons[0][count];
+            latticeInterActionPoint.ionAccumuFy[k][p][j]= eFieldIons[1][count];
+            count++;
+        }
+    }
+
+    cout<<__LINE__<<__FILE__<<endl;
+    getchar();
+
+}
 
 void MPBunch::SSIonBunchInteraction(LatticeInterActionPoint &latticeInterActionPoint, int k)
 {

@@ -66,7 +66,7 @@ public:
     vector<double> temperature;                            // K
     vector<vector<double> >ionLineDensity;                 // [1/m] ion number per meter in rings. 
     vector<double> interactionLength;                      // [m]   effective length of interaction point \sum interactionLength[k] = circ
-
+    vector<double> elemPos;                                // element location
     vector<double> pipeAperatureX;
     vector<double> pipeAperatureY;
 

@@ -16,15 +16,17 @@
 #include "WakeFunction.h"
 #include "FIRFeedBack.h"
 #include "BoardBandImp.h"
+#include "BeamIon2DPIC.h"
 #include <fstream>
 #include <vector>
 #include <complex>
 #include "CavityResonator.h" 
-
+#include "PIC3D.h"
 
 using namespace std;
 using std::vector;
 using std::complex;
+
 
 
 class MPBeam 
@@ -32,7 +34,8 @@ class MPBeam
 public:
     MPBeam();
     ~MPBeam();
-   
+    
+    int currentTurnNum = 0;
     struct StrongStrongBunchInfo{
 
         double emitYMax;
@@ -83,7 +86,7 @@ public:
     // for GPU, all particle cord 
     // double  *partCord; 
     //
-   
+    
     // for coupled bunch mode or bunch-by-bunch growth rate calculation
     // nominal method to get the coupled bunch grwothe rate
     vector<vector<double> > coupledBunchModeAmpX;
@@ -129,7 +132,7 @@ public:
     void MPBeamRMSCal(LatticeInterActionPoint &latticeInterActionPoint, int k);
     void MPGetBeamInfo();
     void MPBeamDataPrintPerTurn(int turns, LatticeInterActionPoint &latticeInterActionPoint,ReadInputSettings &inputParameter);
-    void SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k);
+    void SSBeamIonEffectOneInteractionPoint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint, int nTurns, int k, BeamIon2DPIC &beamIon2DPIC);
     void SRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeFunction &wakefunction, const  LatticeInterActionPoint &latticeInterActionPoint,int turns);    
     void GetTimeDisToNextBunchIntial(ReadInputSettings &inputParameter);
     void GetBunchMinZMaxZ();
@@ -148,6 +151,8 @@ public:
     void BeamEnergyLossOneTurn(const ReadInputSettings &inputParameter); 
     void BeamTransferPerTurnDueToLatticeTOneTurnR66(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void BeamTransferDueToSkewQuad(const ReadInputSettings &inputParameter);
+    void BeamTransferDueToSpaceChargePIC(PIC3D &scBeam3D,LatticeInterActionPoint &latticeInterActionPoint, int k);
+    void BeamTransferDueToSpaceChargeAnalytical(LatticeInterActionPoint &latticeInterActionPoint, int k, ReadInputSettings &inputParameter);
     void BeamTransferPerTurnR66AndSynRadGPU(const ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint);
     void SSIonDataPrint(ReadInputSettings &inputParameter,LatticeInterActionPoint &latticeInterActionPoint,int count);  
     void GetAnalyticalLongitudinalPhaseSpace(ReadInputSettings &inputParameter,CavityResonator &cavityResonator,WakeFunction &sRWakeFunction);
@@ -159,7 +164,8 @@ public:
     void GetAnalyticalWithFilter(const ReadInputSettings &inputParameter); 
     vector<complex<double> > GetHilbertAnalytical(vector<double> signal, const double filterBandWithdNu, double workQ);  
     //void SetBeamPosHistoryDataWithinWindow();
-                  
+
+    void MPGetAccumuPhaseAdv(const LatticeInterActionPoint &latticeInterActionPoint,const  ReadInputSettings &inputParameter);    // not used          
                                	                       
     void BeamSynRadDamping(const ReadInputSettings &inputParameter, LatticeInterActionPoint &latticeInterActionPoint);
     void FIRBunchByBunchFeedback(const ReadInputSettings &inputParameter,FIRFeedBack &firFeedBack,int nTurns);
