@@ -3138,28 +3138,36 @@ void SPBeam::LRWakeBeamIntaction(const  ReadInputSettings &inputParameter, WakeF
                 deltaTij = (beamVec[j].zAver -  wakefunction.poszData[nTurnswakeTrunction-1-n][i]) / CLight / rBeta;
                 tauij    = tauijStastic  + deltaTij;   
                 
+                wakeForceTemp = wakefunction.GetTotLRWakeLinearFit(tauij);
+                beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i] ;  
+                beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i] ;
+                beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch ;            
+
+
                 // notification: 
                 // ensure the wakefucntion return the focusing strength in transverse and energy loss in longitudinal. 
                 // then: beamVec[j].lRWakeForceAver[?] -=  mins here.   
 
-                if(!inputParameter.ringLRWake->pipeGeoInput.empty())
-                {                                       
-                    wakeForceTemp = wakefunction.GetRWLRWakeFun(tauij); 
-                    beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
-                    beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
-                    beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch;                                                       //[V/C]         ->  [V/C]                    
-                }
+                // if(!inputParameter.ringLRWake->pipeGeoInput.empty())
+                // {                                       
+                //     wakeForceTemp = wakefunction.GetRWLRWakeFun(tauij); 
+                //     beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
+                //     beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
+                //     beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch;                                                       //[V/C]         ->  [V/C]                    
+                // }
 
-                if(!inputParameter.ringLRWake->bbrInput.empty())
-                {
-                    wakeForceTemp = wakefunction.GetBBRWakeFun(tauij);                                       
-                    beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
-                    beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]                   
-                    beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch; 
-                    // to subsctract the "stastic term -- only when coupled bunch modes"
-                    // wakeStasticForceTemp = wakefunction.GetBBRWakeFun(tauijStastic);
-                    // beamVec[j].lRWakeForceAver[2] -= (wakeForceTemp[2] - wakeStasticForceTemp[2]) * beamVec[i].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]                
-                }
+                // if(!inputParameter.ringLRWake->bbrInput.empty())
+                // {
+                //     wakeForceTemp = wakefunction.GetBBRWakeFun(tauij);                                       
+                //     beamVec[j].lRWakeForceAver[0] -= wakeForceTemp[0] * beamVec[i].electronNumPerBunch * wakefunction.posxData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]
+                //     beamVec[j].lRWakeForceAver[1] -= wakeForceTemp[1] * beamVec[i].electronNumPerBunch * wakefunction.posyData[nTurnswakeTrunction-1-n][i];    //[V/C/m] * [m] ->  [V/C]                   
+                //     beamVec[j].lRWakeForceAver[2] -= wakeForceTemp[2] * beamVec[i].electronNumPerBunch; 
+                //     // to subsctract the "stastic term -- only when coupled bunch modes"
+                //     // wakeStasticForceTemp = wakefunction.GetBBRWakeFun(tauijStastic);
+                //     // beamVec[j].lRWakeForceAver[2] -= (wakeForceTemp[2] - wakeStasticForceTemp[2]) * beamVec[i].electronNumPerBunch;                                                        //[V/C]         ->  [V/C]                
+                // }
+
+            
             }   
         }
         

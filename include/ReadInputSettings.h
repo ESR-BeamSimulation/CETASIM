@@ -186,7 +186,8 @@ public:
     {
         string pipeGeoInput;
         string bbrInput;
-        int nTurnswakeTrunction=100;
+        int nTurnswakeTrunction = 10;
+        string lrwOutput;
     };    
     RingLRWake * ringLRWake =  new RingLRWake;    
 

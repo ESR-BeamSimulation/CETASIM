@@ -14,6 +14,7 @@
 #include<fstream>	
 #include <numeric>
 #include <cmath>
+#include <stdio.h>
 #include "WakeFunction.h"
 #include <gsl/gsl_matrix.h> 
 #include <gsl/gsl_sf_gamma.h>
@@ -29,6 +30,11 @@ using namespace std;
 using std::vector;
 using std::complex;
 
+using v1i= vector<int> ;
+using v2i= vector<vector<int> > ;
+using v1d= vector<double> ;
+using v2d= vector<vector<double> > ;
+using v3d= vector<vector<vector<double> > > ;
 
 
 WakeFunction::WakeFunction()
@@ -81,7 +87,147 @@ void WakeFunction::InitialLRWake(const ReadInputSettings &inputParameter,const L
     {    
         BBRWakeParaReadIn(inputParameter.ringLRWake->bbrInput);    
     }
+    
+    double trf = inputParameter.ringParBasic->t0 / inputParameter.ringParBasic->harmonics;
+    int turns = inputParameter.ringLRWake->nTurnswakeTrunction;
+    double dt = trf / 2 ;
+    int np = int(turns * inputParameter.ringParBasic->harmonics * trf / dt) + 2; 
+     
+    v2d lwakesBBR = v2d(np, v1d(3, 0.E0));
+    v2d lwakesRW  = v2d(np, v1d(3, 0.E0));
+    lwakesTot     = v2d(3,  v1d(np, 0.E0));
+    lwaketime  	  = v1d(np, 0.E0);
+    v1d lwakeTemp = v1d(3, 0.E0); 
+	
+	string output = inputParameter.ringLRWake->lrwOutput;
+    ofstream fout(output);
+    fout<<"SDDS1"<<endl;
+    fout<<"&column name=time,                    units=s,      type=float,  &end"<<endl;
+
+	fout<<"&column name=rw_wx,              units=V/C/m,  type=float,  &end"<<endl;
+	fout<<"&column name=rw_wy,              units=V/C/m,  type=float,  &end"<<endl;
+	fout<<"&column name=rw_wz,              units=V/C,    type=float,  &end"<<endl;
+	fout<<"&column name=bbr_wx,              units=V/C/m,  type=float,  &end"<<endl;
+	fout<<"&column name=bbr_wy,              units=V/C/m,  type=float,  &end"<<endl;
+	fout<<"&column name=bbr_wz,              units=V/C,    type=float,  &end"<<endl;
+   	fout<<"&column name=tot_wx,              units=V/C/m,  type=float,  &end"<<endl;
+	fout<<"&column name=tot_wy,              units=V/C/m,  type=float,  &end"<<endl;
+	fout<<"&column name=tot_wz,              units=V/C,    type=float,  &end"<<endl;
+    fout<<"&data mode=ascii, &end"<<endl;
+    fout<<"! page number 1"<<endl;
+    fout<<np<<endl;
+
+
+    for(int i=0;i<np;++i)
+    {
+        lwaketime[i] = -i * dt;
+       
+        if(!inputParameter.ringLRWake->pipeGeoInput.empty()) 
+        {    
+            for(int j=0;j<3;++j)  
+            {
+                lwakeTemp = GetRWLRWakeFun(lwaketime[i]);   // x y z
+                lwakesRW[i][j] += lwakeTemp[j];
+            }
+        }
+
+        if(!inputParameter.ringLRWake->bbrInput.empty()) 
+        {    
+            for(int j=0;j<3;++j) 
+            {
+                lwakeTemp = GetBBRWakeFun(lwaketime[i]);  // x y z
+                lwakesBBR[i][j] += lwakeTemp[j];
+            }
+        }
+		
+		for(int j=0;j<3;++j)
+		{
+			lwakesTot[j][i] = lwakesBBR[i][j] + lwakesRW[i][j];
+		}
+
+    
+		fout<<setw(15)<<left<<lwaketime[i]
+			<<setw(15)<<left<<lwakesRW[i][0]
+			<<setw(15)<<left<<lwakesRW[i][1]
+			<<setw(15)<<left<<lwakesRW[i][2]
+			<<setw(15)<<left<<lwakesBBR[i][0]
+			<<setw(15)<<left<<lwakesBBR[i][1]
+			<<setw(15)<<left<<lwakesBBR[i][2]
+			<<setw(15)<<left<<lwakesTot[0][i]
+			<<setw(15)<<left<<lwakesTot[1][i]
+			<<setw(15)<<left<<lwakesTot[2][i]
+			<<endl;
+    }
+    fout.close();
+    
+	
+	for(int i=0;i<np;++i)
+	{
+		lwaketime[i] = -lwaketime[i];
+	}
+  
+   	xlrwakefit.set_points(lwaketime,lwakesTot[0],tk::spline::cspline);
+    ylrwakefit.set_points(lwaketime,lwakesTot[1],tk::spline::cspline);
+    zlrwakefit.set_points(lwaketime,lwakesTot[2],tk::spline::cspline);  
+	
+	/*
+    ofstream fout1("lw.sdds");
+    fout1<<"SDDS1"<<endl;
+    fout1<<"&column name=time,                    units=s,      type=float,  &end"<<endl;
+    if(!inputParameter.ringLRWake->pipeGeoInput.empty()) 
+    {
+    	fout1<<"&column name=tot_wx,              units=V/C/m,  type=float,  &end"<<endl;
+		fout1<<"&column name=tot_wy,              units=V/C/m,  type=float,  &end"<<endl;
+		fout1<<"&column name=tot_wz,              units=V/C,    type=float,  &end"<<endl;
+    }
+    fout1<<"&data mode=ascii, &end"<<endl;
+    fout1<<"! page number 1"<<endl;
+    fout1<<np<<endl;
+    
+    for(int i=0;i<np;++i)
+    {
+    	time[i] = i * dt * 0.1 ;
+    	fout1<<setw(15)<<left<<-time[i]
+    		 <<setw(15)<<left<<xlrwakefit(time[i])
+    		 <<setw(15)<<left<<ylrwakefit(time[i])
+    		 <<setw(15)<<left<<zlrwakefit(time[i])
+    		 <<endl;
+    }
+    fout1.close();
+
+    cout<<__FILE__<<output<<__LINE__<<endl;
+    getchar();
+	
+	*/
+   
 }
+vector<double> WakeFunction::GetTotLRWakeLinearFit(double tau)
+{
+	if(tau>0)
+    {
+        cerr<<"Resistive wall wake calculation, tau is larger than zero"<<endl;
+        exit(0);
+    }
+	double dt = lwaketime[1] - lwaketime[0];
+	int index = floor(-tau / dt);
+	double v0, v1;
+	v1 = -tau / dt - index;
+	v0 = 1 - v1;
+	
+	//cout<<v0<<"	"<<v1<<endl;
+	vector<double> lwake(3,0.E0);
+	for(int i=0;i<3;++i)
+	{
+		lwake[i] = lwakesTot[i][index] * v0 +  lwakesTot[i][index + 1] * v1;
+	}
+	
+	
+	//getchar();
+	return lwake;
+	
+	
+}
+
 
 void WakeFunction::InitialSRWake(const ReadInputSettings &inputParameter,const LatticeInterActionPoint &latticeInterActionPoint)
 {
@@ -140,8 +286,7 @@ void WakeFunction::BBRWakeParaReadIn(string inputfilename)
         }			
     }
     fin1.close();    
- 
-    
+     
 }
 
 void WakeFunction::RWWakeParaReadIn(string filename)

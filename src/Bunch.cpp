@@ -657,7 +657,7 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
 
 	double weighX = phaseAdvX / (2 * PI * nux);
 	double weighY = phaseAdvY / (2 * PI * nuy);
-	
+    
 	double x,px,y,py,ampX,ampY,phiX,phiY;
 	
 	gsl_matrix *matRotat = gsl_matrix_alloc (6, 6);
@@ -669,6 +669,7 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
 
     double tmpx,tmpy,tmpz;
     double vec0[2],vec1[2];
+    double deltaNux,deltaNuy;
 
 	for(int i=0;i<macroEleNumPerBunch;i++)
     {
@@ -680,11 +681,14 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
 		y  = ePositionY[i] - etay  * eMomentumZ[i]; // [m] 
 		py = eMomentumY[i] - etayp * eMomentumZ[i]; // [rad]
 
-        ampX   = ( pow(x,2) + pow( alphax * x + betax * px,2) ) / betax;  //[m]
-        ampY   = ( pow(y,2) + pow( alphay * y + betay * py,2) ) / betay;  //[m]
+        ampX   = ( pow(x,2) + pow( alphax * x + betax * px, 2) ) / betax;  //[m]
+        ampY   = ( pow(y,2) + pow( alphay * y + betay * py, 2) ) / betay;  //[m]
 
-        phiX = phaseAdvX + (chromx * eMomentumZ[i] + aDTX[0] * ampX + aDTX[1] * ampY + aDTX[2] * pow(ampX,2)/2 + aDTX[3] * pow(ampY,2)/2 + aDTX[4] * ampX * ampY ) * weighX;
-        phiY = phaseAdvY + (chromy * eMomentumZ[i] + aDTY[0] * ampX + aDTY[1] * ampY + aDTY[2] * pow(ampX,2)/2 + aDTY[3] * pow(ampY,2)/2 + aDTY[4] * ampX * ampY ) * weighY;
+        deltaNux = (chromx * eMomentumZ[i] + aDTX[0] * ampX + aDTX[1] * ampY + aDTX[2] * pow(ampX,2)/2 + aDTX[3] * pow(ampY,2)/2 + aDTX[4] * ampX * ampY ) * weighX;
+        deltaNuy = (chromy * eMomentumZ[i] + aDTY[0] * ampX + aDTY[1] * ampY + aDTY[2] * pow(ampX,2)/2 + aDTY[3] * pow(ampY,2)/2 + aDTY[4] * ampX * ampY ) * weighY;
+
+        phiX = phaseAdvX + 2 * PI * deltaNux;
+        phiY = phaseAdvY + 2 * PI * deltaNuy;
     	
     	gsl_matrix_set_zero(matRotat);
     	
@@ -698,7 +702,12 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
         vecX->data[3 * vecX->tda] = eMomentumY[i];
         vecX->data[4 * vecX->tda] = ePositionZ[i]; 
         vecX->data[5 * vecX->tda] = eMomentumZ[i]; 
-    	
+
+        // PrintGSLMatrix(matRotat);
+        // PrintGSLMatrix(B1H1);
+        // PrintGSLMatrix(H2B2);
+        // getchar();
+
 		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,B1H1,vecX,0.0,vecX1);
         gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matRotat,vecX1,0.0,vecX);
 
@@ -731,6 +740,8 @@ void Bunch::BunchTransferDueToLatticeTSymplectic(const ReadInputSettings &inputP
 		eMomentumY[i] =  gsl_matrix_get(vecX1,3,0);
 		ePositionZ[i] =  gsl_matrix_get(vecX1,4,0);
 		eMomentumZ[i] =  gsl_matrix_get(vecX1,5,0);
+
+      
 	}
 	
 	gsl_matrix_free (vecX);

@@ -10,6 +10,8 @@
 
 #include <cmath>
 #include <complex>
+#include <stdlib.h>
+#include "Spline.h"
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
 #include <vector>
@@ -51,6 +53,13 @@ public:
     // definition of the bbr wake and impedance can be also found in elegant mannul.   
     //Refer to: Ref. NIMA 221-230 806 (2016) Nagaoka for the long range wake wake function estimation. 
     
+    tk::spline xlrwakefit;
+    tk::spline ylrwakefit;
+    tk::spline zlrwakefit;
+    
+    vector<vector<double> > lwakesTot;
+    vector<double> lwaketime;
+
     vector<double> lRs;     //ohm
     vector<double> lQ;
     vector<double> lOmega;
@@ -61,7 +70,7 @@ public:
     vector<double> txQ;
     vector<double> txOmega;
     
-
+	vector<double> GetTotLRWakeLinearFit( double tau);
 	vector<double> GetBBRWakeFun(double tau); // works for both long and short range wakefunction
     vector<double> GetBBRWakeFun1(double tau) ; // works for both long and short range wakefunction--1mm bunch pusedo-wake potential as wake function
 

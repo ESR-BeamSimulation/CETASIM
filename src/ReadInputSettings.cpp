@@ -690,6 +690,11 @@ int ReadInputSettings::ParamRead(int argc, char *argv[])
         {
           ringLRWake->pipeGeoInput = strVec[1];          
         }
+        if(strVec[0]=="lrwoutput")
+        {
+          ringLRWake->lrwOutput = strVec[1];          
+        }
+        
         if(strVec[0]=="lrwbbrinput")
         {
           ringLRWake->bbrInput = strVec[1];          

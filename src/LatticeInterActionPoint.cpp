@@ -275,8 +275,11 @@ void LatticeInterActionPoint::InitialLattice(const ReadInputSettings &inputParam
             interactionLength[i] = (circRing     - elemPos[i]  + elemPos[0]);
             phaseAdvX12[i]       = 2 * PI * workQx -  xPhaseAdv[i] + xPhaseAdv[0];
             phaseAdvY12[i]       = 2 * PI * workQy -  yPhaseAdv[i] + yPhaseAdv[0];  
-        }              
+        }
+        // cout<<phaseAdvX12[i] / (2* PI)<<" "<<phaseAdvY12[i]/ (2* PI)<<endl;              
     }
+
+    // getchar();
 
     if((i)!=numberOfInteraction)
     {
@@ -411,10 +414,11 @@ void LatticeInterActionPoint::InitialLatticeSympMat(const ReadInputSettings &inp
 		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matInvH1,matInvB1,0.0,symplecticMapInvH1InvB1[i].mat2D);
 		gsl_blas_dgemm(CblasNoTrans,CblasNoTrans,1.0,matInvH2,matInvB2,0.0,symplecticMapInvH2InvB2[i].mat2D);
 		
-		
-      	//PrintGSLMatrix(symplecticMapB1H1[i].mat2D);
-      	//PrintGSLMatrix(symplecticMapInvH2InvB2[i].mat2D);
-          	
+        
+      	// PrintGSLMatrix(symplecticMapB1H1[i].mat2D);
+      	// PrintGSLMatrix(symplecticMapInvH2InvB2[i].mat2D);
+        // getchar();
+
       	gsl_matrix_free(matH1);
       	gsl_matrix_free(matInvH2);
       	gsl_matrix_free(matB1);

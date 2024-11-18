@@ -381,7 +381,7 @@ void PIC3D::Set3DPhi()
             {
                 knx=PI / 2 * (i+1) / (nx + 1);
                 kny=PI / 2 * (j+1) / (ny + 1);
-                knz=PI     * (k)   / (nz);              // chech the formular used in FFTW mannul in function FFT,  
+                knz=PI     * (k)   / (nz);              // check the formular used in FFTW mannul,  
                 
                 // The SK function is uniquely decided
                 K_rho2phi=   pow(2*sin(knx) / meshWidth[0], 2)
